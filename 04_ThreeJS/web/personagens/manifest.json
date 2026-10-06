@@ -58,6 +58,20 @@
    "apontando"
   ]
  },
+ "seguranca_2": {
+  "arquivo": "personagens/seguranca_2.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando",
+   "apontando"
+  ]
+ },
  "apostador_a": {
   "arquivo": "personagens/apostador_a.glb",
   "animacoes": [
@@ -86,6 +100,19 @@
  },
  "apostador_c": {
   "arquivo": "personagens/apostador_c.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando"
+  ]
+ },
+ "apostador_d": {
+  "arquivo": "personagens/apostador_d.glb",
   "animacoes": [
    "parada",
    "falando",

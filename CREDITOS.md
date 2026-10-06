@@ -8,5 +8,6 @@
 | Pistola (`modelos/arma.glb`) e granada (`modelos/granada.glb`) | Modeladas pelo autor do projeto (Marcus) | deste projeto |
 | Sons de rádio e trânsito | Freesound, sons CC0 (lista em `06_Audio/LISTA_SONS.md`) | CC0 |
 | Tiro, estouro e quique da granada | Sintetizados pelo próprio site (provisórios) | — |
-| Cena, máquinas, móveis, texturas das telas | Gerados por `cassino.py` (desenho próprio) | deste projeto |
+| Móveis e objetos (cadeiras, banquetas, sofás, engradados, caixas, estantes, ventiladores, extintor, vasos) | Poly Haven | CC0 |
+| Cena, máquinas, mesas de jogo, texturas das telas | Gerados por `cassino.py` (desenho próprio) | deste projeto |
 | three.js, three-mesh-bvh | bibliotecas | MIT |

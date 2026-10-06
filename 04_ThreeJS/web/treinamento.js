@@ -815,11 +815,12 @@ export async function iniciar(ctx) {
     ['apostador_1', 'apostador_a', 'Apostador', [-2.5, 11.55], [.3, 1], 'm', 1.78],
     ['apostador_2', 'apostador_b', 'Apostador', [-1.75, 9.45], [-1, .3], 'm', 1.78],
     ['apostador_3', 'apostador_c', 'Apostadora', [0.4, 6.8], [0, 1], 'f', 1.68],
-    ['seguranca_2', 'seguranca', 'Homem armado', [-4.9, 10.6], [0, -1], 'm', 1.8],
+    ['apostador_4', 'apostador_d', 'Apostador', [-.1, 11.45], [.3, 1], 'm', 1.78],
+    ['seguranca_2', 'seguranca_2', 'Homem armado', [-4.9, 10.6], [0, -1], 'm', 1.8],
     ['parceiro', 'pm_parceiro', 'Policial parceiro', [4.2, -1.0], [-.5, .3], 'm', 1.8],
     ['apoio', 'pm_apoio', 'Policial de apoio', [-7.0, 12.4], [0, 1], 'm', 1.8],
   ];
-  const DESTINO_CONTENCAO = { apostador_1: [[-1.5, 11.0], [-1.45, 6.7]], apostador_2: [[-1.9, 8.2], [-2.3, 6.75]], apostador_3: [[1.3, 6.7]], seguranca: [[-.5, 6.7]], responsavel: [[1.9, 9.2], [1.95, 7.6]] };
+  const DESTINO_CONTENCAO = { apostador_1: [[-1.5, 11.0], [-1.45, 6.7]], apostador_2: [[-1.9, 8.2], [-2.3, 6.75]], apostador_3: [[1.3, 6.7]], apostador_4: [[-1.0, 11.0], [-.95, 7.7]], seguranca: [[-.5, 6.7]], responsavel: [[1.9, 9.2], [1.95, 7.6]] };
   const FUGA = [[1.85, 12.3], [1.85, 13.7], [-3.6, 15.1], [-7.0, 15.1], [-7.0, 1.0], [-7.0, -1.2], [-17.0, -1.2]];
   function limparNPCs() { Object.values(npcs).forEach(n => scene.remove(n)); for (const k in npcs) delete npcs[k]; }
   function criarNPCs(v) {
@@ -842,7 +843,7 @@ export async function iniciar(ctx) {
     animar(n, u.acoes?.[anim] ? anim : 'andando', 1e6, .25);
   };
   const diz = (n, texto, gesto = 'falando') => n ? dizer(n, n.userData.nome, { texto, gesto }, n.userData.voz) : Promise.resolve();
-  const pessoas = () => ['seguranca', 'apostador_1', 'apostador_2', 'apostador_3'].map(k => npcs[k]).filter(n => n && n.visible && !n.userData.fugiu);
+  const pessoas = () => ['seguranca', 'apostador_1', 'apostador_2', 'apostador_3', 'apostador_4'].map(k => npcs[k]).filter(n => n && n.visible && !n.userData.fugiu);
   const apostadores = () => pessoas().filter(n => /^apostador/.test(n.userData.chave));
   function conferirPessoas() {
     if (!A) return;

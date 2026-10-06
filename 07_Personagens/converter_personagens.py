@@ -31,10 +31,12 @@ PAPEIS = {
     "pm_apoio": ("Police_Male_01", {"parada": "m_idle_neutral_01", "falando": "m_gestic_talk_neutral_01", "andando": "m_walk_fast_01"}),
     "responsavel": ("Male_Adult_14", _civil("m", {"irritado": "m_idle_angry_01"})),
     "atendente": ("Female_Adult_08", _civil("f")),
-    "seguranca": ("Male_Adult_01", _civil("m", {"irritado": "m_idle_angry_01", "apontando": "m_idle_neutral_01+apontando"})),
-    "apostador_a": ("Construction_Male_08", _civil("m")),
-    "apostador_b": ("Construction_Male_07", _civil("m")),
-    "apostador_c": ("Construction_Female_01", _civil("f")),
+    "seguranca": ("Male_Adult_20", _civil("m", {"irritado": "m_idle_angry_01", "apontando": "m_idle_neutral_01+apontando"})),
+    "seguranca_2": ("Male_Adult_10", _civil("m", {"apontando": "m_idle_neutral_01+apontando"})),
+    "apostador_a": ("Male_Adult_13", _civil("m")),
+    "apostador_b": ("Male_Adult_16", _civil("m")),
+    "apostador_c": ("Female_Adult_01", _civil("f")),
+    "apostador_d": ("Male_Adult_01", _civil("m")),
 }
 
 REF_TPOSE = "Female_Adult_08"     # T-pose adulta usada como referencia para as criancas

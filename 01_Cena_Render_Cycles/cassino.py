@@ -667,6 +667,50 @@ def camera(nome, pos, alvo, lente=22):
     ob = bpy.data.objects.new(nome, cd); C_LUZ.objects.link(ob); ob.location = pos
     ob.rotation_euler = (Vector(alvo) - Vector(pos)).to_track_quat("-Z", "Y").to_euler()
     return ob
+# ---- modelos prontos do Poly Haven (CC0): modelos/polyhaven/<nome>/ (baixados por modelos/baixar_polyhaven.py)
+PH_DIR = os.path.join(AQUI, "modelos", "polyhaven"); _ph = {}
+def modelo_ph(nome, asset, pos, rz=0.0, col=None, escala=1.0, max_tris=2000, alt=None, parent=None):
+    """Importa o modelo uma vez (junta numa malha, reduz os triangulos, base no chao e centro em XY) e reaproveita a
+    malha nas copias. Os materiais ganham o prefixo Modelo_ para o pipeline manter a UV original. Devolve None se faltar."""
+    if asset not in _ph:
+        caminho = os.path.join(PH_DIR, asset, asset + "_1k.gltf")
+        if not os.path.exists(caminho): _ph[asset] = None
+        else:
+            antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=caminho); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]; malhas = [o for o in novos if o.type == "MESH"]
+            for o in malhas:
+                mw = o.matrix_world.copy(); o.parent = None; o.matrix_world = mw
+            if len(malhas) > 1:
+                with bpy.context.temp_override(active_object=malhas[0], selected_objects=malhas, selected_editable_objects=malhas):
+                    bpy.ops.object.join()
+            ob = malhas[0]; ob.data.transform(ob.matrix_world); ob.matrix_world = Matrix.Identity(4)
+            for i, sl in enumerate(ob.material_slots):
+                if sl.material: sl.material.name = "Modelo_PH_%s_%d" % (asset, i)
+            tris = sum(len(pl.vertices) - 2 for pl in ob.data.polygons)
+            if tris > max_tris:
+                d = ob.modifiers.new("Reduzir", "DECIMATE"); d.ratio = max_tris / tris
+                me = bpy.data.meshes.new_from_object(ob.evaluated_get(bpy.context.evaluated_depsgraph_get())); ob.modifiers.clear()
+            else: me = ob.data.copy()
+            vs = [v.co for v in me.vertices]
+            mn = Vector((min(v.x for v in vs), min(v.y for v in vs), min(v.z for v in vs))); mx = Vector((max(v.x for v in vs), max(v.y for v in vs), max(v.z for v in vs)))
+            me.transform(Matrix.Translation((-(mn.x + mx.x) / 2, -(mn.y + mx.y) / 2, -mn.z)))
+            for pl in me.polygons: pl.use_smooth = True
+            me.name = "PH_" + asset
+            for o in [o for o in bpy.data.objects if o not in antes]: bpy.data.objects.remove(o, do_unlink=True)
+            _ph[asset] = (me, mx - mn)
+    if not _ph[asset]: return None
+    me, dims = _ph[asset]
+    ob = bpy.data.objects.new(nome, me); (col or C_BAR).objects.link(ob)
+    if parent: ob.parent = parent
+    k = escala if alt is None else alt / dims.z
+    ob.location = pos; ob.rotation_euler = (0, 0, rz); ob.scale = (k, k, k)
+    return ob
+
+_cadeira_de_caixas = cadeira
+def cadeira(nome, x, y, rz, col=None):
+    """Cadeira de plastico (monobloco). Sem o modelo baixado, usa a cadeira feita de caixas."""
+    return modelo_ph(nome, "plastic_monobloc_chair_01", (x, y, 0), rz, col or C_BAR, max_tris=1800) or _cadeira_de_caixas(nome, x, y, rz, col or C_BAR)
+
 def ponto(nome, x, y, olha=(0, -1), z=FZ):
     """Ponto usado pelo site (personagens, maquinas, rotas): vazio P_<nome>; rz = para onde a pessoa olha."""
     return vazio("P_" + nome, (x, y, z), C_LUZ, math.atan2(olha[0], -olha[1]))
@@ -735,8 +779,9 @@ box("Balcao_Corpo", (.6, 3.6, 1.05), (3.6, 3.0, FZ + .525), M["mad"], C_BAR, bev
 box("Balcao_Tampo", (.75, 3.75, .05), (3.55, 3.0, FZ + 1.075), M["rodape"], C_BAR, bevel=.012)
 box("Balcao_Retorno", (2.4, .5, 1.05), (4.8, 1.1, FZ + .525), M["mad"], C_BAR, bevel=.01)
 for k in range(4):
-    cyl("Banqueta_Assento", .17, .17, .05, (2.95, 1.9 + k * .75, FZ + .74), M["couro"], C_BAR, seg=16)
-    cyl("Banqueta_Pe", .14, .03, .72, (2.95, 1.9 + k * .75, FZ + .36), M["metal"], C_BAR, seg=10)
+    if not modelo_ph("Banqueta_Bar", "bar_chair_round_01", (2.92, 1.9 + k * .75, FZ), rnd.uniform(0, 6), C_BAR, max_tris=1500):
+        cyl("Banqueta_Assento", .17, .17, .05, (2.95, 1.9 + k * .75, FZ + .74), M["couro"], C_BAR, seg=16)
+        cyl("Banqueta_Pe", .14, .03, .72, (2.95, 1.9 + k * .75, FZ + .36), M["metal"], C_BAR, seg=10)
 for k, z in enumerate((1.0, 1.45, 1.9)):                                                          # prateleiras de garrafas na parede leste
     box("Prateleira_Bar", (.26, 3.2, .035), (5.76, 3.4, FZ + z), M["mad_cl"], C_BAR)
     for j in range(12):
@@ -757,10 +802,16 @@ for i, (x, y, rz) in enumerate(((-.2, 2.0, .2), (-3.9, 2.2, -.15), (0.6, 4.4, .0
     cyl("Copo_Mesa", .03, .025, .1, (x - .12, y - .1, FZ + .795), M["garrafa_c"], C_BAR, seg=10)
 for k in range(3):                                                                                # deposito do bar
     for j in range(2 + k % 2):
-        box("Engradado", (.4, .3, .28), (3.7 + k * .45, 8.7, FZ + .14 + j * .285), M["eng_v"] if (k + j) % 2 else M["eng_a"], C_ESC, bevel=.01)
-box("Estante_Deposito", (.45, 2.2, 1.9), (2.85, 7.6, FZ + .95), M["poste"], C_ESC)
+        if not modelo_ph("Engradado", "plastic_crate_01", (3.7 + k * .45, 8.7, FZ + j * .262), PI / 2 + rnd.uniform(-.06, .06), C_ESC, max_tris=700):
+            box("Engradado", (.4, .3, .28), (3.7 + k * .45, 8.7, FZ + .14 + j * .285), M["eng_v"] if (k + j) % 2 else M["eng_a"], C_ESC, bevel=.01)
+if modelo_ph("Estante_Deposito", "steel_frame_shelves_01", (2.86, 7.05, FZ), PI / 2, C_ESC, alt=1.9, max_tris=2500):
+    modelo_ph("Estante_Deposito", "steel_frame_shelves_01", (2.86, 8.1, FZ), PI / 2, C_ESC, alt=1.9, max_tris=2500)
+    for k in range(6):
+        modelo_ph("Caixa_Estante", "cardboard_box_01", (2.86, 6.75 + (k % 3) * .52 + (k // 3) * .25, FZ + (.52, 1.0)[k // 3]), rnd.uniform(-.2, .2), C_ESC, escala=.85, max_tris=300)
+else: box("Estante_Deposito", (.45, 2.2, 1.9), (2.85, 7.6, FZ + .95), M["poste"], C_ESC)
 for k in range(5):
-    box("Caixa_Bebida", (.38, .38, .3), (2.85, 6.8 + k * .42, FZ + 1.95 + .15), M["papelao"], C_ESC)
+    if not modelo_ph("Caixa_Bebida", "cardboard_box_01", (2.86, 6.8 + k * .44, FZ + 1.9), rnd.uniform(-.2, .2), C_ESC, max_tris=300):
+        box("Caixa_Bebida", (.38, .38, .3), (2.85, 6.8 + k * .42, FZ + 1.95 + .15), M["papelao"], C_ESC)
 
 # ------------------------------------------------------------------ 4. salao de jogos
 def maquina(i, x, y, olha, col=C_SAL, ligada=True):
@@ -844,7 +895,9 @@ box("Monitor_Cameras", (.5, .04, .32), (3.3, 12.55, FZ + 1.45), M["preto_b"], C_
 quadro("Monitor_Cameras_Tela", (3.3, 12.527, FZ + 1.45), "-y", .46, .28, TELA_CAM, C_ESC)
 box("Contadora_Notas", (.26, .22, .16), (5.45, 10.75, FZ + .84), M["branco"], C_ESC, bevel=.01)
 for k in range(4):                                                                                # deposito: maquinas desligadas e caixas
-    box("Caixa_Deposito", (.5, .5, .45), (-5.6, 9.0 + k * .55, FZ + .225 + (k % 2) * .0), M["papelao"], C_ESC)
+    if not modelo_ph("Caixa_Deposito", "cardboard_box_01", (-5.6, 9.0 + k * .6, FZ), rnd.uniform(-.3, .3), C_ESC, escala=1.3, max_tris=300):
+        box("Caixa_Deposito", (.5, .5, .45), (-5.6, 9.0 + k * .55, FZ + .225), M["papelao"], C_ESC)
+    if k % 2: modelo_ph("Caixa_Deposito", "cardboard_box_01", (-5.6, 9.0 + k * .6, FZ + .45), rnd.uniform(-.5, .5), C_ESC, max_tris=300)
 maquina(21, -5.55, 12.3, (1, 0), C_ESC, ligada=False); maquina(22, -5.55, 11.5, (1, 0), C_ESC, ligada=False)
 box("Placa_Maquina_Solta", (.5, .35, .03), (-4.3, 12.6, FZ + .3), M["plast"], C_ESC, rot=(1.1, 0, 0))
 
@@ -859,7 +912,9 @@ box("Portao_Beco_Folha", (.05, 1.0, 2.0), (-6.05, 0.75, FZ + 1.0), M["porta_ferr
 box("Portao_Quintal_Folha", (.9, .05, 2.0), (-5.5, 15.55, FZ + 1.0), M["porta_ferro"], C_FUN)   # portao do quintal aberto
 box("Tanque_Quintal", (.7, .55, .85), (5.5, 13.5, FZ + .425), M["concreto"], C_FUN)
 for k in range(3):
-    box("Engradado_Quintal", (.4, .3, .28), (3.6 + k * .45, 16.7, FZ + .14), M["eng_a"], C_FUN, bevel=.01)
+    for j in range(1 + k % 2):
+        if not modelo_ph("Engradado_Quintal", "plastic_crate_01", (3.6 + k * .45, 16.7, FZ + j * .262), PI / 2 + rnd.uniform(-.1, .1), C_FUN, max_tris=700):
+            box("Engradado_Quintal", (.4, .3, .28), (3.6 + k * .45, 16.7, FZ + .14 + j * .285), M["eng_a"], C_FUN, bevel=.01)
 cyl("Lixeira_Beco", .26, .22, .7, (-7.6, 3.0, FZ + .35), M["plast"], C_FUN, seg=14)
 box("Maquina_Velha_Beco", (.62, .58, 1.2), (-7.55, 10.5, FZ + .6), M["gab"], C_FUN, rot=(0, .12, .3))
 
@@ -882,21 +937,26 @@ def cartaz(nome, pos, virado, tam, m, linhas, col, tam_txt=.07):
     for i, t in enumerate(linhas):
         texto(nome + "_Texto", t, tam_txt, (x + e[0] * .009, y + e[1] * .009, z + (len(linhas) - 1) * tam_txt * .7 - i * tam_txt * 1.4), virado, M["texto_br"], col)
 def ventilador(nome, x, y, col):
+    if modelo_ph(nome, "ceiling_fan", (x, y, FZ + PD - .52), rnd.uniform(0, 2), col, max_tris=2500): return
     cyl(nome + "_Haste", .015, .015, .3, (x, y, FZ + PD - .15), M["metal"], col, seg=8)
     cyl(nome + "_Motor", .09, .09, .1, (x, y, FZ + PD - .33), M["branco"], col, seg=14)
     for k in range(3):
         a = 2 * PI * k / 3 + .4
         box(nome + "_Pa", (.55, .12, .012), (x + .36 * math.cos(a), y + .36 * math.sin(a), FZ + PD - .35), M["mad_cl"], col, rot=(.12, 0, a))
 def saco_lixo(nome, x, y, col, z=FZ):
+    if modelo_ph(nome, "trashbag", (x, y, z), rnd.uniform(0, 6), col, escala=rnd.uniform(.85, 1.1), max_tris=700): return
     esfera(nome, .27, (x, y, z + .2), M["saco_lixo"], col, sub=2, esc=(1, rnd.uniform(.8, 1.1), .78))
     esfera(nome + "_No", .06, (x + .03, y, z + .43), M["saco_lixo"], col, sub=1)
 def vaso(nome, x, y, col, z=FZ):
-    torno(nome, [(0, 0), (.16, 0), (.22, .38), (.19, .38), (.15, .05), (0, .05)], M["vaso"], col, pos=(x, y, z), seg=14)
+    if not modelo_ph(nome, "planter_pot_clay", (x, y, z), rnd.uniform(0, 6), col, escala=1.75, max_tris=500):
+        torno(nome, [(0, 0), (.16, 0), (.22, .38), (.19, .38), (.15, .05), (0, .05)], M["vaso"], col, pos=(x, y, z), seg=14)
     for k in range(4):
         esfera(nome + "_Folhas", rnd.uniform(.16, .24), (x + rnd.uniform(-.1, .1), y + rnd.uniform(-.1, .1), z + .5 + k * .16), M["planta"], col, sub=1, liso=False)
 def sofa(nome, x, y, comp, olha, col, m=None):
     """Sofa encostado na parede; olha = direcao para onde o assento fica virado."""
-    m = m or M["couro"]; rz = math.atan2(olha[0], -olha[1]); r = vazio(nome, (x, y, FZ), col, rz)
+    m = m or M["couro"]; rz = math.atan2(olha[0], -olha[1])
+    if modelo_ph(nome, "sofa_03", (x, y, FZ), rz, col, escala=comp / 2.74, max_tris=3000): return
+    r = vazio(nome, (x, y, FZ), col, rz)
     box(nome + "_Base", (comp, .7, .22), (0, 0, .11), M["preto"], col, r)
     box(nome + "_Assento", (comp, .62, .2), (0, -.04, .32), m, col, r, bevel=.04)
     box(nome + "_Encosto", (comp, .18, .62), (0, .27, .62), m, col, r, bevel=.05)
@@ -910,10 +970,7 @@ def mesinha(nome, x, y, col, garrafa=True):
         cyl(nome + "_Balde", .08, .1, .16, (x - .1, y - .04, FZ + .55), M["cromo"], col, seg=14)
         for k in range(2): cyl(nome + "_Copo", .026, .03, .09, (x + .02 + k * .1, y - .16, FZ + .515), M["garrafa_c"], col, seg=10)
 
-# ---- rua: carros estacionados, postes do outro lado, lixo, mesa na calcada, vasos
-carro_modelo("Carro_Estacionado_A", C_VEIC, "seda", (-13.5, -3.25, 0), 0)
-carro_modelo("Carro_Estacionado_B", C_VEIC, "suv", (-1.5, -7.75, 0), PI)
-carro_modelo("Carro_Estacionado_C", C_VEIC, "hatch", (15.5, -7.7, 0), PI)
+# ---- rua (sem carros estacionados: pesavam 30 mil triangulos e dezenas de materiais): postes do outro lado, lixo, mesa na calcada, vasos
 for i, x in enumerate((-22, 2, 21)):
     poste("Poste_S_%d" % i, x, -9.25, -1)
 for x, y in ((-16.6, -1.5), (-17.1, -1.2), (9.6, -1.55)):
@@ -977,7 +1034,8 @@ box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL,
 for nome_, (x, y) in (("Carteado", (CX, CY)), ("Roleta", (RX, RY))):
     torno("Pendente_" + nome_, [(.04, .22), (.28, 0), (.3, 0), (.06, .24)], M["feltro"], C_SAL, pos=(x, y, FZ + 2.1), seg=20)
     cyl("Pendente_%s_Fio" % nome_, .006, .006, PD - 2.32, (x, y, FZ + 2.32 + (PD - 2.32) / 2), M["preto"], C_SAL, seg=6)
-torno("Extintor_Salao", [(0, 0), (.07, 0), (.07, .4), (.03, .46), (.03, .52), (0, .52)], M["extintor"], C_SAL, pos=(2.36, 8.75, FZ + .9), seg=12)
+if not modelo_ph("Extintor_Salao", "korean_fire_extinguisher_01", (2.3, 8.75, FZ), -PI / 2, C_SAL, alt=.6, max_tris=1200):
+    torno("Extintor_Salao", [(0, 0), (.07, 0), (.07, .4), (.03, .46), (.03, .52), (0, .52)], M["extintor"], C_SAL, pos=(2.36, 8.75, FZ + .9), seg=12)
 cartaz("Extintor_Placa", (2.415, 8.75, FZ + 1.7), "-x", (.2, .2), M["cartaz_v"], ["E"], C_SAL, .1)
 cyl("Lixeira_Salao", .16, .13, .42, (-3.2, 8.15, FZ + .21), M["plast"], C_SAL, seg=14)
 box("Quadro_de_Luz", (.4, .1, .55), (-1.9, 6.14, FZ + 1.6), M["metal"], C_SAL, bevel=.01)
@@ -1065,8 +1123,9 @@ for k, z in enumerate((1.2, 1.65)):
     for j in range(9):
         torno("Garrafa_Sala", GARRAFA, M[("garrafa_c", "garrafa_a", "garrafa_v")[(j + k) % 3]], C_SEC, pos=(6.24, 9.55 + j * .24, FZ + z + .016), seg=10)
 for k in range(3):
-    cyl("Banqueta_Sala_Assento", .17, .17, .05, (7.75, 9.8 + k * .7, FZ + .74), M["couro"], C_SEC, seg=16)
-    cyl("Banqueta_Sala_Pe", .14, .03, .72, (7.75, 9.8 + k * .7, FZ + .36), M["cromo_sala"], C_SEC, seg=10)
+    if not modelo_ph("Banqueta_Sala", "bar_chair_round_01", (7.75, 9.8 + k * .7, FZ), rnd.uniform(0, 6), C_SEC, max_tris=1500):
+        cyl("Banqueta_Sala_Assento", .17, .17, .05, (7.75, 9.8 + k * .7, FZ + .74), M["couro"], C_SEC, seg=16)
+        cyl("Banqueta_Sala_Pe", .14, .03, .72, (7.75, 9.8 + k * .7, FZ + .36), M["cromo_sala"], C_SEC, seg=10)
 luz("Luz_Sala_Palco", "POINT", 320, "#ff3ad0", (9, 11.3, FZ + 2.7), C_LUZ, shadow_soft_size=.3)
 luz("Luz_Sala_Azul", "POINT", 140, "#3a6bff", (7.6, 8.2, FZ + 2.7), C_LUZ, shadow_soft_size=.4)
 luz("Luz_Sala_Ambar", "POINT", 110, "#ffb060", (10.8, 8.9, FZ + 2.6), C_LUZ, shadow_soft_size=.4)
