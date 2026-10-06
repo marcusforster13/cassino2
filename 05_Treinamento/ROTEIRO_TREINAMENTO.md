@@ -27,7 +27,7 @@ Sem indícios e sem consentimento, a resposta certa é **não entrar**: registra
 | 2. Decisão de entrada | identificar-se; observar a porta; pedir e registrar consentimento; decidir certo | entrar sem consentimento, mandado ou fundadas razões |
 | 3. Contenção e uso da força | anunciar; comando verbal; resposta proporcional; socorro; desarmar e algemar; reunir as pessoas | disparo injustificado; granada contra quem não resiste; omissão de socorro |
 | 4. Identificação | responsável; direitos; funcionária; apostadores; prisão por corrupção | aceitar a vantagem |
-| 5. Apreensão | máquinas lacradas sem abrir; dinheiro contado e lacrado; fichas e cadernos; eletrônicos sem acesso; escritório | vasculhar celular ou computador sem ordem judicial |
+| 5. Apreensão | máquinas lacradas sem abrir; dinheiro contado e lacrado; fichas e cadernos; eletrônicos sem acesso; escritório; localizar a sala reservada e o dinheiro escondido nela | vasculhar celular ou computador sem ordem judicial |
 | 6. Enquadramento e condução | enquadramento; sem algemas em quem colabora; registro e relação de bens | prender todos; liberar sem registro |
 
 Aprovação: nota 70 ou mais e nenhuma falha grave.
@@ -44,6 +44,7 @@ Aprovação: nota 70 ou mais e nenhuma falha grave.
 8. **Funcionários:** tratamento de quem trabalha no local e diz não ser dono.
 9. **Julgamento do STF (RE 966.177, Tema 924)** sobre a validade do art. 50 da Lei das Contravenções Penais: suspenso em agosto de 2026. Atualizar o cenário quando houver decisão.
 10. **Pesos da pontuação** e nota de aprovação.
+11. **Sala reservada (boate escondida):** o treinamento trata só da vistoria e da apreensão do dinheiro. Se a instituição quiser tratar de outras infrações ligadas a esse tipo de local, definir com o instrutor.
 
 ## Base legal usada
 

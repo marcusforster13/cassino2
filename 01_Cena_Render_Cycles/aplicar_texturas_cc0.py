@@ -142,6 +142,8 @@ TABELA = {
     "Couro_Vinho":        ("couro", .6, "#5a1c1c", None, .3),
     "Feltro_Verde":       ("tecido", .4, "#1f6b3a", neutro, .15),
     "Cortina_Branca":     ("tecido", .5, "#d9d6cc", neutro, .35),
+    "Veludo_Vinho":       ("tecido", .5, "#6a1a2c", neutro, .3),
+    "Feltro_Sinuca":      ("tecido", .4, "#1c5c8a", neutro, .15),
     "Poste_Metal":        ("metal_pintado", 1.0, "#3b3d40", grafite, .15),
     "Porta_Loja_Metal":   ("metal_pintado", 1.0, "#5b5f66", grafite, .15),
     "Porta_Ferro":        ("metal_pintado", 1.0, "#4a4f55", grafite, .2),

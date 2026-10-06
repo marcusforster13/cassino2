@@ -18,6 +18,7 @@ Os arquivos ficam em `06_Audio\brutos\` (`.mp3`, `.ogg` ou `.wav`). O pipeline c
 | `granada_efeito_moral` | Estouro forte de granada de luz e som | som sintetizado |
 | `granada_quique` | Objeto metálico batendo no chão | som sintetizado |
 | `maquinas_caca_niquel` | Sons eletrônicos de máquinas de jogo (loop), ouvidos perto do salão | silêncio |
+| `musica_sala_reservada` | Música de boate abafada (loop), ouvida perto da sala reservada | silêncio |
 | `amb_bar` | Burburinho baixo de bar, TV ao fundo (loop) | silêncio |
 | `porta_abrindo`, `algemas` | Eventos | silêncio |
 

@@ -540,6 +540,9 @@ def faixa_lateral(nome, R, col, sup_y, x0, x1, z0, z1, m, n=24):
 #   SALAO DE JOGOS x -3.5 .. 2.5, y 6 .. 13  caca-niqueis, carteado, roleta; porta dos fundos
 #   deposito do bar x 2.5 .. 6, y 6 .. 9
 #   escritorio/caixa x 2.5 .. 6, y 9 .. 13   porta trancada e guiche
+#   SALA RESERVADA x 6 .. 12, y 6 .. 13      boate escondida (palco, pole dance, sofas); entrada por tras de uma
+#                                             estante falsa no deposito do bar
+#   loja fechada   x 6 .. 12, y 0 .. 6       bloco macico na frente da sala reservada
 #   quintal        x -6 .. 6, y 13 .. 17     portao para o beco
 #   beco           x -8 .. -6, y 0 .. 17     sai na rua
 FZ = .15                       # nivel do piso interno e da calcada
@@ -554,19 +557,27 @@ def tex_ceramica(cor, rejunte="#8d8a84", S=256, n=4):
     a[(xx % cel < 2) | (yy % cel < 2)] = np.array(hx(rejunte))
     return np.clip(a, 0, 1)
 
-def tex_caca_niquel(seed, S=128):
-    """Tela de tres rolos com figuras geometricas coloridas (desenho proprio, sem marcas)."""
-    a = np.zeros((S, S, 3)); a[:] = hx("#0b0f1e")
-    r = np.random.default_rng(seed); cores = [hx(c) for c in ("#ff3b30", "#ffd60a", "#34c759", "#0a84ff", "#ff9f0a", "#bf5af2")]
-    yy, xx = np.mgrid[0:S, 0:S]
-    for i in range(3):
+def tex_caca_niquel(seed, S=256):
+    """Tela de cinco rolos e tres linhas com figuras coloridas e barras de credito (desenho proprio, sem marcas)."""
+    r = np.random.default_rng(seed); yy, xx = np.mgrid[0:S, 0:S]
+    fundo = [hx(c) for c in ("#3a1a05", "#06203a", "#2a0a2e", "#0a2a14")][seed % 4]
+    a = np.ones((S, S, 3)) * np.array(fundo) * (.6 + .8 * (yy / S))[..., None]
+    cores = [hx(c) for c in ("#ff3b30", "#ffd60a", "#34c759", "#0a84ff", "#ff9f0a", "#bf5af2", "#ffffff")]
+    cw, ch, y0 = S // 5, 60, 38
+    for i in range(5):
         for j in range(3):
-            cx, cy = 22 + i * 42, 22 + j * 42; c = np.array(cores[r.integers(6)]); f = r.integers(3)
-            m = ((xx - cx) ** 2 + (yy - cy) ** 2 < 196) if f == 0 else ((abs(xx - cx) + abs(yy - cy)) < 17) if f == 1 else ((abs(xx - cx) < 12) & (abs(yy - cy) < 12))
-            a[m] = c * (1 if j == 1 else .4)
-    a[(xx % 42 < 2)] = .22
-    a[abs(yy - 64) < 1] = (1, 1, 1)
-    return a
+            cx, cy = i * cw + cw // 2, y0 + j * ch + ch // 2; c = np.array(cores[r.integers(7)]); f = r.integers(4); R = 19
+            d2 = (xx - cx) ** 2 + (yy - cy) ** 2
+            m = (d2 < R * R) if f == 0 else ((abs(xx - cx) + abs(yy - cy)) < R + 3) if f == 1 else ((abs(xx - cx) < R - 3) & (abs(yy - cy) < R - 3)) if f == 2 else ((d2 < R * R) & (d2 > (R - 8) ** 2))
+            borda = ((xx - cx) ** 2 + (yy - cy) ** 2 < (R + 4) ** 2) & ~m if f == 0 else np.zeros_like(m)
+            a[borda] = (.05, .05, .05); a[m] = c * (.75 + .25 * (1 - (yy[m] - cy + R) / (2 * R)))[..., None]
+        a[(abs(xx - i * cw) < 2) & (yy > y0) & (yy < y0 + 3 * ch)] = (.85, .7, .2)
+    a[yy < 30] = np.array(hx("#d9a514")) * .9; a[(yy < 30) & (xx % 64 < 40) & (yy > 8) & (yy < 22)] = (.12, .08, .02)
+    a[yy > S - 34] = (.06, .06, .08)
+    for k in range(4):
+        a[(yy > S - 26) & (yy < S - 10) & (xx > 10 + k * 62) & (xx < 58 + k * 62)] = np.array(cores[(seed + k) % 6]) * .8
+    a[(abs(yy - (y0 + ch * 1.5)) < 1.5) & (xx > 4) & (xx < S - 4)] = (1, 1, 1)
+    return np.clip(a, 0, 1)
 
 def tex_cameras(S=128):
     """Monitor das cameras de seguranca: quatro quadros cinzentos."""
@@ -637,6 +648,25 @@ def parede(nome, a, b, m, col, vaos=(), h=PD, t=.2, z0=FZ, ext=None):
         trecho(d, v0, 0, h, ""); trecho(v0, v1, 0, zb, "_Mureta"); trecho(v0, v1, zt, h, "_Verga"); d = v1
     trecho(d, L + ext, 0, h, "")
 
+def cortina(nome, a, b, m, col, z0=None, h=2.75, passo=.11):
+    """Cortina com pregas: tiras verticais alternando a profundidade."""
+    ax, ay = a; bx, by = b; horiz = abs(bx - ax) > abs(by - ay); L = abs(bx - ax) if horiz else abs(by - ay)
+    z0 = FZ + .12 if z0 is None else z0
+    for k in range(int(L / passo)):
+        d = (k + .5) * passo; f = .035 * math.sin(k * 1.9) + .012 * math.sin(k * .7)
+        pos = (min(ax, bx) + d, ay + f, z0 + h / 2) if horiz else (ax + f, min(ay, by) + d, z0 + h / 2)
+        box(nome, (passo * 1.08, .05, h) if horiz else (.05, passo * 1.08, h), pos, m, col)
+    box(nome + "_Varao", (L, .03, .03) if horiz else (.03, L, .03), ((ax + bx) / 2, (ay + by) / 2, z0 + h + .02), M["metal"], col)
+
+def esfera(nome, r, pos, m, col, parent=None, sub=2, esc=(1, 1, 1), liso=True):
+    bm = bmesh.new(); bmesh.ops.create_icosphere(bm, subdivisions=sub, radius=r); bmesh.ops.scale(bm, vec=Vector(esc), verts=bm.verts)
+    return finish(nome, bm, pos, m, col, parent, smooth=liso)
+
+def camera(nome, pos, alvo, lente=22):
+    cd = bpy.data.cameras.new(nome); cd.lens = lente; cd.clip_end = 400
+    ob = bpy.data.objects.new(nome, cd); C_LUZ.objects.link(ob); ob.location = pos
+    ob.rotation_euler = (Vector(alvo) - Vector(pos)).to_track_quat("-Z", "Y").to_euler()
+    return ob
 def ponto(nome, x, y, olha=(0, -1), z=FZ):
     """Ponto usado pelo site (personagens, maquinas, rotas): vazio P_<nome>; rz = para onde a pessoa olha."""
     return vazio("P_" + nome, (x, y, z), C_LUZ, math.atan2(olha[0], -olha[1]))
@@ -658,7 +688,7 @@ for i, x in enumerate((-16, 9, 27)):
 
 # vizinhos: dos dois lados do bar (depois do beco) e do outro lado da rua
 cores = [M["reboco_a"], M["pastilha_a"], M["reboco_c"], M["reboco_d"], M["reboco_b"], M["pastilha_b"]]
-for i, (x0, x1, and_) in enumerate(((-30, -19, 4), (-19, -8.1, 2), (6.1, 17, 3), (17, 30, 5))):
+for i, (x0, x1, and_) in enumerate(((-30, -19, 4), (-19, -8.1, 2), (12.2, 21, 3), (21, 30, 5))):
     predio("Predio_N_%d" % i, x0 + .1, x1 - .1, 0.0, 1, 4.2 + and_ * 3.0, cores[(i * 5 + 2) % 6], and_, i % 4)
 x = -RUA_X; i = 0
 while x < RUA_X - 1:
@@ -675,7 +705,7 @@ box("Laje", (12.2, 13.2, .2), (0, 6.5, FZ + PD + .1), M["laje"], C_EST)
 # paredes externas
 parede("Parede_Fachada", (-6, 0), (6, 0), M["fach"], C_EST, vaos=[(3.0, 5.0, 0, 2.6)])          # entrada do bar: x -3 .. -1
 parede("Parede_Oeste", (-6, 0), (-6, 13), M["parede"], C_EST)
-parede("Parede_Leste", (6, 0), (6, 13), M["parede"], C_EST)
+parede("Parede_Leste", (6, 0), (6, 13), M["parede"], C_EST, vaos=[(6.85, 7.85, 0, 2.05)])      # passagem escondida para a sala reservada
 parede("Parede_Fundo", (-6, 13), (6, 13), M["parede"], C_EST, vaos=[(7.4, 8.3, 0, 2.1)])          # porta dos fundos: x 1.4 .. 2.3
 # paredes internas
 parede("Parede_Bar_Fundo", (-6, 6), (6, 6), M["parede"], C_EST, t=.15,
@@ -686,12 +716,12 @@ parede("Parede_Salao_Leste", (2.5, 6), (2.5, 13), M["parede"], C_EST, t=.15,
        vaos=[(3.4, 4.3, 0, 2.1), (5.0, 6.0, 1.05, 1.65)])                                         # porta do escritorio y 9.4 .. 10.3; guiche y 11 .. 12
 parede("Parede_Escritorio_Sul", (2.5, 9), (6, 9), M["parede"], C_EST, t=.15)
 # segundo andar (sobrado) e fachada
-box("Sobrado_Andar", (12.2, 13.2, 3.1), (0, 6.5, FZ + PD + .2 + 1.55), M["fach"], C_PRED)
-for i, x in enumerate((-4, 0, 4)):
+box("Sobrado_Andar", (18.2, 13.2, 3.1), (3, 6.5, FZ + PD + .2 + 1.55), M["fach"], C_PRED)
+for i, x in enumerate((-4, 0, 4, 8.6)):
     box("Sobrado_Moldura", (1.54, .1, 1.44), (x, -.12, 5.1), M["esquadria"], C_PRED)
     box("Sobrado_Janela", (1.4, .03, 1.3), (x, -.17, 5.1), M["cortina"] if i == 1 else M["janela_off"], C_PRED)
-box("Sobrado_Cornija", (12.4, .4, .2), (0, -.1, 6.55), M["concreto"], C_PRED)
-box("Bar_Marquise", (12, 1.1, .12), (0, -.55, 3.3), M["concreto"], C_PRED)
+box("Sobrado_Cornija", (18.4, .4, .2), (3, -.1, 6.55), M["concreto"], C_PRED)
+box("Bar_Marquise", (18, 1.1, .12), (3, -.55, 3.3), M["concreto"], C_PRED)
 box("Bar_Letreiro_Fundo", (5.0, .06, .7), (-2, -.14, 3.75), LETREIROS[0], C_PRED)
 texto("Bar_Letreiro_Texto", "BAR E PETISCOS", .34, (-2, -.18, 3.75), "-y", M["texto_letreiro"], C_PRED)
 box("Bar_Porta_Enrolada", (2.1, .3, .3), (-2, .05, FZ + 2.75), M["porta_enrolar"], C_EST)        # porta de enrolar aberta (recolhida)
@@ -716,7 +746,9 @@ box("Freezer_Horizontal", (.7, 1.5, .9), (5.5, 5.1, FZ + .45), M["freezer"], C_B
 box("Geladeira_Vertical", (.7, .7, 1.9), (5.5, 1.75, FZ + .95), M["freezer"], C_BAR, bevel=.03)
 box("TV_Bar", (1.1, .06, .64), (0.5, 5.86, FZ + 2.2), M["preto_b"], C_BAR, bevel=.01)
 box("TV_Bar_Tela", (1.02, .01, .56), (0.5, 5.82, FZ + 2.2), M["tv"], C_BAR)
-box("Azulejo_Barra", (9.4, .02, 1.3), (-.9, 5.91, FZ + .65), M["azulejo"], C_BAR)
+box("Azulejo_Barra", (8.4, .02, 1.3), (0.0, 5.915, FZ + .65), M["azulejo"], C_BAR)
+box("Azulejo_Barra_Canto", (.6, .02, 1.3), (-5.6, 5.915, FZ + .65), M["azulejo"], C_BAR)
+box("Azulejo_Barra_Oeste", (.02, 5.7, 1.3), (-5.89, 3.0, FZ + .65), M["azulejo"], C_BAR)
 for i, (x, y, rz) in enumerate(((-.2, 2.0, .2), (-3.9, 2.2, -.15), (0.6, 4.4, .05))):
     r = mesa("Mesa_Bar_%d" % i, x, y, rz, tam=(.75, .75), col=C_BAR); r.location.z = FZ
     for k, (dx, dy, a) in enumerate(((0, -.62, PI), (0, .62, 0), (-.62, 0, -PI / 2), (.62, 0, PI / 2))[:3 + (i % 2)]):
@@ -725,7 +757,7 @@ for i, (x, y, rz) in enumerate(((-.2, 2.0, .2), (-3.9, 2.2, -.15), (0.6, 4.4, .0
     cyl("Copo_Mesa", .03, .025, .1, (x - .12, y - .1, FZ + .795), M["garrafa_c"], C_BAR, seg=10)
 for k in range(3):                                                                                # deposito do bar
     for j in range(2 + k % 2):
-        box("Engradado", (.4, .3, .28), (5.6, 6.5 + k * .45, FZ + .14 + j * .285), M["eng_v"] if (k + j) % 2 else M["eng_a"], C_ESC, bevel=.01)
+        box("Engradado", (.4, .3, .28), (3.7 + k * .45, 8.7, FZ + .14 + j * .285), M["eng_v"] if (k + j) % 2 else M["eng_a"], C_ESC, bevel=.01)
 box("Estante_Deposito", (.45, 2.2, 1.9), (2.85, 7.6, FZ + .95), M["poste"], C_ESC)
 for k in range(5):
     box("Caixa_Bebida", (.38, .38, .3), (2.85, 6.8 + k * .42, FZ + 1.95 + .15), M["papelao"], C_ESC)
@@ -789,8 +821,8 @@ for k in range(18):
 for i in range(3):                                                                                # quadro de apostas pintado no feltro
     for j in range(6):
         box("Roleta_Quadro", (.26, .2, .002), (RX - .28 + i * .28, RY - .95 + j * .22, FZ + .794), M["ficha_r"] if (i + j) % 2 else M["ficha_p"], C_SAL)
-box("Cortina_Salao_Fundo", (4.6, .06, 2.7), (-1.1, 12.87, FZ + 1.5), M["cortina_br"], C_SAL)
-box("Cortina_Salao_Oeste", (.06, 4.4, 2.7), (-3.39, 10.6, FZ + 1.5), M["cortina_br"], C_SAL)
+cortina("Cortina_Salao_Fundo", (-3.4, 12.86), (1.2, 12.86), M["cortina_br"], C_SAL)
+cortina("Cortina_Salao_Oeste", (-3.39, 8.4), (-3.39, 12.8), M["cortina_br"], C_SAL)
 box("Neon_Salao", (2.4, .04, .08), (-.5, 6.1, FZ + 2.5), M["neon_r"], C_SAL)
 box("Neon_Salao_2", (.04, 2.0, .08), (2.4, 7.3, FZ + 2.5), M["neon_v"], C_SAL)
 box("Bebedouro", (.34, .34, 1.0), (2.2, 6.35, FZ + .5), M["freezer"], C_SAL, bevel=.02)
@@ -830,6 +862,218 @@ for k in range(3):
     box("Engradado_Quintal", (.4, .3, .28), (3.6 + k * .45, 16.7, FZ + .14), M["eng_a"], C_FUN, bevel=.01)
 cyl("Lixeira_Beco", .26, .22, .7, (-7.6, 3.0, FZ + .35), M["plast"], C_FUN, seg=14)
 box("Maquina_Velha_Beco", (.62, .58, 1.2), (-7.55, 10.5, FZ + .6), M["gab"], C_FUN, rot=(0, .12, .3))
+
+
+# ================================================================== 6b. DETALHES E SALA RESERVADA
+M.update({
+    "neon_m": mat("Neon_Magenta", "#3a0530", .3, emit="#ff2ad4", forca=6), "espelho": mat("Espelho", "#8f9db4", .08, .2), "cromo_sala": mat("Cromado_Sala", "#d4d8de", .18, .3), "palco": mat("Palco_Laminado", "#3a3340", .25),
+    "veludo": mat("Veludo_Vinho", "#6a1a2c", .98), "preto_piso": mat("Piso_Preto_Brilhante", "#1a1a20", .15),
+    "forro_preto": mat("Forro_Preto", "#17171c", .9), "lousa": mat("Lousa_Verde", "#1f3a2c", .9),
+    "saco_lixo": mat("Saco_Lixo_Preto", "#0e0e10", .35), "planta": mat("Folhagem_Vaso", "#2c5a30", .8), "vaso": mat("Vaso_Barro", "#9a5a3c", .9),
+    "cartaz_a": mat("Cartaz_Amarelo", "#e3b21c", .7), "cartaz_v": mat("Cartaz_Vermelho", "#b3261e", .7), "cartaz_az": mat("Cartaz_Azul", "#1f5fa8", .7),
+    "feltro_azul": mat("Feltro_Sinuca", "#1c5c8a", .98), "vidro_estufa": mat("Vidro_Estufa", "#bcd0d4", .05, alpha=.3),
+    "bolsa": mat("Bolsa_Esportiva", "#16202e", .8), "botijao": mat("Botijao_Azul", "#2a4f9a", .5), "extintor": mat("Extintor_Vermelho", "#c01818", .35),
+    "salgado": mat("Salgado", "#c8923c", .8), "bola_a": mat("Bola_Sinuca_Vermelha", "#b01818", .2), "bola_b": mat("Bola_Sinuca_Branca", "#efece2", .2),
+})
+GARRAFA = [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)]
+def cartaz(nome, pos, virado, tam, m, linhas, col, tam_txt=.07):
+    w, h = tam; x, y, z = pos; e = {"-y": (0, -1), "+y": (0, 1), "-x": (-1, 0), "+x": (1, 0)}[virado]
+    box(nome, (w, .012, h) if e[0] == 0 else (.012, w, h), pos, m, col)
+    for i, t in enumerate(linhas):
+        texto(nome + "_Texto", t, tam_txt, (x + e[0] * .009, y + e[1] * .009, z + (len(linhas) - 1) * tam_txt * .7 - i * tam_txt * 1.4), virado, M["texto_br"], col)
+def ventilador(nome, x, y, col):
+    cyl(nome + "_Haste", .015, .015, .3, (x, y, FZ + PD - .15), M["metal"], col, seg=8)
+    cyl(nome + "_Motor", .09, .09, .1, (x, y, FZ + PD - .33), M["branco"], col, seg=14)
+    for k in range(3):
+        a = 2 * PI * k / 3 + .4
+        box(nome + "_Pa", (.55, .12, .012), (x + .36 * math.cos(a), y + .36 * math.sin(a), FZ + PD - .35), M["mad_cl"], col, rot=(.12, 0, a))
+def saco_lixo(nome, x, y, col, z=FZ):
+    esfera(nome, .27, (x, y, z + .2), M["saco_lixo"], col, sub=2, esc=(1, rnd.uniform(.8, 1.1), .78))
+    esfera(nome + "_No", .06, (x + .03, y, z + .43), M["saco_lixo"], col, sub=1)
+def vaso(nome, x, y, col, z=FZ):
+    torno(nome, [(0, 0), (.16, 0), (.22, .38), (.19, .38), (.15, .05), (0, .05)], M["vaso"], col, pos=(x, y, z), seg=14)
+    for k in range(4):
+        esfera(nome + "_Folhas", rnd.uniform(.16, .24), (x + rnd.uniform(-.1, .1), y + rnd.uniform(-.1, .1), z + .5 + k * .16), M["planta"], col, sub=1, liso=False)
+def sofa(nome, x, y, comp, olha, col, m=None):
+    """Sofa encostado na parede; olha = direcao para onde o assento fica virado."""
+    m = m or M["couro"]; rz = math.atan2(olha[0], -olha[1]); r = vazio(nome, (x, y, FZ), col, rz)
+    box(nome + "_Base", (comp, .7, .22), (0, 0, .11), M["preto"], col, r)
+    box(nome + "_Assento", (comp, .62, .2), (0, -.04, .32), m, col, r, bevel=.04)
+    box(nome + "_Encosto", (comp, .18, .62), (0, .27, .62), m, col, r, bevel=.05)
+    for sx in (-1, 1):
+        box(nome + "_Braco", (.16, .7, .5), (sx * (comp / 2 - .08), 0, .36), m, col, r, bevel=.04)
+def mesinha(nome, x, y, col, garrafa=True):
+    cyl(nome + "_Pe", .04, .16, .44, (x, y, FZ + .22), M["metal"], col, seg=10)
+    cyl(nome + "_Tampo", .32, .32, .03, (x, y, FZ + .455), M["preto_b"], col, seg=22)
+    if garrafa:
+        torno(nome + "_Garrafa", GARRAFA, M["garrafa_v"], col, pos=(x + .08, y + .05, FZ + .47), seg=10)
+        cyl(nome + "_Balde", .08, .1, .16, (x - .1, y - .04, FZ + .55), M["cromo"], col, seg=14)
+        for k in range(2): cyl(nome + "_Copo", .026, .03, .09, (x + .02 + k * .1, y - .16, FZ + .515), M["garrafa_c"], col, seg=10)
+
+# ---- rua: carros estacionados, postes do outro lado, lixo, mesa na calcada, vasos
+carro_modelo("Carro_Estacionado_A", C_VEIC, "seda", (-13.5, -3.25, 0), 0)
+carro_modelo("Carro_Estacionado_B", C_VEIC, "suv", (-1.5, -7.75, 0), PI)
+carro_modelo("Carro_Estacionado_C", C_VEIC, "hatch", (15.5, -7.7, 0), PI)
+for i, x in enumerate((-22, 2, 21)):
+    poste("Poste_S_%d" % i, x, -9.25, -1)
+for x, y in ((-16.6, -1.5), (-17.1, -1.2), (9.6, -1.55)):
+    saco_lixo("Saco_Lixo_Rua", x, y, C_RUA)
+vaso("Vaso_Entrada_A", -3.35, -.3, C_RUA); vaso("Vaso_Entrada_B", -.65, -.3, C_RUA)
+r = mesa("Mesa_Calcada", 1.2, -1.0, .1, tam=(.75, .75), col=C_RUA); r.location.z = FZ
+for k, (dx, a) in enumerate(((-.62, -PI / 2), (.62, PI / 2))):
+    c = cadeira("Cadeira_Calcada_%d" % k, 1.2 + dx, -1.0, a + rnd.uniform(-.2, .2), C_RUA); c.location.z = FZ
+torno("Garrafa_Calcada", GARRAFA, M["garrafa_a"], C_RUA, pos=(1.25, -.95, FZ + .745), seg=10)
+cartaz("Cavalete_Bar", (-.35, -1.35, FZ + .55), "-y", (.6, 1.0), M["lousa"], ["PRATO FEITO", "R$ 22", "CERVEJA", "GELADA"], C_RUA, .075)
+texto("Bar_Neon_Cerveja", "CERVEJA GELADA", .2, (2.6, -.2, FZ + 2.95), "-y", M["neon_a"], C_PRED)
+# loja fechada ao lado (bloco macico na frente da sala reservada)
+box("Loja_Fechada_Bloco", (6, 5.9, PD + .2), (9, 2.95, FZ + (PD + .2) / 2), M["fach"], C_PRED)
+box("Loja_Fechada_Porta_Loja", (3.4, .06, 2.7), (9, -.03, FZ + 1.35), M["porta_enrolar"], C_PRED)
+box("Loja_Fechada_Rodape", (6, .05, .5), (9, -.025, FZ + .25), M["rodape"], C_PRED)
+cartaz("Loja_Fechada_Aluga", (9, -.07, FZ + 1.9), "-y", (1.2, .5), M["cartaz_a"], ["ALUGA-SE"], C_PRED, .16)
+
+# ---- bar: sinuca, estufa, caixa, lousa, cartazes, ventiladores, relogio
+SX, SY = -2.5, 4.35
+box("Sinuca_Corpo", (2.3, 1.3, .22), (SX, SY, FZ + .72), M["mad"], C_BAR, bevel=.02)
+box("Sinuca_Pano", (2.06, 1.06, .012), (SX, SY, FZ + .834), M["feltro_azul"], C_BAR)
+for sx, sy, w, d in ((0, .59, 2.3, .12), (0, -.59, 2.3, .12), (1.09, 0, .12, 1.3), (-1.09, 0, .12, 1.3)):
+    box("Sinuca_Tabela", (w, d, .06), (SX + sx, SY + sy, FZ + .86), M["mad"], C_BAR, bevel=.01)
+for sx in (-1, 1):
+    for sy in (-1, 1):
+        box("Sinuca_Pe", (.13, .13, .62), (SX + sx * .98, SY + sy * .5, FZ + .31), M["mad"], C_BAR)
+        cyl("Sinuca_Cacapa", .055, .055, .02, (SX + sx * 1.0, SY + sy * .5, FZ + .845), M["preto_b"], C_BAR, seg=12)
+for k in range(7):
+    esfera("Sinuca_Bola", .027, (SX + rnd.uniform(-.8, .8), SY + rnd.uniform(-.38, .38), FZ + .867), M["bola_b"] if k == 0 else M["bola_a"], C_BAR, sub=1)
+barra("Sinuca_Taco", (SX - .7, SY - .5, FZ + .9), (SX + .6, SY - .62, FZ + .9), .012, M["mad_cl"], C_BAR, seg=6)
+box("Sinuca_Luminaria", (1.2, .3, .1), (SX, SY, FZ + 2.0), M["feltro"], C_BAR, bevel=.02)
+box("Sinuca_Luminaria_Luz", (1.1, .2, .02), (SX, SY, FZ + 1.945), M["lamp_q"], C_BAR)
+for sx in (-.5, .5): cyl("Sinuca_Luminaria_Fio", .006, .006, FZ + PD - 2.05 - FZ, (SX + sx, SY, FZ + 2.05 + (PD - 2.05) / 2), M["preto"], C_BAR, seg=6)
+luz("Luz_Sinuca", "POINT", 22, "#ffe2b0", (SX, SY, FZ + 1.8), C_LUZ, shadow_soft_size=.2)
+box("Estufa_Base", (.46, .8, .06), (3.55, 1.9, FZ + 1.13), M["metal"], C_BAR)
+box("Estufa_Vidro", (.44, .78, .3), (3.55, 1.9, FZ + 1.31), M["vidro_estufa"], C_BAR)
+box("Estufa_Luz", (.4, .74, .02), (3.55, 1.9, FZ + 1.45), M["lamp_q"], C_BAR)
+for k in range(8):
+    esfera("Estufa_Salgado", .04, (3.45 + (k % 2) * .18, 1.62 + (k // 2) * .18, FZ + 1.2), M["salgado"], C_BAR, sub=1, esc=(1, 1.3, .8))
+box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_BAR, bevel=.02)
+box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
+for k in range(5):
+    torno("Garrafa_Balcao", GARRAFA, M[("garrafa_a", "garrafa_v")[k % 2]], C_BAR, pos=(3.5 + rnd.uniform(-.1, .1), 2.7 + k * .28, FZ + 1.1), seg=10)
+    cyl("Copo_Balcao", .03, .025, .1, (3.38, 2.82 + k * .28, FZ + 1.15), M["garrafa_c"], C_BAR, seg=10)
+cartaz("Lousa_Precos", (2.6, 5.9, FZ + 1.95), "-y", (1.5, .9), M["lousa"], ["PRATO FEITO  R$ 22", "CERVEJA 600 ML  R$ 12", "CAIPIRINHA  R$ 14", "PORÇÃO DE FRITAS  R$ 25"], C_BAR, .075)
+cartaz("Cartaz_Bar_A", (-5.89, 1.4, FZ + 1.9), "+x", (.7, .95), M["cartaz_v"], ["PROMOÇÃO", "DE QUARTA", "BALDE", "R$ 45"], C_BAR, .085)
+cartaz("Cartaz_Bar_B", (-5.89, 2.6, FZ + 1.9), "+x", (.7, .95), M["cartaz_az"], ["SOM", "AO VIVO", "SÁBADO"], C_BAR, .1)
+cartaz("Cartaz_Bar_C", (-5.89, 3.8, FZ + 1.9), "+x", (.7, .95), M["cartaz_a"], ["FIADO", "SÓ", "AMANHÃ"], C_BAR, .1)
+cartaz("Placa_Banheiro", (5.2, 5.9, FZ + 2.3), "-y", (.8, .2), M["preto"], ["SÓ FUNCIONÁRIOS"], C_BAR, .06)
+ventilador("Ventilador_Bar_A", -3.6, 1.6, C_BAR); ventilador("Ventilador_Bar_B", .9, 2.2, C_BAR)
+cyl("Relogio_Parede", .16, .16, .03, (-1.6, 5.9, FZ + 2.3), M["branco"], C_BAR, rot=(PI / 2, 0, 0), seg=24)
+for a_, l_ in ((.5, .1), (2.2, .13)):
+    barra("Relogio_Ponteiro", (-1.6, 5.88, FZ + 2.3), (-1.6 + l_ * math.sin(a_), 5.88, FZ + 2.3 + l_ * math.cos(a_)), .006, M["preto"], C_BAR, seg=4)
+box("Rodape_Bar", (11.8, .02, .1), (0, .115, FZ + .05), M["rodape"], C_BAR)
+saco_lixo("Saco_Lixo_Bar", 5.5, .55, C_BAR)
+
+# ---- salao: placar, ar-condicionado, luminarias, extintor, lixeira, mesinhas
+box("Placar_Acumulado", (2.6, .05, .42), (-1.3, 12.78, FZ + 2.45), M["preto_b"], C_SAL)
+texto("Placar_Acumulado_Texto", "ACUMULADO  R$ 12.480", .17, (-1.3, 12.75, FZ + 2.45), "-y", M["neon_a"], C_SAL)
+box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL, bevel=.03)
+for nome_, (x, y) in (("Carteado", (CX, CY)), ("Roleta", (RX, RY))):
+    torno("Pendente_" + nome_, [(.04, .22), (.28, 0), (.3, 0), (.06, .24)], M["feltro"], C_SAL, pos=(x, y, FZ + 2.1), seg=20)
+    cyl("Pendente_%s_Fio" % nome_, .006, .006, PD - 2.32, (x, y, FZ + 2.32 + (PD - 2.32) / 2), M["preto"], C_SAL, seg=6)
+torno("Extintor_Salao", [(0, 0), (.07, 0), (.07, .4), (.03, .46), (.03, .52), (0, .52)], M["extintor"], C_SAL, pos=(2.36, 8.75, FZ + .9), seg=12)
+cartaz("Extintor_Placa", (2.415, 8.75, FZ + 1.7), "-x", (.2, .2), M["cartaz_v"], ["E"], C_SAL, .1)
+cyl("Lixeira_Salao", .16, .13, .42, (-3.2, 8.15, FZ + .21), M["plast"], C_SAL, seg=14)
+box("Quadro_de_Luz", (.4, .1, .55), (-1.9, 6.14, FZ + 1.6), M["metal"], C_SAL, bevel=.01)
+mesinha("Mesinha_Salao_A", 1.75, 12.2, C_SAL); mesinha("Mesinha_Salao_B", -2.0, 8.0, C_SAL, garrafa=False)
+cyl("Cinzeiro_Carteado", .05, .04, .02, (CX - .3, CY - .35, FZ + .8), M["garrafa_c"], C_SAL, seg=12)
+for k in range(3): cyl("Copo_Carteado", .028, .024, .09, (CX + .45 * math.cos(k * 2.1), CY + .45 * math.sin(k * 2.1), FZ + .835), M["garrafa_c"], C_SAL, seg=10)
+torno("Garrafa_Carteado", GARRAFA, M["garrafa_a"], C_SAL, pos=(CX + .1, CY + .5, FZ + .79), seg=10)
+box("Rodape_Salao", (5.8, .02, .1), (-.5, 6.09, FZ + .05), M["rodape"], C_SAL)
+
+# ---- escritorio: pastas, moedas, maquininha, quadro de chaves, calendario
+box("Prateleira_Escritorio", (.28, 1.6, .03), (5.76, 10.0, FZ + 1.6), M["mad_cl"], C_ESC)
+for k in range(9):
+    box("Pasta_Arquivo", (.24, .07, .3), (5.76, 9.35 + k * .085, FZ + 1.77), (M["cartaz_az"], M["preto"], M["cartaz_v"], M["papelao"])[k % 4], C_ESC, rot=(0, rnd.uniform(-.06, .06), 0))
+for k in range(6):
+    cyl("Pilha_Moedas", .013, .013, .012 + (k % 3) * .012, (5.15 + (k % 3) * .035, 11.35 + (k // 3) * .035, FZ + .766 + (k % 3) * .006), M["dourado"], C_ESC, seg=10)
+box("Maquininha_Cartao", (.075, .16, .05), (5.2, 11.75, FZ + .785), M["plast"], C_ESC, bevel=.01)
+box("Radio_Comunicador", (.06, .035, .15), (5.62, 10.75, FZ + .835), M["preto"], C_ESC, bevel=.008)
+cartaz("Quadro_Chaves", (4.3, 9.09, FZ + 1.55), "+y", (.5, .4), M["mad_cl"], [], C_ESC)
+for k in range(6): box("Chave_Pendurada", (.02, .01, .07), (4.12 + k * .072, 9.105, FZ + 1.55), M["dourado"], C_ESC)
+cartaz("Calendario", (5.3, 9.09, FZ + 1.6), "+y", (.34, .5), M["branco"], [], C_ESC)
+box("Calendario_Faixa", (.34, .014, .14), (5.3, 9.092, FZ + 1.78), M["cartaz_v"], C_ESC)
+box("Cadeira_Visita_Assento", (.44, .44, .06), (3.6, 10.4, FZ + .45), M["branco"], C_ESC, bevel=.015)
+box("Cadeira_Visita_Encosto", (.42, .04, .42), (3.6, 10.19, FZ + .72), M["branco"], C_ESC, bevel=.012)
+for sx in (-1, 1):
+    for sy in (-1, 1): cyl("Cadeira_Visita_Pe", .017, .017, .44, (3.6 + sx * .19, 10.4 + sy * .19, FZ + .22), M["branco"], C_ESC, seg=6)
+box("Sacola_Dinheiro_Vazia", (.4, .25, .3), (5.0, 12.65, FZ + .15), M["bolsa"], C_ESC, bevel=.04)
+# marcas de arrasto e fresta de luz que denunciam a estante falsa no deposito do bar
+for k in range(3): box("Marca_Arrasto", (.02, 1.05, .003), (5.6 + k * .09, 7.9, FZ + .002), M["preto"], C_ESC)
+box("Fresta_Luz_Sala", (.012, 1.0, .012), (5.905, 7.35, FZ + .006), mat("Fresta_Magenta", "#3a0530", .3, emit="#ff2ad4", forca=2.5), C_ESC)
+
+# ---- quintal e beco
+for x, y in ((-7.5, 4.2), (-7.4, 4.8), (4.6, 16.5), (5.0, 16.1), (-7.5, 14.2)):
+    saco_lixo("Saco_Lixo_Fundos", x, y, C_FUN)
+for k in range(2):
+    torno("Botijao_Gas", [(0, 0), (.15, .02), (.18, .12), (.18, .42), (.12, .52), (.06, .54), (.06, .6), (0, .6)], M["botijao"], C_FUN, pos=(5.3 + k * .42, 14.4, FZ), seg=14)
+box("Condensadora_Ar", (.8, .32, .58), (-2.5, 13.3, FZ + 2.0), M["branco"], C_FUN, bevel=.02)
+cyl("Condensadora_Grade", .22, .22, .02, (-2.6, 13.47, FZ + 2.0), M["esquadria"], C_FUN, rot=(PI / 2, 0, 0), seg=16)
+barra("Varal", (-5.8, 16.6, FZ + 1.9), (5.8, 16.6, FZ + 1.9), .004, M["branco"], C_FUN, seg=4)
+for k in range(4): box("Pano_Varal", (.5, .01, .45), (-3.5 + k * .9, 16.6, FZ + 1.66), (M["branco"], M["cartaz_az"], M["cortina_br"], M["cartaz_v"])[k], C_FUN)
+box("Caixote_Beco", (.6, .5, .5), (-7.55, 8.3, FZ + .25), M["mad_cl"], C_FUN)
+box("Caixote_Beco_B", (.5, .4, .4), (-7.6, 8.3, FZ + .7), M["papelao"], C_FUN, rot=(0, 0, .3))
+
+# ---- SALA RESERVADA (boate escondida): x 6.1 .. 11.9, y 6.1 .. 12.9
+C_SEC = collection("11_Sala_Reservada")
+box("Piso_Sala_Reservada", (6, 7, FZ), (9, 9.5, FZ / 2), M["preto_piso"], C_EST)
+box("Laje_Sala_Reservada", (6.2, 7.2, .2), (9.0, 9.5, FZ + PD + .1), M["laje"], C_EST)
+parede("Parede_Sala_Sul", (6, 6), (12, 6), M["parede"], C_EST)
+parede("Parede_Sala_Leste", (12, 6), (12, 13), M["parede"], C_EST)
+parede("Parede_Sala_Norte", (6, 13), (12, 13), M["parede"], C_EST)
+# forro e paredes escuras por dentro
+box("Sala_Forro", (5.8, 6.8, .02), (9, 9.5, FZ + PD - .012), M["forro_preto"], C_SEC)
+box("Sala_Revest_Sul", (5.8, .025, PD), (9, 6.115, FZ + PD / 2), M["veludo"], C_SEC)
+box("Sala_Revest_Leste", (.025, 6.8, PD), (11.885, 9.5, FZ + PD / 2), M["veludo"], C_SEC)
+box("Sala_Revest_Norte", (5.8, .025, PD), (9, 12.885, FZ + PD / 2), M["veludo"], C_SEC)
+box("Sala_Revest_Oeste", (.025, 5.0, PD), (6.115, 10.4, FZ + PD / 2), M["veludo"], C_SEC)
+box("Sala_Revest_Oeste_Sul", (.025, .72, PD), (6.115, 6.47, FZ + PD / 2), M["veludo"], C_SEC)
+box("Sala_Revest_Oeste_Verga", (.025, 1.1, PD - 2.05), (6.115, 7.35, FZ + 2.05 + (PD - 2.05) / 2), M["veludo"], C_SEC)
+cortina("Sala_Cortina_Entrada", (6.5, 6.85), (6.5, 7.0), M["veludo"], C_SEC)
+# palco com dois postes de pole dance, espelho ao fundo e fita de LED
+box("Palco", (3.8, 1.9, .35), (9, 11.9, FZ + .175), M["palco"], C_SEC, bevel=.015)
+box("Palco_LED_Frente", (3.8, .02, .04), (9, 10.94, FZ + .3), M["neon_m"], C_SEC)
+for sx in (-1, 1):
+    box("Palco_LED_Lado", (.02, 1.9, .04), (9 + sx * 1.91, 11.9, FZ + .3), M["neon_m"], C_SEC)
+    box("Palco_Degrau", (.7, .32, .17), (9 + sx * 1.3, 10.78, FZ + .085), M["preto_piso"], C_SEC)
+    cyl("Pole_Dance", .023, .023, PD - .35, (9 + sx * 1.0, 11.75, FZ + .35 + (PD - .35) / 2), M["cromo_sala"], C_SEC, seg=14)
+    cyl("Pole_Dance_Base", .13, .13, .02, (9 + sx * 1.0, 11.75, FZ + .36), M["cromo_sala"], C_SEC, seg=18)
+    cyl("Pole_Dance_Topo", .09, .09, .02, (9 + sx * 1.0, 11.75, FZ + PD - .03), M["cromo_sala"], C_SEC, seg=18)
+    box("Caixa_Som", (.38, .34, .7), (9 + sx * 2.35, 12.55, FZ + .35), M["plast"], C_SEC, bevel=.02)
+    for k, rr in enumerate((.13, .07)): cyl("Caixa_Som_Falante", rr, rr, .02, (9 + sx * 2.35, 12.375, FZ + .26 + k * .28), M["preto_b"], C_SEC, rot=(PI / 2, 0, 0), seg=16)
+box("Palco_Espelho", (3.8, .02, 2.3), (9, 12.86, FZ + 1.6), M["espelho"], C_SEC)
+box("Palco_LED_Espelho", (3.9, .03, .04), (9, 12.85, FZ + 2.78), M["neon_az"], C_SEC)
+texto("Sala_Neon_Lounge", "LOUNGE", .34, (9.6, 6.14, FZ + 2.2), "+y", M["neon_m"], C_SEC)
+esfera("Globo_Espelhado", .17, (9, 9.7, FZ + PD - .32), M["cromo_sala"], C_SEC, sub=2, liso=False)
+cyl("Globo_Espelhado_Haste", .008, .008, .16, (9, 9.7, FZ + PD - .09), M["metal"], C_SEC, seg=6)
+# sofas, mesinhas e bar
+sofa("Sofa_Sala_Leste_A", 11.5, 7.6, 2.3, (-1, 0), C_SEC); sofa("Sofa_Sala_Leste_B", 11.5, 10.2, 2.3, (-1, 0), C_SEC)
+sofa("Sofa_Sala_Sul", 9.6, 6.5, 2.4, (0, 1), C_SEC)
+mesinha("Mesinha_Sala_A", 10.6, 7.6, C_SEC); mesinha("Mesinha_Sala_B", 10.6, 10.2, C_SEC); mesinha("Mesinha_Sala_C", 9.6, 7.45, C_SEC)
+box("Bar_Sala_Balcao", (.5, 2.3, 1.05), (7.15, 10.5, FZ + .525), M["preto_piso"], C_SEC, bevel=.015)
+box("Bar_Sala_Tampo", (.6, 2.4, .04), (7.15, 10.5, FZ + 1.07), M["cromo_sala"], C_SEC)
+box("Bar_Sala_LED", (.02, 2.3, .04), (7.41, 10.5, FZ + .12), M["neon_az"], C_SEC)
+for k, z in enumerate((1.2, 1.65)):
+    box("Bar_Sala_Prateleira", (.2, 2.2, .03), (6.24, 10.5, FZ + z), M["cromo_sala"], C_SEC)
+    box("Bar_Sala_Prateleira_LED", (.02, 2.2, .02), (6.15, 10.5, FZ + z + .03), M["neon_az"], C_SEC)
+    for j in range(9):
+        torno("Garrafa_Sala", GARRAFA, M[("garrafa_c", "garrafa_a", "garrafa_v")[(j + k) % 3]], C_SEC, pos=(6.24, 9.55 + j * .24, FZ + z + .016), seg=10)
+for k in range(3):
+    cyl("Banqueta_Sala_Assento", .17, .17, .05, (7.75, 9.8 + k * .7, FZ + .74), M["couro"], C_SEC, seg=16)
+    cyl("Banqueta_Sala_Pe", .14, .03, .72, (7.75, 9.8 + k * .7, FZ + .36), M["cromo_sala"], C_SEC, seg=10)
+luz("Luz_Sala_Palco", "POINT", 320, "#ff3ad0", (9, 11.3, FZ + 2.7), C_LUZ, shadow_soft_size=.3)
+luz("Luz_Sala_Azul", "POINT", 140, "#3a6bff", (7.6, 8.2, FZ + 2.7), C_LUZ, shadow_soft_size=.4)
+luz("Luz_Sala_Ambar", "POINT", 110, "#ffb060", (10.8, 8.9, FZ + 2.6), C_LUZ, shadow_soft_size=.4)
+luz("Luz_Sala_Sofa_Sul", "POINT", 80, "#ff7ab0", (9.4, 7.2, FZ + 2.6), C_LUZ, shadow_soft_size=.4)
+luz("Luz_Sala_Bar", "POINT", 80, "#7aa0ff", (7.3, 10.6, FZ + 2.5), C_LUZ, shadow_soft_size=.4)
+luz("Luz_Sala_Palco_Frente", "POINT", 160, "#ffd0f0", (9, 10.2, FZ + 2.7), C_LUZ, shadow_soft_size=.3)
+camera("Camera_Sala_Reservada", (6.7, 7.2, 1.75), (10.0, 11.6, 1.2), 14)
 
 # ------------------------------------------------------------------ 7. interativos (portas e material a apreender)
 def porta(nome, dobradica, rz, m, larg=.88, rotulo=None, lado_rotulo=-1):
@@ -878,6 +1122,21 @@ box("I_DVR_Cameras_Luz", (.02, .005, .01), (.13, -.122, .03), M["neon_v"], C_INT
 # a estante do escritorio tem prateleiras abertas onde ficam a caixa e o gravador
 box("Estante_Escritorio_Vao_A", (.7, .04, .3), (3.95, 12.56, FZ + .65), M["preto"], C_ESC)
 box("Estante_Escritorio_Vao_B", (.7, .04, .3), (3.3, 12.56, FZ + 1.3), M["preto"], C_ESC)
+
+
+# estante falsa do deposito do bar: esconde a passagem para a sala reservada (o site desliza a raiz para o lado)
+r = vazio("I_Estante_Secreta", (5.76, 7.35, FZ), C_INT)
+box("I_Estante_Secreta_Fundo", (.03, 1.2, 2.12), (.115, 0, 1.06), M["mad"], C_INT, r)
+for sy in (-1, 1): box("I_Estante_Secreta_Lado", (.3, .03, 2.12), (-.03, sy * .6, 1.06), M["mad"], C_INT, r)
+for k in range(6): box("I_Estante_Secreta_Prat", (.3, 1.2, .03), (-.03, 0, .015 + k * .418), M["mad"], C_INT, r)
+for k in range(5):
+    for j in range(4):
+        if (k + j) % 3 == 0: box("I_Estante_Secreta_Caixa", (.24, .26, .3), (-.04, -.44 + j * .29, .18 + k * .418), M["papelao"], C_INT, r)
+        else: torno("I_Estante_Secreta_Garrafa", GARRAFA, M[("garrafa_a", "garrafa_v", "garrafa_c")[(k + j) % 3]], C_INT, r, pos=(-.04, -.44 + j * .29, .03 + k * .418), seg=8)
+# bolsa com dinheiro escondida atras do bar da sala reservada
+r = vazio("I_Dinheiro_Sala", (6.55, 11.25, FZ), C_INT, .3)
+box("I_Dinheiro_Sala_Bolsa", (.52, .28, .22), (0, 0, .11), M["bolsa"], C_INT, r, bevel=.04)
+for k in range(6): maco("I_Dinheiro_Sala_Maco", r, -.15 + (k % 3) * .15, -.04 + (k // 3) * .08, .232, M["nota"] if k % 2 else M["nota2"], rnd.uniform(-.15, .15))
 
 # ------------------------------------------------------------------ 8. viatura
 r = carro_modelo("Viatura_PM", C_VEIC, "perua", (5.2, -3.3, 0), 0, cor="#eceded", escala=1.08)
@@ -930,11 +1189,6 @@ ponto("Porta_Salao", -4.75, 5.3, (0, 1)); ponto("Porta_Escritorio", 1.9, 9.85, (
 ponto("Viatura_Preso", 3.4, -2.2, (1, -.3))
 
 # ------------------------------------------------------------------ 11. cameras, ceu, render
-def camera(nome, pos, alvo, lente=22):
-    cd = bpy.data.cameras.new(nome); cd.lens = lente; cd.clip_end = 400
-    ob = bpy.data.objects.new(nome, cd); C_LUZ.objects.link(ob); ob.location = pos
-    ob.rotation_euler = (Vector(alvo) - Vector(pos)).to_track_quat("-Z", "Y").to_euler()
-    return ob
 camera("Camera_Rua", (1.5, -7.5, 1.75), (-1.5, 1.0, 2.2), 18)
 camera("Camera_Bar", (-1.9, 0.9, 1.75), (1.5, 5.5, 1.2), 15)
 camera("Camera_Corredor", (-4.75, 5.2, 1.75), (-4.2, 8.5, 1.3), 15)
@@ -948,7 +1202,7 @@ scene.camera = bpy.data.objects["Camera_Rua"]
 world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World"); scene.world = world
 bg = world.node_tree.nodes.get("Background")
 if bg:
-    bg.inputs["Color"].default_value = (*lin(hx("#1b2640")), 1); bg.inputs["Strength"].default_value = .18
+    bg.inputs["Color"].default_value = (*lin(hx("#1b2640")), 1); bg.inputs["Strength"].default_value = .32
 scene.unit_settings.system = "METRIC"
 scene.render.resolution_x, scene.render.resolution_y = 1920, 1080
 scene.render.engine = "CYCLES"; scene.cycles.samples = 128; scene.cycles.use_denoising = True

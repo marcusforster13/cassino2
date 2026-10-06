@@ -8,5 +8,7 @@
 
 ## Equipamentos do policial
 
-`arma.glb` (pistola) e `granada.glb` (granada de efeito moral) foram fornecidos pelo responsável pelo projeto. **Confirmar a origem e a licença antes de divulgar.**
+`arma.glb` (pistola) e `granada.glb` (granada de efeito moral) foram modelados pelo autor do projeto.
+
+`carros/seda.glb`, `suv.glb` e `hatch.glb` (carros estacionados) vêm do mesmo pacote da viatura, sem modificação.
 `preparar_equipamentos.py` junta as peças, ajusta o tamanho e grava as versões do site em `04_ThreeJS/web/modelos/`.

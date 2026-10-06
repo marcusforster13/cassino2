@@ -170,7 +170,7 @@ say("%d materiais trocados por PBR com texturas CC0" % n_pbr)
 SEM_LIGHTMAP = {"09_Luzes_Cameras", "99_Colisao", "10_Carro_Abordado", "08_Interativos"}
 # niveis:  rapido (teste, ~2 min) | padrao (~5 min) | alta (~30-60 min)
 ALTA = "alta" in ARGS
-RES = {"03_Bar_Estrutura": 2048, "01_Rua": 1024, "10_Viatura": 512, "02_Vizinhos": 1024, "04_Bar_Moveis": 1024, "05_Salao_Jogos": 1024, "06_Escritorio_Depositos": 1024, "07_Fundos_Beco": 1024}
+RES = {"03_Bar_Estrutura": 2048, "01_Rua": 1024, "10_Viatura": 1024, "11_Sala_Reservada": 1024, "02_Vizinhos": 1024, "04_Bar_Moveis": 1024, "05_Salao_Jogos": 1024, "06_Escritorio_Depositos": 1024, "07_Fundos_Beco": 1024}
 RES_PADRAO = 512
 AMOSTRAS = 24 if RAPIDO else (640 if ALTA else 256)
 scene.render.engine = "CYCLES"; scene.cycles.device = "CPU"

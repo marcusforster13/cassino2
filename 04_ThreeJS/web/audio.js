@@ -13,6 +13,7 @@ const DEF = {
   amb_transito_noite:  { tipo: 'ambiente', fora: .45, dentro: .12 },
   amb_bar:             { tipo: 'ambiente', fora: .1, dentro: .35 },
   maquinas_caca_niquel: { tipo: 'posicional', pos: [-1.3, 1.2, -11.5], vol: .5, alcance: 9 },
+  musica_sala_reservada: { tipo: 'posicional', pos: [9, 1.4, -11.5], vol: .5, alcance: 8 },
   cachorro_longe:      { tipo: 'esporadico', area: [[-30, -15], [-20, 20]], vol: .4, intervalo: [25, 60] },
   sirene_longe:        { tipo: 'evento', vol: .4 },
   radio_chiado:        { tipo: 'evento', vol: .3 },

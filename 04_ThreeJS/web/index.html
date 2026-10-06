@@ -259,6 +259,8 @@ const INFO = [
     body: 'Dinheiro se conta no local, na frente do responsável ou de uma testemunha, e segue em envelope lacrado e numerado. Isso protege a prova e protege o policial.' },
   { tag: 'Compartimento trancado', title: 'Escritório e caixa', pos: [3.4, 1.9, -9.9],
     body: 'Aqui ficam o caixa, os cadernos, o computador, o celular e o gravador das câmeras. Celular e computador podem ser apreendidos, mas o conteúdo só pode ser acessado com ordem judicial ou consentimento.' },
+  { tag: 'Cômodo escondido', title: 'Sala reservada', pos: [9, 1.9, -8.8],
+    body: 'Uma boate escondida atrás de uma estante falsa no depósito do bar: palco, bar próprio e sofás. Locais assim costumam guardar parte do dinheiro. Por isso a vistoria precisa passar por todos os cômodos e observar sinais como marcas de arrasto no piso e luz por baixo de móveis.' },
   { tag: 'Rota de fuga', title: 'Porta dos fundos, quintal e beco', pos: [1.85, 1.9, -13.6],
     body: 'Pela porta dos fundos chega-se ao quintal e, pelo portão, ao beco que sai na rua. Antes de entrar, peça apoio para cobrir esta saída. Não é legítimo atirar em quem foge desarmado (Lei 13.060/2014).' },
   { tag: 'Uso da força', title: 'Arma e granada de efeito moral', pos: [3.4, 1.6, 1.6],
@@ -309,7 +311,7 @@ function irPara(nome) {
   rig.position.set(x, Math.max(0, y - 1.6), z);
   yaw = Math.atan2(-(ax - x), -(az - z)); pitch = Math.atan2(ay - y, Math.hypot(ax - x, az - z));
 }
-const NOMES = { Camera_Rua: "Rua", Camera_Bar: "Bar", Camera_Corredor: "Corredor", Camera_Salao: "Salão", Camera_Escritorio: "Escritório", Camera_Fundos: "Fundos" };
+const NOMES = { Camera_Rua: "Rua", Camera_Bar: "Bar", Camera_Corredor: "Corredor", Camera_Salao: "Salão", Camera_Escritorio: "Escritório", Camera_Fundos: "Fundos", Camera_Sala_Reservada: "Sala reservada" };
 Object.keys(CFG.cameras).forEach((k, i) => {
   const b = document.createElement('button'); b.type = 'button'; b.textContent = `${i + 1} · ${NOMES[k] || k}`;
   b.onclick = () => irPara(k); $('vistas').appendChild(b);

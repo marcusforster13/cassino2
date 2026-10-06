@@ -12,7 +12,7 @@ Treinamento para policiais militares: atendimento a uma denúncia de **jogo de a
 2. Bar aberto ao público × porta "PRIVATIVO": quando pode entrar (flagrante visível, consentimento registrado) e quando não pode (só a denúncia anônima).
 3. Contenção: anúncio, comando verbal, reação a agressão armada, fuga pelos fundos.
 4. Identificação: responsável, funcionária, apostadores; oferta de dinheiro.
-5. Apreensão: máquinas, dinheiro, fichas, cadernos, celular, computador, gravador das câmeras; escritório trancado.
+5. Apreensão: máquinas, dinheiro, fichas, cadernos, celular, computador, gravador das câmeras; escritório trancado; sala reservada escondida atrás de uma estante falsa no depósito do bar, com parte do dinheiro.
 6. Enquadramento, algemas e condução.
 
 Modos: exploração (cena livre), história (3 ocorrências guiadas), treino (objetivos e dicas) e avaliação (sem dicas). No fim, relatório com nota, erros, falhas graves e base legal, com download em JSON.

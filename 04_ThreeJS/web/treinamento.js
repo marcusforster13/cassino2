@@ -441,8 +441,36 @@ export async function iniciar(ctx) {
     return suave(seg, e => { p.ang = a0 + (alvo - a0) * e; p.o.rotation.y = p.base + p.ang; });
   }
 
+  // estante falsa do deposito do bar: esconde a passagem para a sala reservada
+  const estante = (() => {
+    const o = ctx.cena.getObjectByName('I_Estante_Secreta'); if (!o) return null;
+    o.updateWorldMatrix(true, false);
+    const col = new THREE.Mesh(new THREE.BoxGeometry(.4, 2.15, 1.25), invisivel());
+    o.getWorldPosition(col.position); col.position.y += 1.07; col.userData.estante = true; col.geometry.computeBoundsTree(); scene.add(col); col.updateMatrixWorld(true);
+    return { o, z0: o.position.z, col, aberta: false };
+  })();
+  function moverEstante(aberta, seg = 1.4) {
+    if (!estante) return Promise.resolve();
+    const cols = ctx.colisao(), i = cols.indexOf(estante.col), a0 = estante.o.position.z, alvo = estante.z0 - (aberta ? 1.12 : 0);
+    estante.aberta = aberta; estante.col.position.z = alvo; estante.col.updateMatrixWorld(true);
+    if (i < 0) cols.push(estante.col);
+    if (seg > .3) estouro(.5, 300, .35, .7);                       // som de movel arrastado
+    return suave(seg, e => { estante.o.position.z = a0 + (alvo - a0) * e; });
+  }
+  function usarEstante() {
+    if (!estante) return;
+    if (S.ativo && A) {
+      if (!A.entrou) return legenda('Depósito', 'Depósito do bar: engradados, caixas e uma estante.', 4);
+      if (!A.salaSecreta) {
+        A.salaSecreta = true; registrar('localizar_sala_secreta'); moverEstante(true);
+        return legenda('Vistoria', 'As marcas no piso e a luz por baixo indicam uma passagem. A estante corre para o lado: há uma sala escondida.', 7);
+      }
+    }
+    moverEstante(!estante.aberta);
+  }
+
   const ITENS = { dinheiro_mesa: 'I_Dinheiro_Mesa', fichas: 'I_Fichas', caderno_apostas: 'I_Caderno_Apostas', notebook: 'I_Notebook', celular: 'I_Celular',
-    caderno_contab: 'I_Caderno_Contabilidade', dinheiro_escondido: 'I_Dinheiro_Escondido', dvr: 'I_DVR_Cameras' };
+    caderno_contab: 'I_Caderno_Contabilidade', dinheiro_escondido: 'I_Dinheiro_Escondido', dvr: 'I_DVR_Cameras', dinheiro_sala: 'I_Dinheiro_Sala' };
   const itens = {}, hitsItem = [];
   for (const [k, nome] of Object.entries(ITENS)) {
     const o = ctx.cena.getObjectByName(nome); if (!o) continue;
@@ -469,6 +497,8 @@ export async function iniciar(ctx) {
     maquinas: 'Máquinas caça-níqueis: são o principal vestígio do jogo de azar (LCP art. 50). Relacionar, fotografar e lacrar; quem abre e examina é a perícia.',
     dinheiro_mesa: 'Dinheiro sobre a mesa de jogo: contar no local, na frente do responsável ou de testemunha, e lacrar em envelope numerado.',
     dinheiro_escondido: 'Caixa com maços de dinheiro guardada no escritório.',
+    dinheiro_sala: 'Bolsa com maços de dinheiro escondida atrás do bar da sala reservada.',
+    estante: 'Estante do depósito do bar. Há marcas de arrasto no piso e uma fresta de luz colorida por baixo.',
     fichas: 'Fichas de aposta: indicam os valores em jogo.',
     caderno_apostas: 'Caderno com anotações de apostas e prêmios.',
     caderno_contab: 'Caderno de contabilidade: entradas, saídas e nomes.',
@@ -503,9 +533,76 @@ export async function iniciar(ctx) {
 
   const gl = new GLTFLoader();
   const arma = new THREE.Group(); arma.visible = false;       // pistola na mao do policial
-  const clarao = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe9a0, toneMapped: false, fog: false }));
-  clarao.position.set(0, .071, -.2); clarao.visible = false; arma.add(clarao);
-  const luzTiro = new THREE.PointLight(0xffd9a0, 0, 9, 2); luzTiro.position.copy(clarao.position); arma.add(luzTiro);
+  // clarao do disparo: estrela de fogo na boca do cano (tres planos cruzados) e luz que ilumina o comodo por um instante
+  const texFlash = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+    g.translate(64, 64);
+    for (let k = 0; k < 7; k++) {                             // linguas de fogo
+      g.rotate(Math.PI * 2 / 7 + (Math.random() - .5) * .3); const L = 34 + Math.random() * 28;
+      const gr = g.createLinearGradient(0, 0, L, 0); gr.addColorStop(0, 'rgba(255,240,190,1)'); gr.addColorStop(.5, 'rgba(255,170,60,.8)'); gr.addColorStop(1, 'rgba(255,90,20,0)');
+      g.fillStyle = gr; g.beginPath(); g.moveTo(0, -9); g.lineTo(L, 0); g.lineTo(0, 9); g.fill();
+    }
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, 30); gr.addColorStop(0, 'rgba(255,255,240,1)'); gr.addColorStop(.5, 'rgba(255,200,90,.7)'); gr.addColorStop(1, 'rgba(255,120,30,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 30, 0, 7); g.fill();
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const matFlash = new THREE.MeshBasicMaterial({ map: texFlash, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false, side: THREE.DoubleSide });
+  function criarFlash(tam = .2) {
+    const g = new THREE.Group(), geo = new THREE.PlaneGeometry(tam, tam);
+    const a = new THREE.Mesh(geo, matFlash), b = new THREE.Mesh(geo, matFlash), c = new THREE.Mesh(geo, matFlash);
+    b.rotation.y = Math.PI / 2; b.scale.x = 1.5; c.rotation.x = Math.PI / 2; c.scale.y = 1.5; g.add(a, b, c);
+    const l = new THREE.PointLight(0xffc880, 0, 10, 2); g.add(l); g.userData.luz = l; g.visible = false; return g;
+  }
+  function acenderFlash(f) {
+    f.rotation.z = Math.random() * 6.28; f.scale.setScalar(.75 + Math.random() * .6); f.visible = true; f.userData.luz.intensity = 9;
+    setTimeout(() => { f.userData.luz.intensity = 3; }, 40); setTimeout(() => { f.visible = false; f.userData.luz.intensity = 0; }, 85);
+    f.getWorldPosition(GT);
+    const m = new THREE.Mesh(geoFum, new THREE.MeshBasicMaterial({ color: 0xbfbfbf, transparent: true, opacity: .22, depthWrite: false }));
+    m.position.copy(GT); m.scale.setScalar(.04); scene.add(m); fumacas.push({ f: m, t: 0, v: new THREE.Vector3(0, .25, 0), s0: .04, cres: .22, vida: 1.1, op: .22 });
+  }
+  const clarao = criarFlash(); clarao.position.set(0, .071, -.25); arma.add(clarao);
+  const luzTiro = clarao.userData.luz;
+  // capsulas ejetadas e gotas de sangue: pequenas pecas com gravidade e vida curta
+  const soltos = [], geoCaps = new THREE.CylinderGeometry(.0045, .0045, .019, 6), matCaps = new THREE.MeshBasicMaterial({ color: 0xb8923a });
+  const geoGota = new THREE.SphereGeometry(.011, 5, 4), matGota = new THREE.MeshBasicMaterial({ color: 0x6a0505 });
+  function capsula(arm) {
+    const m = new THREE.Mesh(geoCaps, matCaps); arm.getWorldPosition(m.position); m.position.y += .07;
+    const lado = new THREE.Vector3(1, 0, 0).applyQuaternion(arm.getWorldQuaternion(new THREE.Quaternion()));
+    scene.add(m); soltos.push({ m, v: lado.multiplyScalar(1.6 + Math.random()).add(new THREE.Vector3(0, 1.8, 0)), t: 0, vida: 1.1, giro: 20 });
+  }
+  // sangue: respingo no ponto atingido, mancha na superficie atras e poca sob quem caiu
+  const texSangue = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+    for (let k = 0; k < 26; k++) {
+      const a = Math.random() * 6.28, d = Math.pow(Math.random(), 1.6) * 46, r = 4 + Math.random() * (k < 6 ? 22 : 8);
+      g.fillStyle = `rgba(${95 + Math.random() * 40 | 0},4,4,${.75 + Math.random() * .25})`; g.beginPath(); g.arc(64 + Math.cos(a) * d, 64 + Math.sin(a) * d, r, 0, 7); g.fill();
+    }
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const manchas = [], geoMancha = new THREE.PlaneGeometry(1, 1);
+  function mancha(ponto, normal, raio) {
+    const m = new THREE.Mesh(geoMancha, new THREE.MeshBasicMaterial({ map: texSangue, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, toneMapped: false, color: 0x9a9a9a }));
+    m.position.copy(ponto).addScaledVector(normal, .007); m.lookAt(ponto.clone().add(normal)); m.rotateZ(Math.random() * 6.28); m.scale.setScalar(raio * 2);
+    scene.add(m); manchas.push(m); if (manchas.length > 36) { const v = manchas.shift(); scene.remove(v); v.material.dispose(); }
+    return m;
+  }
+  function limparSangue() { for (const m of manchas) { scene.remove(m); m.material.dispose(); } manchas.length = 0; }
+  function sangue(p, dir) {
+    for (let k = 0; k < 16; k++) {
+      const m = new THREE.Mesh(geoGota, matGota); m.position.copy(p); m.scale.setScalar(.5 + Math.random());
+      const v = dir.clone().multiplyScalar(.8 + Math.random() * 2.6).add(new THREE.Vector3((Math.random() - .5) * 1.6, Math.random() * 1.6, (Math.random() - .5) * 1.6));
+      scene.add(m); soltos.push({ m, v, t: 0, vida: .55 + Math.random() * .3, giro: 0 });
+    }
+    rayG.set(p, GV.copy(dir).normalize()); rayG.far = 3.5;                 // mancha na parede ou no movel atras
+    const h = rayG.intersectObjects(ctx.colisao(), false)[0];
+    if (h?.face) mancha(h.point, GN.copy(h.face.normal).transformDirection(h.object.matrixWorld).clone(), .16 + Math.random() * .2);
+  }
+  function pocaSangue(n) {
+    setTimeout(() => {
+      const m = mancha(new THREE.Vector3(n.position.x + Math.sin(n.rotation.y) * 1.0, .152, n.position.z + Math.cos(n.rotation.y) * 1.0), new THREE.Vector3(0, 1, 0), .06);
+      suave(6, e => { m.scale.setScalar(.12 + .95 * e); });
+    }, 900);
+  }
   let armaModelo = null, granadaModelo = null;
   const prep = raiz => { raiz.traverse(o => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(m => ctx.iluminar(m.clone())) : ctx.iluminar(o.material.clone()); }); return raiz; };
   gl.loadAsync('modelos/arma.glb').then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); }).catch(() => { });
@@ -528,19 +625,19 @@ export async function iniciar(ctx) {
   let ultimoTiro = 0;
   function disparar(ray) {
     const agora = performance.now(); if (agora - ultimoTiro < 280) return true; ultimoTiro = agora;
-    somTiro(); clarao.visible = true; luzTiro.intensity = 30; const rx = arma.rotation.x; arma.rotation.x = rx + .22;
-    setTimeout(() => { clarao.visible = false; luzTiro.intensity = 0; }, 70); setTimeout(() => { arma.rotation.x = rx; }, 130);
+    somTiro(); acenderFlash(clarao); capsula(arma); const rx = arma.rotation.x; arma.rotation.x = rx + .22;
+    setTimeout(() => { arma.rotation.x = rx; }, 130);
     const pessoas = Object.values(npcs).filter(n => n.visible && !n.userData.caido);
     const hn = ray.intersectObjects(pessoas.map(n => n.userData.hit), false)[0];
     const hp = ray.intersectObjects(ctx.colisao(), false)[0];
     if (hn && (!hp || hn.distance < hp.distance)) {
       const n = pessoas.find(p => p.userData.hit === hn.object), k = n.userData.chave;
       if (S.ativo && A) {
-        if (k === 'seguranca' && A.ameaca) { registrar('resposta_proporcional', 'disparo'); A.ameaca = false; legenda('Instrutor', 'Agressão armada atual: o disparo foi resposta legítima. Agora, socorro imediato e comunicação.', 6); }
+        if (n.userData.ameaca) { registrar('resposta_proporcional', 'disparo'); if (ameacando().length <= 1) legenda('Instrutor', 'Agressão armada atual: o disparo foi resposta legítima. Agora, socorro imediato e comunicação.', 6); }
         else registrar('disparo_injustificado', n.userData.nome);
         A.ferido = n; S.variacao.ferido = 'sim';
       }
-      cair(n);
+      sangue(hn.point, ray.ray.direction); cair(n); sincAmeaca();
     } else {
       if (hp?.face) marcar(hp);
       if (S.ativo && A) registrar('disparo_sem_alvo');
@@ -549,7 +646,9 @@ export async function iniciar(ctx) {
   }
   function cair(n) {
     const u = n.userData; u.caido = true; u.rota = []; u.destino = null; u.semVirar = true; u.aoChegar = null;
-    if (u.chave === 'seguranca') armaNPC.visible = false, armaChao(n.position);
+    u.ameaca = false; u.atira = false;
+    if (u.arma?.visible) { u.arma.visible = false; armaChao(n.position, u.chave); }
+    pocaSangue(n);
     const y0 = n.position.y, r0 = n.rotation.x;
     suave(.7, e => { n.rotation.x = r0 + (-Math.PI / 2 - r0) * e; n.position.y = y0 + .12 * e; });
   }
@@ -621,9 +720,10 @@ export async function iniciar(ctx) {
       if (dg > 7 || (dg > 3.5 && !visto(GN.copy(pos).setY(pos.y + .8), GT))) continue;
       alguem = true; u.rota = []; u.destino = null; u.aoChegar = null; u.atordoado = performance.now() + 7000;
       animar(n, u.acoes?.nervoso ? 'nervoso' : 'parada', 7, .2);
-      if (u.chave === 'seguranca' && ameaca) { A.ameaca = false; renderSeguranca(true); }
+      if (u.ameaca) renderNPC(n, true);
       if (u.fugindo) { u.fugindo = false; u.reunido = false; }
     }
+    sincAmeaca();
     if (S.ativo && A) {
       if (ameaca && !A.ameaca) { registrar('resposta_proporcional', 'granada'); legenda('Instrutor', 'O agressor foi atordoado e largou a arma, sem disparo. Algeme e recolha a arma.', 6); }
       else if (alguem) registrar('granada_desproporcional');
@@ -632,21 +732,61 @@ export async function iniciar(ctx) {
   function efeitos(dt) {
     fisicaGranadas(dt);
     for (let i = fumacas.length - 1; i >= 0; i--) {
-      const o = fumacas[i]; o.t += dt; o.f.position.addScaledVector(o.v, dt); o.f.scale.setScalar(.3 + o.t * .55); o.f.material.opacity = .35 * Math.max(0, 1 - o.t / 5);
-      if (o.t > 5) { scene.remove(o.f); o.f.material.dispose(); fumacas.splice(i, 1); }
+      const o = fumacas[i], vida = o.vida ?? 5; o.t += dt; o.f.position.addScaledVector(o.v, dt); o.f.scale.setScalar((o.s0 ?? .3) + o.t * (o.cres ?? .55)); o.f.material.opacity = (o.op ?? .35) * Math.max(0, 1 - o.t / vida);
+      if (o.t > vida) { scene.remove(o.f); o.f.material.dispose(); fumacas.splice(i, 1); }
+    }
+    for (let i = soltos.length - 1; i >= 0; i--) {
+      const o = soltos[i]; o.t += dt; o.v.y -= 9.8 * dt; o.m.position.addScaledVector(o.v, dt); if (o.giro) o.m.rotation.x += o.giro * dt;
+      if (o.m.position.y < .16) { o.m.position.y = .16; o.v.set(0, 0, 0); }
+      if (o.t > o.vida) { scene.remove(o.m); soltos.splice(i, 1); }
     }
   }
-  // arma do seguranca (o mesmo modelo): na mao dele quando aponta; no chao depois que larga
-  const armaNPC = new THREE.Group(); armaNPC.visible = false; scene.add(armaNPC);
-  const armaSolta = new THREE.Group(); armaSolta.visible = false; scene.add(armaSolta);
-  gl.loadAsync('modelos/arma.glb').then(g => { armaNPC.add(prep(g.scene)); armaSolta.add(prep(g.scene.clone())); }).catch(() => { });
+  // armas dos agressores (o mesmo modelo): na mao quando apontam; no chao depois que largam
+  const armaNPC = new THREE.Group(), armaNPC2 = new THREE.Group(), armaSolta = new THREE.Group(), armaSolta2 = new THREE.Group();
+  for (const g of [armaNPC, armaNPC2, armaSolta, armaSolta2]) { g.visible = false; scene.add(g); }
+  for (const g of [armaNPC, armaNPC2]) { const f = criarFlash(.24); f.position.set(0, .071, -.25); g.add(f); g.userData.flash = f; }
+  gl.loadAsync('modelos/arma.glb').then(g => { for (const a of [armaNPC, armaNPC2, armaSolta, armaSolta2]) a.add(prep(g.scene.clone())); }).catch(() => { });
   const hitArma = new THREE.Mesh(new THREE.SphereGeometry(.2, 8, 6), invisivel()); hitArma.userData.item = 'arma'; armaSolta.add(hitArma);
-  function armaChao(p) { armaSolta.position.set(p.x + .35, .17, p.z + .2); armaSolta.rotation.set(0, 1, Math.PI / 2); armaSolta.visible = true; armaSolta.updateMatrixWorld(true); }
+  function armaChao(p, chave) {
+    const g = chave === 'seguranca_2' ? armaSolta2 : armaSolta;
+    g.position.set(p.x + .35, .17, p.z + .2); g.rotation.set(0, 1, Math.PI / 2); g.visible = true; g.updateMatrixWorld(true);
+  }
   function seguirArmaNPC() {
-    const n = npcs.seguranca; if (!armaNPC.visible || !n) return;
-    const m = n.userData.modelo, mao = m?.getObjectByName('Bip01_R_Hand'); if (!mao) return;
-    mao.getWorldPosition(armaNPC.position); camera.getWorldPosition(GT);
-    armaNPC.lookAt(GT); armaNPC.rotateY(Math.PI); armaNPC.translateZ(-.06); armaNPC.translateY(.03);
+    for (const n of Object.values(npcs)) {
+      const g = n.userData.arma; if (!g?.visible) continue;
+      const mao = n.userData.modelo?.getObjectByName('Bip01_R_Hand'); if (!mao) continue;
+      mao.getWorldPosition(g.position); camera.getWorldPosition(GT);
+      g.lookAt(GT); g.rotateY(Math.PI); g.translateZ(-.06); g.translateY(.03);
+    }
+  }
+  const ameacando = () => Object.values(npcs).filter(n => n.userData.ameaca && !n.userData.caido);
+  function sincAmeaca() { if (A) A.ameaca = ameacando().length > 0; }
+  function veuVermelho(k = .55, seg = 1.6) {
+    veu.material.color.set(0xff2020); veu.visible = true; veu.material.opacity = k;
+    suave(seg, e => { veu.material.opacity = k * (1 - e); if (e >= 1) { veu.visible = false; veu.material.color.set(0xffffff); } });
+  }
+  function policialAtingido() {
+    S.vida = (S.vida ?? 3) - 1; veuVermelho(); registrar('atingido');
+    if (S.vida <= 0) {
+      legenda('Instrutor', 'Você foi gravemente ferido. O parceiro e o apoio assumem. Ocorrência encerrada.', 7);
+      for (const n of ameacando()) renderNPC(n, true);
+      setTimeout(finalizar, 4500);
+    } else legenda('Alerta', `Você foi atingido (${S.vida} de 3). Proteja-se atrás da parede e reaja.`, 4);
+  }
+  function tiroInimigo(n) {
+    const g = n.userData.arma; if (!g) return;
+    somTiro(); if (g.userData.flash) acenderFlash(g.userData.flash); capsula(g);
+    const de = g.position.clone(); camera.getWorldPosition(GT); const alvo = GT.clone();
+    if (visto(de, alvo) && Math.random() < .3) return policialAtingido();
+    GV.copy(alvo).sub(de).normalize(); GV.x += (Math.random() - .5) * .3; GV.y += (Math.random() - .5) * .25; GV.z += (Math.random() - .5) * .3;
+    rayG.set(de, GV.normalize()); rayG.far = 30; const h = rayG.intersectObjects(ctx.colisao(), false)[0]; if (h?.face) marcar(h);
+  }
+  function confronto() {                                      // agressores que atiram: um disparo a cada 1,5 a 2,8 s
+    if (!A || A.fase === 'fim') return; const agora = performance.now();
+    for (const n of ameacando()) {
+      const u = n.userData; if (!u.atira || u.destino || u.rota?.length || u.atordoado > agora) continue;
+      if (agora > u.proxTiro) { u.proxTiro = agora + 1500 + Math.random() * 1300; tiroInimigo(n); }
+    }
   }
 
   /* ================= variacoes ================= */
@@ -675,6 +815,7 @@ export async function iniciar(ctx) {
     ['apostador_1', 'apostador_a', 'Apostador', [-2.5, 11.55], [.3, 1], 'm', 1.78],
     ['apostador_2', 'apostador_b', 'Apostador', [-1.75, 9.45], [-1, .3], 'm', 1.78],
     ['apostador_3', 'apostador_c', 'Apostadora', [0.4, 6.8], [0, 1], 'f', 1.68],
+    ['seguranca_2', 'seguranca', 'Homem armado', [-4.9, 10.6], [0, -1], 'm', 1.8],
     ['parceiro', 'pm_parceiro', 'Policial parceiro', [4.2, -1.0], [-.5, .3], 'm', 1.8],
     ['apoio', 'pm_apoio', 'Policial de apoio', [-7.0, 12.4], [0, 1], 'm', 1.8],
   ];
@@ -685,13 +826,16 @@ export async function iniciar(ctx) {
     limparNPCs();
     for (const [chave, papel, nome, [x, y], [dx, dy], voz, alt] of ELENCO) {
       if (chave === 'responsavel' && v.responsavel === 'ausente') continue;
+      if (chave === 'seguranca_2' && v.seguranca !== 'confronto') continue;
       const n = personagem(papel, nome, chave.startsWith('p') || chave === 'apoio' ? 0x1b2a4a : 0x3d4045, alt);
       n.userData.modelo?.traverse(o => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(m => ctx.iluminar(m.clone())) : ctx.iluminar(o.material.clone()); });
       Object.assign(n.userData, { chave, voz, fig: true, giroBase: olharPara(dx, dy), altura: alt });
       n.position.copy(B(x, y)); n.rotation.y = n.userData.giroBase; scene.add(n); npcs[chave] = n;
     }
     if (npcs.apoio) npcs.apoio.visible = false;
-    armaNPC.visible = false; armaSolta.visible = false;
+    for (const g of [armaNPC, armaNPC2, armaSolta, armaSolta2]) g.visible = false;
+    if (npcs.seguranca) npcs.seguranca.userData.arma = armaNPC;
+    if (npcs.seguranca_2) npcs.seguranca_2.userData.arma = armaNPC2;
   }
   const rota = (n, pts, vel, anim, aoChegar) => {
     const u = n.userData; u.rota = pts.map(([x, y]) => B(x, y)); u.destino = null; u.vel = vel; u.aoChegar = () => { animar(n, u.base || 'parada', 1e6, .3); aoChegar?.(); };
@@ -726,14 +870,14 @@ export async function iniciar(ctx) {
 
   /* ================= fluxo da ocorrencia ================= */
   function novaOcorrencia(v, cap) {
-    S.variacao = v; S.feitos = new Map(); S.granadas = 2;
+    S.variacao = v; S.feitos = new Map(); S.granadas = 2; S.vida = 3; limparSangue();
     A = { n: HIST.length + 1, fase: 'chegada', titulo: cap?.titulo || `Ocorrência ${HIST.length + 1}` };
     criarNPCs(v); sacar(false);
     for (const it of Object.values(itens)) it.o.visible = true;
-    lacres.visible = false;
+    lacres.visible = false; moverEstante(false, .1);
     moverPorta('salao', v.indicios === 'visiveis' ? .13 : 0, .1); moverPorta('escritorio', 0, .1); moverPorta('fundos', 0, .1);
     rig.position.set(3.0, .15, 1.2); ctx.setYaw(1.34);
-    const abrir = () => { radio(CEN.radio.inicio).then(() => dica('Fale com o parceiro (ao lado da viatura) e use o menu (T ou botão Y/B) para falar no rádio.')); };
+    const abrir = () => { radio(CEN.radio.inicio).then(() => { if (!A?.entrada) dica('Fale com o parceiro (ao lado da viatura) e use o menu (T ou botão Y/B) para falar no rádio.'); }); };
     if (cap) { fecharPaineis(); menu.mostrar({ tag: 'Modo história', titulo: cap.titulo, texto: cap.texto, longe: 1.3, botoes: [{ label: 'Começar', acao: () => { menu.esconder(); abrir(); } }] }); }
     else abrir();
     status();
@@ -790,12 +934,14 @@ export async function iniciar(ctx) {
     A.entrou = true; A.fase = 'salao';
     painelOpc('Salão de jogos', 'Você entrou no salão', CEN.dialogos.anuncio, () => { A.anunciou = true; reacoes(); }, 'Há pessoas jogando nas máquinas e na mesa.', false);
   }
-  function renderSeguranca(largou) {                           // o seguranca se rende; se estava com a arma na mao, ela vai ao chao
-    const s = npcs.seguranca; if (!s) return;
-    s.userData.base = 'rendido'; animar(s, 'rendido', 1e6, .3); A.rendeu = true; s.userData.reunido = true;
-    if (largou) { armaNPC.visible = false; armaChao(s.position); }
-    status();
+  function renderNPC(s, largou) {                             // a pessoa se rende; se estava com a arma na mao, ela vai ao chao
+    if (!s) return; const u = s.userData;
+    u.ameaca = false; u.atira = false; u.base = 'rendido'; animar(s, 'rendido', 1e6, .3); u.reunido = true;
+    if (u.chave === 'seguranca' && A) A.rendeu = true;
+    if (largou && u.arma?.visible) { u.arma.visible = false; armaChao(s.position, u.chave); }
+    sincAmeaca(); status();
   }
+  const renderSeguranca = largou => renderNPC(npcs.seguranca, largou);
   function reacoes() {
     const v = S.variacao, s = npcs.seguranca;
     for (const n of apostadores()) { animar(n, 'rendido', 3.5, .3); n.userData.base = n.userData.acoes?.nervoso ? 'nervoso' : 'parada'; }
@@ -816,30 +962,42 @@ export async function iniciar(ctx) {
     if (v.seguranca === 'armado_rende') setTimeout(() => { A && legenda('Alerta', 'O homem perto da entrada leva a mão à cintura: há um volume sob a camisa. Fale com ele.', 6); }, 1200);
     if (v.seguranca === 'armado_reage') setTimeout(() => {
       if (!A || !s || s.userData.caido || s.userData.atordoado > performance.now()) return;
-      A.ameaca = true; s.userData.base = 'apontando'; animar(s, 'apontando', 1e6, .25); armaNPC.visible = true; s.userData.semVirar = false;
+      s.userData.ameaca = true; sincAmeaca(); s.userData.base = 'apontando'; animar(s, 'apontando', 1e6, .25); armaNPC.visible = true; s.userData.semVirar = false;
       legenda('Alerta', 'O homem perto da entrada sacou uma arma e aponta para você!', 5);
       A.tAmeaca = setTimeout(() => {
         if (!A?.ameaca) return;
-        somTiro(); veu.material.color.set(0xff2020); veu.visible = true; veu.material.opacity = .55;
-        suave(1.6, e => { veu.material.opacity = .55 * (1 - e); if (e >= 1) { veu.visible = false; veu.material.color.set(0xffffff); } });
-        registrar('atingido'); A.ameaca = false;
+        somTiro(); acenderFlash(armaNPC.userData.flash); veuVermelho(); registrar('atingido');
         legenda('Instrutor', 'Você foi atingido. Diante de agressão armada atual, a reação imediata é legítima. O parceiro rendeu o agressor.', 8);
         renderSeguranca(true);
       }, 6500);
     }, 1800);
     else if (s && v.seguranca === 'desarmado') { animar(s, 'rendido', 3, .3); }
+    if (v.seguranca === 'confronto') setTimeout(() => {       // confronto: o seguranca atira e um segundo homem armado sai do deposito
+      if (!A || !s) return;
+      const armar = (n, atraso) => {
+        const u = n.userData; if (u.caido || u.atordoado > performance.now()) return;
+        u.ameaca = true; u.atira = true; u.proxTiro = performance.now() + atraso; u.base = 'apontando'; animar(n, 'apontando', 1e6, .25);
+        if (u.arma) u.arma.visible = true; u.semVirar = false; sincAmeaca(); status();
+      };
+      armar(s, 2200); legenda('Alerta', 'O homem perto da entrada sacou uma arma e vai atirar! Proteja-se e reaja.', 5);
+      const s2 = npcs.seguranca_2;
+      if (s2) setTimeout(() => {
+        if (!A || A.fase === 'fim' || s2.userData.caido) return;
+        rota(s2, [[-4.75, 8.9], [-4.75, 7.3], [-3.0, 7.5]], 2.8, 'correndo', () => { armar(s2, 900); legenda('Alerta', 'Um segundo homem armado veio do depósito!', 4); });
+      }, 5200);
+    }, 1500);
   }
   function menuSeguranca() {
     const D = CEN.dialogos, v = S.variacao, s = npcs.seguranca, u = s.userData;
-    if (A.ameaca) return legenda('Alerta', 'Ele não obedece e mantém a arma apontada para você.', 3);
-    if (u.caido) return painelOpc('Ferido', 'Homem baleado', D.socorro, op => { if (op.acao) { A.socorro = true; radio(CEN.radio.socorro); } });
-    if (v.arma === 'sim' && !A.rendeu) return painelOpc('Segurança', 'Homem com volume na cintura', D.armado, op => {
+    if (u.ameaca) return legenda('Alerta', 'Ele não obedece e mantém a arma apontada para você.', 3);
+    if (u.caido && !A.socorro) return painelOpc('Ferido', 'Homem baleado', D.socorro, op => { if (op.acao) { A.socorro = true; radio(CEN.radio.socorro); } });
+    if (v.arma === 'sim' && !A.rendeu && !u.caido) return painelOpc('Segurança', 'Homem com volume na cintura', D.armado, op => {
       if (op.acao) { diz(s, D.resposta_armado, 'nervoso'); renderSeguranca(false); armaChao(s.position); dica('Ele obedeceu. Recolha a arma e algeme (fale com ele de novo).'); }
       else dica('Para atirar, saque a arma (tecla Q ou botão A). Avalie: ele está atacando alguém?');
     });
     if (v.arma === 'sim' && !A.algemou) return painelOpc('Segurança', 'Homem que estava armado', D.pos_arma, op => {
-      A.algemou = true; armaSolta.visible = false;
-      if (op.acao) { u.algemado = true; u.base = 'algemado'; animar(s, 'algemado', 1e6, .4); legenda('Apreensão', 'Arma recolhida, desmuniciada e lacrada. Homem algemado; a justificativa vai para o registro.', 5); }
+      A.algemou = true; armaSolta.visible = false; armaSolta2.visible = false;
+      if (op.acao) { u.algemado = true; if (!u.caido) { u.base = 'algemado'; animar(s, 'algemado', 1e6, .4); } legenda('Apreensão', 'Arma recolhida, desmuniciada e lacrada. Homem algemado; a justificativa vai para o registro.', 5); }
       conferirPessoas();
     });
     if (v.arma === 'sim') return legenda('Segurança', 'Preso em flagrante por porte ilegal de arma, aguardando a condução.', 3);
@@ -892,6 +1050,7 @@ export async function iniciar(ctx) {
       return painelOpc('Vestígio', 'Máquinas caça-níqueis', D.maquinas, op => { A.maquinas = true; if (op.acao) { lacres.visible = true; legenda('Apreensão', `${CFG.maquinas || 8} máquinas fotografadas, relacionadas e lacradas. Mais duas, desligadas, no depósito.`, 5); } status(); });
     }
     if (/^dinheiro/.test(k)) return painelOpc('Vestígio', 'Dinheiro', D.dinheiro, op => {
+      if (op.acao && k === 'dinheiro_sala') registrar('apreender_dinheiro_secreto');
       apreender(k, op.acao ? 'Dinheiro contado na frente de testemunha e lacrado. Lacre nº ' + (417000 + Math.floor(Math.random() * 900)) + '.' : 'Dinheiro recolhido sem contagem.');
     }, INFO_ITEM[k]);
     if (/^(notebook|celular)$/.test(k)) return painelOpc('Vestígio', k === 'celular' ? 'Celular' : 'Computador', D.eletronico, op => {
@@ -963,12 +1122,14 @@ export async function iniciar(ctx) {
     menu.mostrar({
       tag: 'Treinamento · conteúdo sensível', titulo: 'Cassino clandestino',
       texto: 'Você é policial militar e atende uma denúncia de jogo de azar nos fundos de um bar. O treinamento simula abordagem, uso da força (arma de fogo e granada de efeito moral), apreensão e condução.\n\n' +
+        'Há cenas de confronto armado, com disparos e sangue.\n' +
         'Computador: clique fala/usa · T menu · Q saca ou guarda a arma (com ela na mão, o clique dispara) · E lança granada · K checklist.\n' +
         'Quest: gatilho usa/clica · A saca a arma (gatilho direito dispara) · X lança granada · Y ou B abre o menu · grip liga a lanterna.',
       botoes: [
-        { label: 'Modo história (3 ocorrências guiadas)', acao: () => comecar('historia') },
+        { label: 'Modo história (4 ocorrências guiadas)', acao: () => comecar('historia') },
         { label: 'Modo treino (objetivos e dicas na tela)', acao: () => comecar('treino') },
         { label: 'Modo avaliação (sem dicas)', acao: () => comecar('avaliacao') },
+        { label: 'Treino de confronto armado (direto na entrada do salão)', acao: () => comecar('confronto') },
         { label: S.voz === false ? 'Voz sintética: desligada (só legendas)' : 'Voz sintética: ligada', acao: () => { S.voz = S.voz === false; aviso(); } },
         { label: 'Cancelar', acao: () => menu.esconder() }
       ]
@@ -988,6 +1149,15 @@ export async function iniciar(ctx) {
     S.fila = S.historia ? CEN.historia.slice(1) : [];
     if (ctx.hotspots) ctx.hotspots.visible = false;
     document.getElementById('relatorioHTML')?.setAttribute('hidden', '');
+    if (modo === 'confronto') {                             // pula a chegada: comeca no corredor, com a entrada ja decidida
+      novaOcorrencia(derivar({ indicios: 'visiveis', consentimento: 'nega', seguranca: 'confronto', fuga: 'colaboram', responsavel: 'presente', suborno: 'nao' }), null);
+      for (const id of ['comunicar_chegada', 'pedir_apoio', 'planejar_parceiro', 'identificar_se', 'observar_indicios', 'decisao_entrada']) registrar(id);
+      Object.assign(A, { titulo: 'Treino de confronto armado', chegada: true, apoio: true, plano: true, parceiroJunto: true, parceiroNoBar: true, abriu: true, decidiuEntrada: true, entrada: true });
+      moverPorta('salao', 1, .1); if (npcs.apoio) npcs.apoio.visible = true; if (npcs.parceiro) npcs.parceiro.position.copy(B(-4.75, 5.0));
+      rig.position.set(-4.75, .15, -6.9); ctx.setYaw(-Math.PI / 2); sacar(true);
+      dica('Você está no corredor, com a arma na mão. O salão fica à sua frente. Use a parede como proteção.', 7);
+      return;
+    }
     novaOcorrencia(S.historia ? derivar({ ...CEN.historia[0].variacao }) : sortear(), S.historia ? CEN.historia[0] : null);
   }
   function abrirMenu() {
@@ -1061,17 +1231,18 @@ export async function iniciar(ctx) {
   function cenaExploracao() {
     S.variacao = derivar({ ...CEN.historia[0].variacao }); criarNPCs(S.variacao);
     for (const it of Object.values(itens)) it.o.visible = true;
-    lacres.visible = false; moverPorta('salao', 1, .1); moverPorta('escritorio', 1, .1); moverPorta('fundos', 0, .1);
+    lacres.visible = false; moverEstante(false, .1); moverPorta('salao', 1, .1); moverPorta('escritorio', 1, .1); moverPorta('fundos', 0, .1);
   }
   function explorar(ray) {
-    const hi = ray.intersectObjects([...hitsItem, ...Object.values(portas).map(p => p.col)], false)[0];
+    const hi = ray.intersectObjects([...hitsItem, ...(estante ? [estante.col] : []), ...Object.values(portas).map(p => p.col)], false)[0];
     const hn = ray.intersectObjects(Object.values(npcs).filter(n => n.visible).map(n => n.userData.hit), false)[0];
     if (hn && hn.distance < 6 && (!hi || hn.distance < hi.distance)) {
       const n = Object.values(npcs).find(p => p.userData.hit === hn.object), k = n.userData.chave, E = CEN.exploracao;
       diz(n, k === 'parceiro' ? CEN.equipe.pm_parceiro : k === 'apoio' ? CEN.equipe.pm_apoio : E[k] || E.apostador); return true;
     }
     if (hi && hi.distance < 4.5) {
-      if (hi.object.userData.porta) { const k = hi.object.userData.porta; moverPorta(k, portas[k].frac > .5 ? 0 : 1); }
+      if (hi.object.userData.estante) usarEstante();
+      else if (hi.object.userData.porta) { const k = hi.object.userData.porta; moverPorta(k, portas[k].frac > .5 ? 0 : 1); }
       else legenda('Vestígio', INFO_ITEM[hi.object.userData.item], 6);
       return true;
     }
@@ -1085,7 +1256,7 @@ export async function iniciar(ctx) {
     if (!S.ativo) return explorar(ray);
     if (!A || A.fase === 'fim') return false;
     const hn = ray.intersectObjects(Object.values(npcs).filter(n => n.visible).map(n => n.userData.hit), false)[0];
-    const hi = ray.intersectObjects([...hitsItem, hitArma, ...Object.values(portas).filter(p => p.frac <= .5 || p === portas.salao || p === portas.escritorio || p === portas.fundos).map(p => p.col)], false)[0];
+    const hi = ray.intersectObjects([...hitsItem, hitArma, ...(estante ? [estante.col] : []), ...Object.values(portas).filter(p => p.frac <= .5 || p === portas.salao || p === portas.escritorio || p === portas.fundos).map(p => p.col)], false)[0];
     if (hn && hn.distance < 5 && (!hi || hn.distance < hi.distance)) {
       const n = Object.values(npcs).find(p => p.userData.hit === hn.object), k = n.userData.chave;
       if (n.userData.caido) painelOpc('Ferido', 'Pessoa baleada', CEN.dialogos.socorro, op => { if (op.acao) { A.socorro = true; radio(CEN.radio.socorro); } });
@@ -1093,13 +1264,15 @@ export async function iniciar(ctx) {
       else if (k === 'apoio') diz(n, CEN.equipe.pm_apoio);
       else if (k === 'atendente') menuAtendente();
       else if (k === 'seguranca') (A.anunciou ? menuSeguranca() : null);
+      else if (k === 'seguranca_2') legenda('Homem armado', n.userData.ameaca ? 'Ele não obedece e continua atirando.' : 'Rendido e desarmado. Preso em flagrante, aguardando a condução.', 3);
       else if (k === 'responsavel') menuResponsavel();
       else menuPessoa(n);
       return true;
     }
     if (hi && hi.distance < 4) {
       const u = hi.object.userData;
-      if (u.porta === 'salao') menuPortaSalao();
+      if (u.estante) usarEstante();
+      else if (u.porta === 'salao') menuPortaSalao();
       else if (u.porta === 'escritorio') menuEscritorio();
       else if (u.porta === 'fundos') { if (A.entrou) moverPorta('fundos', portas.fundos.frac > .5 ? 0 : 1); }
       else if (u.item === 'arma') { if (armaSolta.visible) menuSeguranca(); else return false; }
@@ -1121,7 +1294,7 @@ export async function iniciar(ctx) {
     const L = [], v = S.variacao;
     if (!A) return ['Aguarde a próxima ocorrência'];
     if (A.fase === 'fim') return ['Ocorrência concluída'];
-    if (A.ameaca) return ['Agressão armada: reaja com o meio necessário (arma ou granada)'];
+    if (A.ameaca) return ['Agressão armada: proteja-se e reaja com o meio necessário (arma ou granada)', `Sua condição: ${S.vida ?? 3} de 3`];
     if (A.ferido && !A.socorro) L.push('Peça socorro médico pelo rádio (menu)');
     if (!A.entrou) {
       if (!A.chegada) L.push('Informe a chegada pelo rádio (menu)');
@@ -1133,7 +1306,7 @@ export async function iniciar(ctx) {
       else L.push('Ocorrência registrada sem entrada');
     } else {
       if (!A.anunciou) L.push('Anuncie a presença policial');
-      if (v.arma === 'sim' && !A.rendeu) L.push('Fale com o homem perto da entrada');
+      if (v.arma === 'sim' && !A.rendeu && !npcs.seguranca?.userData.caido) L.push('Fale com o homem perto da entrada');
       else if (v.arma === 'sim' && !A.algemou) L.push('Recolha a arma e algeme quem estava armado');
       if (!S.feitos.has('reunir_pessoas')) L.push('Reúna as pessoas junto à parede');
       if (!S.feitos.has('qualificar_apostadores')) L.push('Qualifique os apostadores');
@@ -1141,9 +1314,11 @@ export async function iniciar(ctx) {
       if (!A.maquinas) L.push('Relacione e lacre as máquinas');
       if (!A.apreendidos?.has('dinheiro_mesa')) L.push('Apreenda o dinheiro da mesa');
       if (!A.escritorio) L.push('Decida o que fazer com o escritório trancado');
+      if (!A.salaSecreta) L.push('Vistorie todos os cômodos, inclusive o depósito do bar');
+      else if (!A.apreendidos?.has('dinheiro_sala')) L.push('Procure dinheiro na sala reservada');
       if (!A.decidiu) L.push('Encerre pelo rádio: enquadramento e condução (menu)');
     }
-    return L.slice(0, 5);
+    return L.slice(0, 6);
   }
   function status() {
     const el = document.getElementById('statusTrein'); if (!el) return;
@@ -1157,7 +1332,7 @@ export async function iniciar(ctx) {
   function quadro() {
     const agora = performance.now(), dt = Math.min(.1, (agora - ultimo) / 1000); ultimo = agora;
     if (agora > legAte) { leg.visible = false; const hl = document.getElementById('legendaHTML'); if (hl && !hl.hidden) hl.hidden = true; }
-    efeitos(dt);
+    efeitos(dt); if (S.ativo) confronto();
     camera.getWorldPosition(V); camera.getWorldDirection(V2);
     if (S.ativo && A && A.entrada && !A.entrou && noSalao(V)) aoEntrarNoSalao();
     if (S.ativo && A && !A.parceiroNoBar && A.parceiroJunto && noBar(V) && !A.decidiuEntrada && npcs.parceiro && !npcs.parceiro.userData.rota?.length && !npcs.parceiro.userData.destino) { A.parceiroNoBar = true; rota(npcs.parceiro, [[-3.6, 4.6]], 1.5, 'andando'); }
@@ -1170,7 +1345,7 @@ export async function iniciar(ctx) {
       moverNPC(n, dt);
       camera.getWorldPosition(V);
       if (u.caido) continue;
-      const encarar = (u.chave === 'seguranca' && A?.ameaca) || (u.real && !u.destino && !u.semVirar && !u.rota?.length && V.distanceTo(n.position) < 3.2 && (S.ativo ? (A?.anunciou || !/^apostador|seguranca|responsavel/.test(u.chave)) : true));
+      const encarar = u.ameaca || (u.real && !u.destino && !u.semVirar && !u.rota?.length && V.distanceTo(n.position) < 3.2 && (S.ativo ? (A?.anunciou || !/^apostador|seguranca|responsavel/.test(u.chave)) : true));
       if (encarar) { let d = Math.atan2(V.x - n.position.x, V.z - n.position.z) - n.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); n.rotation.y += d * Math.min(1, dt * (A?.ameaca ? 6 : 2.5)); }
       else if (u.fig && !u.fala && !u.destino && !u.rota?.length) { let d = u.giroBase - n.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); n.rotation.y += d * Math.min(1, dt * 1.2); }
     }
@@ -1195,7 +1370,7 @@ export async function iniciar(ctx) {
     apontar, painelAberto: () => paineis.some(p => p.mesh.visible),
     menu: abrirMenu, quadro, estado: S, relatorio,
     // acesso para testes automatizados e para o instrutor
-    _t: { comecar, encerrar, objetivos, sortear, derivar, novaOcorrencia, npcs, portas, moverPorta, itens, usarItem, sacar, disparar, lancarGranada, detonar, granadas, arremessar, falarRadio, menuParceiro, menuAtendente, menuPortaSalao, menuSeguranca, menuPessoa, menuResponsavel, menuEscritorio, decidirFinal, finalizar, reacoes, aoEntrarNoSalao, usar, arma, armaNPC, armaSolta, lacres, B,
+    _t: { comecar, encerrar, objetivos, sortear, derivar, novaOcorrencia, npcs, portas, moverPorta, itens, usarItem, sacar, disparar, lancarGranada, detonar, granadas, arremessar, falarRadio, menuParceiro, menuAtendente, menuPortaSalao, menuSeguranca, menuPessoa, menuResponsavel, menuEscritorio, decidirFinal, finalizar, reacoes, aoEntrarNoSalao, usar, arma, armaNPC, armaSolta, lacres, B, armaNPC2, armaSolta2, ameacando, tiroInimigo, policialAtingido, sangue, manchas, soltos, estante, moverEstante, usarEstante,
       ocorrencia: () => A, historico: HIST, botoes: () => (dialogo.mesh.visible ? dialogo : menu).botoes, painel: () => (dialogo.mesh.visible ? dialogo : menu.mesh.visible ? menu : null) }
   };
   return window.__trein;
