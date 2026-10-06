@@ -437,6 +437,7 @@ export async function iniciar(ctx) {
     const p = portas[k]; if (!p) return Promise.resolve();
     const cols = ctx.colisao(), i = cols.indexOf(p.col), alvo = p.aberta * frac, a0 = p.ang;
     if (frac > .5) { if (i >= 0) cols.splice(i, 1); } else if (i < 0) cols.push(p.col);
+    if (seg > .3 && p.frac !== frac) window.__som?.tocar('porta_abrindo', p.col.position);
     p.frac = frac;
     return suave(seg, e => { p.ang = a0 + (alvo - a0) * e; p.o.rotation.y = p.base + p.ang; });
   }
@@ -454,7 +455,7 @@ export async function iniciar(ctx) {
     const cols = ctx.colisao(), i = cols.indexOf(estante.col), a0 = estante.o.position.z, alvo = estante.z0 - (aberta ? 1.12 : 0);
     estante.aberta = aberta; estante.col.position.z = alvo; estante.col.updateMatrixWorld(true);
     if (i < 0) cols.push(estante.col);
-    if (seg > .3) estouro(.5, 300, .35, .7);                       // som de movel arrastado
+    if (seg > .3 && !window.__som?.tocar('movel_arrastado', estante.col.position, false, { ini: .3, dur: 1.6 })) estouro(.5, 300, .35, .7);      // som de movel arrastado
     return suave(seg, e => { estante.o.position.z = a0 + (alvo - a0) * e; });
   }
   function usarEstante() {
@@ -998,7 +999,7 @@ export async function iniciar(ctx) {
     });
     if (v.arma === 'sim' && !A.algemou) return painelOpc('Segurança', 'Homem que estava armado', D.pos_arma, op => {
       A.algemou = true; armaSolta.visible = false; armaSolta2.visible = false;
-      if (op.acao) { u.algemado = true; if (!u.caido) { u.base = 'algemado'; animar(s, 'algemado', 1e6, .4); } legenda('Apreensão', 'Arma recolhida, desmuniciada e lacrada. Homem algemado; a justificativa vai para o registro.', 5); }
+      if (op.acao) { window.__som?.tocar('algemas', s.position.clone().setY(1.1)); u.algemado = true; if (!u.caido) { u.base = 'algemado'; animar(s, 'algemado', 1e6, .4); } legenda('Apreensão', 'Arma recolhida, desmuniciada e lacrada. Homem algemado; a justificativa vai para o registro.', 5); }
       conferirPessoas();
     });
     if (v.arma === 'sim') return legenda('Segurança', 'Preso em flagrante por porte ilegal de arma, aguardando a condução.', 3);
@@ -1351,6 +1352,14 @@ export async function iniciar(ctx) {
       else if (u.fig && !u.fala && !u.destino && !u.rota?.length) { let d = u.giroBase - n.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); n.rotation.y += d * Math.min(1, dt * 1.2); }
     }
     seguirArmaNPC();
+    if (Math.floor(agora / 500) !== Math.floor((agora - dt * 1000) / 500)) {        // sons que saem dos comodos fechados
+      const som = window.__som;
+      if (som?.nivel) {
+        const silencio = S.ativo && A && S.variacao.indicios === 'nenhum' && !A.entrou;      // nessa variacao nao se ouve nada do bar
+        som.nivel('maquinas_caca_niquel', portas.salao?.frac > .5 ? 1 : silencio ? 0 : .3);
+        som.nivel('musica_sala_reservada', estante?.aberta ? 1 : .2);
+      }
+    }
     if (S.ativo && Math.floor(agora / 1000) !== Math.floor((agora - dt * 1000) / 1000)) status();
   }
 

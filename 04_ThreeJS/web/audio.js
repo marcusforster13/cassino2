@@ -11,14 +11,15 @@ import * as THREE from 'three';
 // posicoes em coordenadas da cena web (Y para cima)
 const DEF = {
   amb_transito_noite:  { tipo: 'ambiente', fora: .45, dentro: .12 },
-  amb_bar:             { tipo: 'ambiente', fora: .1, dentro: .35 },
-  maquinas_caca_niquel: { tipo: 'posicional', pos: [-1.3, 1.2, -11.5], vol: .5, alcance: 9 },
-  musica_sala_reservada: { tipo: 'posicional', pos: [9, 1.4, -11.5], vol: .5, alcance: 8 },
+  amb_bar:             { tipo: 'ambiente', fora: .06, dentro: .3 },
+  maquinas_caca_niquel: { tipo: 'posicional', pos: [-1.3, 1.2, -11.0], vol: .55, ref: 2.2, rolloff: 1.5 },
+  musica_sala_reservada: { tipo: 'posicional', pos: [9, 1.4, -11.5], vol: .5, ref: 2.0, rolloff: 1.5 },
   cachorro_longe:      { tipo: 'esporadico', area: [[-30, -15], [-20, 20]], vol: .4, intervalo: [25, 60] },
   sirene_longe:        { tipo: 'evento', vol: .4 },
   radio_chiado:        { tipo: 'evento', vol: .3 },
   radio_bip:           { tipo: 'evento', vol: .6 },
-  porta_abrindo:       { tipo: 'evento', vol: .6 },
+  porta_abrindo:       { tipo: 'evento', vol: .5 },
+  movel_arrastado:     { tipo: 'evento', vol: .7 },
   algemas:             { tipo: 'evento', vol: .6 },
   tiro_pistola:        { tipo: 'evento', vol: 1 },
   granada_efeito_moral: { tipo: 'evento', vol: 1 },
@@ -106,7 +107,7 @@ export async function iniciarAudio({ scene, camera, renderer }) {
     const a = new THREE.PositionalAudio(listener); a.setBuffer(buffers[n]); a.setLoop(true);
     a.setRefDistance(d.ref); a.setRolloffFactor(d.rolloff); a.setDistanceModel('exponential'); a.setVolume(mudo ? 0 : vol(n, d.vol));
     const o = new THREE.Object3D(); o.position.fromArray(d.pos); o.add(a); scene.add(o); a.play();
-    posicionais.push({ n, a, o, d });
+    posicionais.push({ n, a, o, d, k: 1 });
     return a;
   }
   function agendarEsporadicos() {
@@ -160,7 +161,9 @@ export async function iniciarAudio({ scene, camera, renderer }) {
     },
     iniciarTreino() { if (buffers.choro_crianca_baixo && !posicionais.some(p => p.n === 'choro_crianca_baixo')) { ligar(); posicional('choro_crianca_baixo', DEF.choro_crianca_baixo); } },
     pararChoro() { const p = posicionais.find(p => p.n === 'choro_crianca_baixo'); if (p) { p.a.stop(); scene.remove(p.o); posicionais.splice(posicionais.indexOf(p), 1); } },
-    mudo(v) { mudo = v; for (const p of posicionais) p.a.setVolume(v ? 0 : vol(p.n, p.d.vol)); },
+    mudo(v) { mudo = v; for (const p of posicionais) p.a.setVolume(v ? 0 : vol(p.n, p.d.vol) * p.k); },
+    // abafa ou libera um som posicional (porta fechada, estante no lugar): k de 0 a 1, com transicao curta
+    nivel(n, k) { const p = posicionais.find(p => p.n === n); if (!p || p.k === k) return; p.k = k; if (!mudo) p.a.gain.gain.setTargetAtTime(vol(p.n, p.d.vol) * k, listener.context.currentTime, .4); },
     desbloquear,
     quadro, carregados: () => Object.keys(buffers),
     falas: () => Object.fromEntries(Object.entries(fala).map(([k, v]) => [k, [+v.ini.toFixed(2), +v.dur.toFixed(2), +buffers[k].duration.toFixed(2), +(ganho[k] || 1).toFixed(2)]])),

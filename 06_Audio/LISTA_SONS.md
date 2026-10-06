@@ -1,25 +1,24 @@
 # Sons do treinamento — Cassino clandestino
 
-Os arquivos ficam em `06_Audio\brutos\` (`.mp3`, `.ogg` ou `.wav`). O pipeline copia para o site. Só sons de uso livre (CC0); não extrair áudio de vídeos.
+Os arquivos ficam em `06_Audio/brutos/`. O pipeline copia para o site. Fonte: **freesound.org**, só sons com licença **Creative Commons 0** (uso livre, sem crédito obrigatório). Foi baixada a versão MP3 de cada som. Não extrair áudio de vídeos.
 
-## Já temos (Freesound, CC0 — vieram do projeto Lei Seca)
-
-| Arquivo | O que é | Origem |
+| Arquivo | Uso | Origem (Freesound, CC0) |
 |---|---|---|
-| `amb_transito_noite` | Trânsito noturno a média distância (loop) | "Medium Night City Traffic 2", brunoboselli, som 871592 |
-| `radio_bip` | Bipe de rádio antes e depois das falas da sala de operações | "Walkie Talkie - Roger Beep", bruce965, som 321906 |
+| `amb_transito_noite` | Trânsito noturno (loop), na rua | "Medium Night City Traffic 2", brunoboselli, som 871592 |
+| `radio_bip` | Bipe de rádio | "Walkie Talkie - Roger Beep", bruce965, som 321906 |
 | `radio_chiado` | Chiado de rádio (ainda não usado) | "Walkie_Talkie_Static", crcavol, som 154654 |
+| `maquinas_caca_niquel` | Sons de máquinas de jogo (loop), saem do salão | "pseudobinaural old time casino ambience from optical sounds1", kb7clx, som 862557 |
+| `amb_bar` | Burburinho de bar (loop), dentro do prédio | "Spacious Bar Ambience With Music, Medium Crowd 02", HECKFRICKER, som 729330 |
+| `musica_sala_reservada` | Música abafada (loop), sai da sala reservada | "Distant Dance Club.wav", DeVern, som 586173 |
+| `tiro_pistola` | Disparo, do policial e dos agressores | "Small pistol gunshot indoors", acidsnowflake, som 402789 |
+| `granada_efeito_moral` | Estouro da granada de efeito moral | "Flashbang", modusmogulus, som 737326 |
+| `granada_quique` | Granada batendo no chão ou na parede | "Iron Clang.wav", Unstableuranium, som 98867 |
+| `algemas` | Algemas fechando | "ratchet.wav", Nomadyag, som 193058 |
+| `porta_abrindo` | Portas | "Metal Door Squeaking 8 (Medium)", MathewHenry, som 700705 |
+| `movel_arrastado` | Estante falsa correndo para o lado | "Dragging on wood", Black0032, som 721414 |
 
-## Falta (o site já toca se o arquivo existir, com este nome)
+Conferir a licença na página de cada som antes de divulgar o treinamento (a busca foi filtrada por CC0, mas o autor pode alterar a licença).
 
-| Arquivo | O que é | Enquanto não houver |
-|---|---|---|
-| `tiro_pistola` | Disparo de pistola, seco, em ambiente fechado | som sintetizado pelo site |
-| `granada_efeito_moral` | Estouro forte de granada de luz e som | som sintetizado |
-| `granada_quique` | Objeto metálico batendo no chão | som sintetizado |
-| `maquinas_caca_niquel` | Sons eletrônicos de máquinas de jogo (loop), ouvidos perto do salão | silêncio |
-| `musica_sala_reservada` | Música de boate abafada (loop), ouvida perto da sala reservada | silêncio |
-| `amb_bar` | Burburinho baixo de bar, TV ao fundo (loop) | silêncio |
-| `porta_abrindo`, `algemas` | Eventos | silêncio |
+Sem o arquivo, tiro, estouro, quique e estante usam um som sintetizado pelo site.
 
 Vozes: rode `gerar_roteiro_vozes.py` para gerar o roteiro de gravação. Sem gravação, o site usa a voz sintética do navegador, com legenda (no Quest, só legenda).
