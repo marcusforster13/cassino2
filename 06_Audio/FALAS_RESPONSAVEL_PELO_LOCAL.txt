@@ -1,0 +1,35 @@
+﻿OPERAÇÃO LEI SECA — FALAS: RESPONSÁVEL PELO LOCAL
+============================================================
+
+Homem, 40 a 60 anos, gerente do jogo. Seguro de si, depois contrariado. Fale como gente de verdade, sem tom de locutor.
+
+Como gravar:
+- Um arquivo por fala, com o nome indicado (.wav ou .mp3).
+- Salvar em 06_Audio\brutos\ (ou mandar para o Claude).
+- Falar exatamente o texto (é por ele que o site encontra a gravação).
+- ~0,5 s de silêncio no começo e no fim. O tempo é só referência.
+
+------------------------------------------------------------
+
+[ ]  1.  "Isso aqui é só um joguinho entre amigos."
+      Quando: Modo exploração · debochado
+      Tempo: 3–5 s     Arquivo: fala_responsavel_01
+
+[ ]  2.  "Sou eu que tomo conta. O que é que tá acontecendo?"
+      Quando: Perguntam quem é o responsável · contrariado
+      Tempo: 5–6 s     Arquivo: fala_responsavel_02
+
+[ ]  3.  "Eu quero ligar pro meu advogado."
+      Quando: Depois de ouvir os direitos
+      Tempo: 3–4 s     Arquivo: fala_responsavel_03
+
+[ ]  4.  "Chefe, vamos resolver isso aqui mesmo. Tem cinco mil na gaveta. Ninguém precisa ficar sabendo."
+      Quando: Oferta de dinheiro · em voz baixa
+      Tempo: 7–9 s     Arquivo: fala_responsavel_04
+
+[ ]  5.  "Tá bom… eu abro."
+      Quando: Pedem para abrir o escritório · resignado
+      Tempo: 2–3 s     Arquivo: fala_responsavel_05
+
+------------------------------------------------------------
+Total: 5 falas ([x] = já gravada).

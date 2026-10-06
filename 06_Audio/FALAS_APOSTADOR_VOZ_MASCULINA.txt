@@ -1,0 +1,27 @@
+﻿OPERAÇÃO LEI SECA — FALAS: APOSTADOR (VOZ MASCULINA)
+============================================================
+
+Homem comum, sem graça por ter sido pego jogando.
+
+Como gravar:
+- Um arquivo por fala, com o nome indicado (.wav ou .mp3).
+- Salvar em 06_Audio\brutos\ (ou mandar para o Claude).
+- Falar exatamente o texto (é por ele que o site encontra a gravação).
+- ~0,5 s de silêncio no começo e no fim. O tempo é só referência.
+
+------------------------------------------------------------
+
+[ ]  1.  "Hoje a máquina tá pagando…"
+      Quando: Modo exploração
+      Tempo: 3–4 s     Arquivo: fala_apostador_01
+
+[ ]  2.  "Tá bom, seu policial."
+      Quando: Mandam ficar junto à parede
+      Tempo: 2–2 s     Arquivo: fala_apostador_02
+
+[ ]  3.  "Tá aqui. Eu só vim jogar um pouquinho…"
+      Quando: Entrega o documento · sem graça
+      Tempo: 4–6 s     Arquivo: fala_apostador_03
+
+------------------------------------------------------------
+Total: 3 falas ([x] = já gravada).

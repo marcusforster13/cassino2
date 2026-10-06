@@ -1,0 +1,23 @@
+﻿OPERAÇÃO LEI SECA — FALAS: SEGURANÇA
+============================================================
+
+Homem, 25 a 40 anos, poucas palavras.
+
+Como gravar:
+- Um arquivo por fala, com o nome indicado (.wav ou .mp3).
+- Salvar em 06_Audio\brutos\ (ou mandar para o Claude).
+- Falar exatamente o texto (é por ele que o site encontra a gravação).
+- ~0,5 s de silêncio no começo e no fim. O tempo é só referência.
+
+------------------------------------------------------------
+
+[ ]  1.  "Aqui é área reservada."
+      Quando: Modo exploração · seco
+      Tempo: 2–2 s     Arquivo: fala_seguranca_01
+
+[ ]  2.  "Calma, calma! Eu não vou fazer nada."
+      Quando: Rende-se ao comando · assustado
+      Tempo: 3–4 s     Arquivo: fala_seguranca_02
+
+------------------------------------------------------------
+Total: 2 falas ([x] = já gravada).

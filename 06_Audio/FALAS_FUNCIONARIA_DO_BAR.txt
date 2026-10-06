@@ -1,0 +1,43 @@
+﻿OPERAÇÃO LEI SECA — FALAS: FUNCIONÁRIA DO BAR
+============================================================
+
+Mulher, 25 a 45 anos, atende no balcão. Está com medo de se complicar. O tom muda a cada fala (veja a indicação).
+
+Como gravar:
+- Um arquivo por fala, com o nome indicado (.wav ou .mp3).
+- Salvar em 06_Audio\brutos\ (ou mandar para o Claude).
+- Falar exatamente o texto (é por ele que o site encontra a gravação).
+- ~0,5 s de silêncio no começo e no fim. O tempo é só referência.
+
+------------------------------------------------------------
+
+[ ]  1.  "Boa noite. Vai querer alguma coisa?"
+      Quando: Modo exploração · simpática
+      Tempo: 3–4 s     Arquivo: fala_atendente_01
+
+[ ]  2.  "Boa noite… pois não?"
+      Quando: O policial se identifica · apreensiva
+      Tempo: 2–3 s     Arquivo: fala_atendente_02
+
+[ ]  3.  "Tem umas maquininhas lá atrás… Eu só trabalho aqui no balcão."
+      Quando: Pergunta sobre os fundos · admite, com medo
+      Tempo: 5–7 s     Arquivo: fala_atendente_03
+
+[ ]  4.  "Lá é depósito. Não tem nada, não."
+      Quando: Pergunta sobre os fundos · nega, desviando o olhar
+      Tempo: 3–4 s     Arquivo: fala_atendente_04
+
+[ ]  5.  "Pode entrar. Eu não quero problema pra mim."
+      Quando: Autoriza a entrada
+      Tempo: 3–5 s     Arquivo: fala_atendente_05
+
+[ ]  6.  "Não posso. O dono não deixa ninguém entrar lá."
+      Quando: Não autoriza a entrada
+      Tempo: 4–5 s     Arquivo: fala_atendente_06
+
+[ ]  7.  "O dono só vem de manhã buscar o dinheiro. Eu tenho o telefone dele."
+      Quando: Dono ausente · explica
+      Tempo: 6–8 s     Arquivo: fala_atendente_07
+
+------------------------------------------------------------
+Total: 7 falas ([x] = já gravada).

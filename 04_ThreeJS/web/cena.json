@@ -1,0 +1,436 @@
+{
+ "gerado_em": "2026-10-06 14:33",
+ "qualidade": "padrao",
+ "lightmaps": {
+  "01_Rua_Estatico": {
+   "lm": "lightmaps/LM_01_Rua.png",
+   "max": 2.14493
+  },
+  "02_Vizinhos_Estatico": {
+   "lm": "lightmaps/LM_02_Vizinhos.png",
+   "max": 0.48025
+  },
+  "03_Bar_Estrutura_Estatico": {
+   "lm": "lightmaps/LM_03_Bar_Estrutura.png",
+   "max": 2.15172
+  },
+  "04_Bar_Moveis_Estatico": {
+   "lm": "lightmaps/LM_04_Bar_Moveis.png",
+   "max": 0.81193
+  },
+  "05_Salao_Jogos_Estatico": {
+   "lm": "lightmaps/LM_05_Salao_Jogos.png",
+   "max": 2.86895
+  },
+  "06_Escritorio_Depositos_Estatico": {
+   "lm": "lightmaps/LM_06_Escritorio_Depositos.png",
+   "max": 1.54174
+  },
+  "07_Fundos_Beco_Estatico": {
+   "lm": "lightmaps/LM_07_Fundos_Beco.png",
+   "max": 0.12574
+  },
+  "10_Viatura_Estatico": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  },
+  "Giroflex_Lente_1": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  },
+  "Giroflex_Lente_2": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  },
+  "Giroflex_Lente_3": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  },
+  "Giroflex_Lente_4": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  },
+  "Giroflex_Lente_5": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  },
+  "Giroflex_Lente_6": {
+   "lm": "lightmaps/LM_10_Viatura.png",
+   "max": 0.3253
+  }
+ },
+ "lightmap_ganho": 3.14159,
+ "exposicao": 1.0,
+ "env": "env/noite_1k.hdr",
+ "env_intensidade": 0.35,
+ "cameras": {
+  "Camera_Rua": {
+   "pos": [
+    1.5,
+    1.75,
+    7.5
+   ],
+   "alvo": [
+    -1.8241,
+    2.2486,
+    -1.9182
+   ]
+  },
+  "Camera_Bar": {
+   "pos": [
+    -1.9,
+    1.75,
+    -0.9
+   ],
+   "alvo": [
+    4.0166,
+    0.7929,
+    -8.9048
+   ]
+  },
+  "Camera_Corredor": {
+   "pos": [
+    -4.75,
+    1.75,
+    -5.2
+   ],
+   "alvo": [
+    -3.1207,
+    0.4169,
+    -14.9759
+   ]
+  },
+  "Camera_Salao": {
+   "pos": [
+    -3.0,
+    1.75,
+    -6.5
+   ],
+   "alvo": [
+    2.7024,
+    0.691,
+    -14.6462
+   ]
+  },
+  "Camera_Escritorio": {
+   "pos": [
+    2.95,
+    1.75,
+    -9.4
+   ],
+   "alvo": [
+    9.2267,
+    -0.0264,
+    -16.9794
+   ]
+  },
+  "Camera_Fundos": {
+   "pos": [
+    5.2,
+    1.75,
+    -16.4
+   ],
+   "alvo": [
+    -4.3219,
+    1.1808,
+    -13.3985
+   ]
+  }
+ },
+ "giroflex": {
+  "vermelho": [
+   4.95,
+   1.7204,
+   3.65
+  ],
+  "azul": [
+   4.95,
+   1.7204,
+   2.95
+  ]
+ },
+ "luz_dinamica": 0.9,
+ "pontos": {
+  "Maquina_01": {
+   "pos": [
+    -2.9,
+    0.15,
+    -12.6
+   ],
+   "rz": 0.0
+  },
+  "Maquina_02": {
+   "pos": [
+    -2.1,
+    0.15,
+    -12.6
+   ],
+   "rz": 0.0
+  },
+  "Maquina_03": {
+   "pos": [
+    -1.3,
+    0.15,
+    -12.6
+   ],
+   "rz": 0.0
+  },
+  "Maquina_04": {
+   "pos": [
+    -0.5,
+    0.15,
+    -12.6
+   ],
+   "rz": 0.0
+  },
+  "Maquina_05": {
+   "pos": [
+    0.3,
+    0.15,
+    -12.6
+   ],
+   "rz": 0.0
+  },
+  "Maquina_06": {
+   "pos": [
+    -3.1,
+    0.15,
+    -9.0
+   ],
+   "rz": 1.5708
+  },
+  "Maquina_07": {
+   "pos": [
+    -3.1,
+    0.15,
+    -9.9
+   ],
+   "rz": 1.5708
+  },
+  "Maquina_08": {
+   "pos": [
+    -3.1,
+    0.15,
+    -10.8
+   ],
+   "rz": 1.5708
+  },
+  "Inicio": {
+   "pos": [
+    3.0,
+    0.15,
+    1.2
+   ],
+   "rz": -2.6012
+  },
+  "Parceiro": {
+   "pos": [
+    4.2,
+    0.15,
+    1.0
+   ],
+   "rz": -2.1112
+  },
+  "Parceiro_Fundos": {
+   "pos": [
+    -7.0,
+    0.15,
+    -12.2
+   ],
+   "rz": -3.1416
+  },
+  "Parceiro_Salao": {
+   "pos": [
+    -2.6,
+    0.15,
+    -6.7
+   ],
+   "rz": 2.3562
+  },
+  "Atendente": {
+   "pos": [
+    4.6,
+    0.15,
+    -3.0
+   ],
+   "rz": -1.5708
+  },
+  "Seguranca": {
+   "pos": [
+    -2.9,
+    0.15,
+    -7.2
+   ],
+   "rz": -1.5708
+  },
+  "Responsavel": {
+   "pos": [
+    1.25,
+    0.15,
+    -10.9
+   ],
+   "rz": -1.5708
+  },
+  "Apostador_1": {
+   "pos": [
+    -2.1,
+    0.15,
+    -11.85
+   ],
+   "rz": -3.1416
+  },
+  "Apostador_2": {
+   "pos": [
+    -2.25,
+    0.15,
+    -9.9
+   ],
+   "rz": -1.5708
+  },
+  "Apostador_3": {
+   "pos": [
+    0.4,
+    0.15,
+    -6.75
+   ],
+   "rz": -3.1416
+  },
+  "Contencao_1": {
+   "pos": [
+    1.9,
+    0.15,
+    -8.6
+   ],
+   "rz": -1.5708
+  },
+  "Contencao_2": {
+   "pos": [
+    1.9,
+    0.15,
+    -9.3
+   ],
+   "rz": -1.5708
+  },
+  "Contencao_3": {
+   "pos": [
+    1.3,
+    0.15,
+    -12.3
+   ],
+   "rz": 0.0
+  },
+  "Contencao_4": {
+   "pos": [
+    -0.6,
+    0.15,
+    -12.0
+   ],
+   "rz": 0.0
+  },
+  "Contencao_5": {
+   "pos": [
+    -1.4,
+    0.15,
+    -6.6
+   ],
+   "rz": 0.0
+  },
+  "Contencao_6": {
+   "pos": [
+    -2.2,
+    0.15,
+    -8.2
+   ],
+   "rz": 0.0
+  },
+  "Fuga_1": {
+   "pos": [
+    1.85,
+    0.15,
+    -12.3
+   ],
+   "rz": 0.0
+  },
+  "Fuga_2": {
+   "pos": [
+    1.85,
+    0.15,
+    -13.7
+   ],
+   "rz": 0.0
+  },
+  "Fuga_3": {
+   "pos": [
+    -4.8,
+    0.15,
+    -15.1
+   ],
+   "rz": 0.0
+  },
+  "Fuga_4": {
+   "pos": [
+    -7.0,
+    0.15,
+    -15.1
+   ],
+   "rz": 0.0
+  },
+  "Fuga_5": {
+   "pos": [
+    -7.0,
+    0.15,
+    -1.0
+   ],
+   "rz": 0.0
+  },
+  "Fuga_6": {
+   "pos": [
+    -7.0,
+    0.15,
+    1.2
+   ],
+   "rz": 0.0
+  },
+  "Fuga_7": {
+   "pos": [
+    -16.0,
+    0.15,
+    1.2
+   ],
+   "rz": 0.0
+  },
+  "Porta_Salao": {
+   "pos": [
+    -4.75,
+    0.15,
+    -5.3
+   ],
+   "rz": -3.1416
+  },
+  "Porta_Escritorio": {
+   "pos": [
+    1.9,
+    0.15,
+    -9.85
+   ],
+   "rz": 1.5708
+  },
+  "Porta_Fundos": {
+   "pos": [
+    1.85,
+    0.15,
+    -12.4
+   ],
+   "rz": -3.1416
+  },
+  "Viatura_Preso": {
+   "pos": [
+    3.4,
+    0.15,
+    2.2
+   ],
+   "rz": 1.2793
+  }
+ },
+ "maquinas": 8
+}

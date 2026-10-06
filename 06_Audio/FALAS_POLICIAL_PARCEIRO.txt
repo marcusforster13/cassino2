@@ -1,0 +1,23 @@
+﻿OPERAÇÃO LEI SECA — FALAS: POLICIAL PARCEIRO
+============================================================
+
+Policial militar, colega de guarnição: calmo e direto.
+
+Como gravar:
+- Um arquivo por fala, com o nome indicado (.wav ou .mp3).
+- Salvar em 06_Audio\brutos\ (ou mandar para o Claude).
+- Falar exatamente o texto (é por ele que o site encontra a gravação).
+- ~0,5 s de silêncio no começo e no fim. O tempo é só referência.
+
+------------------------------------------------------------
+
+[ ]  1.  "Estou com você. É só dizer como vamos entrar."
+      Quando: Modo exploração e antes do planejamento
+      Tempo: 4–5 s     Arquivo: fala_parceiro_01
+
+[ ]  2.  "Positivo. Vou junto com você."
+      Quando: Depois de combinar a entrada
+      Tempo: 2–3 s     Arquivo: fala_parceiro_02
+
+------------------------------------------------------------
+Total: 2 falas ([x] = já gravada).

@@ -1,0 +1,100 @@
+{
+ "pm_parceiro": {
+  "arquivo": "personagens/pm_parceiro.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "andando",
+   "correndo"
+  ]
+ },
+ "pm_apoio": {
+  "arquivo": "personagens/pm_apoio.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "andando"
+  ]
+ },
+ "responsavel": {
+  "arquivo": "personagens/responsavel.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando",
+   "irritado"
+  ]
+ },
+ "atendente": {
+  "arquivo": "personagens/atendente.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando"
+  ]
+ },
+ "seguranca": {
+  "arquivo": "personagens/seguranca.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando",
+   "irritado",
+   "apontando"
+  ]
+ },
+ "apostador_a": {
+  "arquivo": "personagens/apostador_a.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando"
+  ]
+ },
+ "apostador_b": {
+  "arquivo": "personagens/apostador_b.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando"
+  ]
+ },
+ "apostador_c": {
+  "arquivo": "personagens/apostador_c.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando"
+  ]
+ }
+}

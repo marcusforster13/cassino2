@@ -1,0 +1,39 @@
+﻿OPERAÇÃO LEI SECA — FALAS: SALA DE OPERAÇÕES (RÁDIO)
+============================================================
+
+Voz de rádio da sala de operações: firme, curta, sem emoção. Homem ou mulher.
+
+Como gravar:
+- Um arquivo por fala, com o nome indicado (.wav ou .mp3).
+- Salvar em 06_Audio\brutos\ (ou mandar para o Claude).
+- Falar exatamente o texto (é por ele que o site encontra a gravação).
+- ~0,5 s de silêncio no começo e no fim. O tempo é só referência.
+
+------------------------------------------------------------
+
+[ ]  1.  "Viatura, denúncia anônima de jogo de azar nos fundos do bar da esquina. Verifique."
+      Quando: Início de cada ocorrência
+      Tempo: 6–8 s     Arquivo: fala_radio_01
+
+[ ]  2.  "Copiado. Viatura no local."
+      Quando: O policial informa a chegada
+      Tempo: 2–2 s     Arquivo: fala_radio_02
+
+[ ]  3.  "Copiado. Outra guarnição vai cobrir os fundos pelo beco lateral."
+      Quando: O policial pede apoio
+      Tempo: 4–6 s     Arquivo: fala_radio_03
+
+[ ]  4.  "Copiado. Registre a ocorrência; a denúncia será encaminhada à Polícia Civil."
+      Quando: O policial decide não entrar
+      Tempo: 5–6 s     Arquivo: fala_radio_04
+
+[ ]  5.  "Copiado. Ambulância a caminho. Preserve o local e aguarde o oficial de serviço."
+      Quando: O policial pede socorro médico
+      Tempo: 6–8 s     Arquivo: fala_radio_05
+
+[ ]  6.  "Copiado. Delegacia avisada da condução."
+      Quando: Fim da ocorrência
+      Tempo: 2–3 s     Arquivo: fala_radio_06
+
+------------------------------------------------------------
+Total: 6 falas ([x] = já gravada).
