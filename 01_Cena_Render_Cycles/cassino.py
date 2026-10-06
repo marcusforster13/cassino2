@@ -794,7 +794,7 @@ box("TV_Bar_Tela", (1.02, .01, .56), (0.5, 5.82, FZ + 2.2), M["tv"], C_BAR)
 box("Azulejo_Barra", (8.4, .02, 1.3), (0.0, 5.915, FZ + .65), M["azulejo"], C_BAR)
 box("Azulejo_Barra_Canto", (.6, .02, 1.3), (-5.6, 5.915, FZ + .65), M["azulejo"], C_BAR)
 box("Azulejo_Barra_Oeste", (.02, 5.7, 1.3), (-5.89, 3.0, FZ + .65), M["azulejo"], C_BAR)
-for i, (x, y, rz) in enumerate(((-.2, 2.0, .2), (-3.9, 2.2, -.15), (0.6, 4.4, .05))):
+for i, (x, y, rz) in enumerate(((-.7, 1.75, .2), (-3.9, 2.2, -.15), (0.15, 4.8, .05))):
     r = mesa("Mesa_Bar_%d" % i, x, y, rz, tam=(.75, .75), col=C_BAR); r.location.z = FZ
     for k, (dx, dy, a) in enumerate(((0, -.62, PI), (0, .62, 0), (-.62, 0, -PI / 2), (.62, 0, PI / 2))[:3 + (i % 2)]):
         c = cadeira("Cadeira_Bar_%d_%d" % (i, k), x + dx, y + dy, rz + a + rnd.uniform(-.2, .2), C_BAR); c.location.z = FZ
@@ -815,32 +815,53 @@ for k in range(5):
 
 # ------------------------------------------------------------------ 4. salao de jogos
 def maquina(i, x, y, olha, col=C_SAL, ligada=True):
-    """Caca-niquel de gabinete, no formato comum nas apreensoes (desenho proprio, sem marcas): gabinete preto com
-    frisos cromados, topo em arco iluminado, tela, noteiro a direita, mesa de botoes inclinada e bandeja de moedas."""
+    """Caca-niquel de gabinete, no formato comum nas apreensoes (desenho proprio, sem marcas): gabinete preto de cantos
+    arredondados com frisos cromados, topo em arco iluminado com aro, tela com moldura, noteiro, mesa de botoes redondos
+    iluminados, porta do cofre com fechadura e bandeja de moedas. Na frente, cadeira de escritorio."""
     n = "Caca_Niquel_%02d" % i; rz = math.atan2(olha[0], -olha[1]); r = vazio(n, (x, y, FZ), col, rz)
-    box(n + "_Gabinete", (.6, .55, 1.42), (0, 0, .71), M["gab"], col, r, bevel=.02)
+    RX = (PI / 2, 0, 0); INC = (.28, 0, 0)
+    box(n + "_Base", (.62, .56, .1), (0, 0, .05), M["plast"], col, r, bevel=.01)
+    box(n + "_Gabinete", (.6, .55, .72), (0, 0, .46), M["gab"], col, r, bevel=.03, seg=3)
+    box(n + "_Corpo_Tela", (.6, .5, .64), (0, .025, 1.12), M["gab"], col, r, bevel=.04, seg=3)
     for sx in (-1, 1):
-        box(n + "_Friso", (.022, .03, 1.4), (sx * .295, -.268, .7), M["cromo"], col, r)
-    box(n + "_Mesa_Botoes", (.6, .27, .07), (0, -.38, .84), M["gab"], col, r, rot=(.3, 0, 0), bevel=.012)
-    box(n + "_Bandeja", (.2, .1, .035), (.12, -.33, .6), M["cromo"], col, r)
-    box(n + "_Porta_Cofre", (.5, .012, .46), (0, -.277, .3), M["plast"], col, r)
-    box(n + "_Noteiro", (.11, .014, .26), (.2, -.279, 1.14), M["plast"], col, r)
-    cyl(n + "_Topo_Arco", .3, .3, .16, (0, -.14, 1.42), M["gab"], col, r, rot=(PI / 2, 0, 0), seg=28)
+        box(n + "_Friso", (.02, .03, 1.32), (sx * .3, -.262, .76), M["cromo"], col, r, bevel=.006)
+    box(n + "_Mesa_Botoes", (.6, .3, .08), (0, -.37, .83), M["gab"], col, r, rot=INC, bevel=.02)
+    box(n + "_Mesa_Borda", (.6, .02, .045), (0, -.515, .79), M["cromo"], col, r)
+    box(n + "_Moldura_Tela", (.47, .02, .41), (-.06, -.228, 1.13), M["plast"], col, r, bevel=.008)
+    box(n + "_Noteiro", (.1, .022, .25), (.215, -.228, 1.15), M["plast"], col, r, bevel=.006)
+    box(n + "_Noteiro_Boca", (.074, .01, .012), (.215, -.241, 1.19), M["preto_b"], col, r)
+    cyl(n + "_Fechadura", .012, .012, .012, (.215, -.24, 1.02), M["cromo"], col, r, rot=RX, seg=10)
+    box(n + "_Porta_Cofre", (.5, .012, .46), (0, -.277, .37), M["plast"], col, r, bevel=.006)
+    cyl(n + "_Fechadura_Cofre", .014, .014, .014, (.19, -.284, .52), M["cromo"], col, r, rot=RX, seg=10)
+    box(n + "_Bandeja", (.24, .1, .045), (-.02, -.325, .64), M["cromo"], col, r, bevel=.008)
+    box(n + "_Bandeja_Fundo", (.2, .07, .01), (-.02, -.325, .665), M["preto_b"], col, r)
+    cyl(n + "_Topo_Arco", .3, .3, .2, (0, -.115, 1.43), M["gab"], col, r, rot=RX, seg=32)
+    cyl(n + "_Topo_Aro", .306, .306, .028, (0, -.212, 1.43), M["cromo"], col, r, rot=RX, seg=32)
+    for k in range(6):                                           # grade de ventilacao na lateral
+        box(n + "_Grade", (.004, .2, .012), (.302, .05, .3 + k * .035), M["preto_b"], col, r)
     if ligada:
-        quadro(n + "_Tela", (-.075, -.279, 1.14), "-y", .38, .32, TELAS[i % 4], col, r)
-        box(n + "_Noteiro_Luz", (.07, .006, .016), (.2, -.288, 1.1), M["neon_v"], col, r)
-        cyl(n + "_Topo_Luz", .27, .27, .012, (0, -.226, 1.42), (M["neon_az"], M["neon_a"], M["neon_r"], M["neon_v"])[i % 4], col, r, rot=(PI / 2, 0, 0), seg=28)
-        texto(n + "_Topo_Texto", ("DIVIRTA-SE", "BOA SORTE", "PRÊMIOS", "JOGUE AQUI")[i % 4], .058, (0, -.236, 1.53), "-y", M["texto_br"], col, r)
-        for k in range(10):
-            box(n + "_Botao", (.036, .036, .014), (-.2 + (k % 5) * .075, -.42 + (k // 5) * .07, .845 + (k // 5) * .022), M["branco"] if k % 3 else M["neon_a"], col, r, rot=(.3, 0, 0))
-        # cadeira de escritorio na frente
-        box(n + "_Cadeira_Assento", (.46, .44, .07), (0, -.95, .47), M["preto"], col, r, bevel=.03)
-        box(n + "_Cadeira_Encosto", (.42, .06, .46), (0, -1.17, .82), M["preto"], col, r, rot=(.12, 0, 0), bevel=.03)
-        cyl(n + "_Cadeira_Coluna", .025, .025, .4, (0, -.95, .24), M["metal"], col, r, seg=8)
-        cyl(n + "_Cadeira_Base", .27, .27, .04, (0, -.95, .03), M["plast"], col, r, seg=5)
+        quadro(n + "_Tela", (-.06, -.2395, 1.13), "-y", .43, .37, TELAS[i % 4], col, r)
+        box(n + "_Noteiro_Luz", (.06, .006, .012), (.215, -.241, 1.225), M["neon_v"], col, r)
+        cyl(n + "_Topo_Luz", .272, .272, .012, (0, -.227, 1.43), (M["neon_az"], M["neon_a"], M["neon_r"], M["neon_v"])[i % 4], col, r, rot=RX, seg=32)
+        texto(n + "_Topo_Texto", ("DIVIRTA-SE", "BOA SORTE", "PRÊMIOS", "JOGUE AQUI")[i % 4], .058, (0, -.237, 1.54), "-y", M["texto_br"], col, r)
+        cores = (M["neon_r"], M["neon_a"], M["neon_v"], M["neon_az"], M["neon_a"])
+        for k in range(5):
+            cyl(n + "_Botao", .022, .022, .018, (-.23 + k * .082, -.41, .852), cores[k], col, r, rot=INC, seg=12)
+            cyl(n + "_Botao_Menor", .014, .014, .014, (-.23 + k * .082, -.335, .873), M["branco"], col, r, rot=INC, seg=10)
+        cyl(n + "_Botao_Gira", .036, .036, .022, (.215, -.39, .858), M["neon_r"], col, r, rot=INC, seg=16)
+        # cadeira de escritorio: assento, encosto curvo, coluna, base de cinco pes com rodizios
+        box(n + "_Cadeira_Assento", (.46, .44, .07), (0, -.95, .47), M["preto"], col, r, bevel=.03, seg=3)
+        for k in range(3):
+            box(n + "_Cadeira_Encosto", (.16, .05, .44), ((k - 1) * .15, -1.17 + abs(k - 1) * .025, .83), M["preto"], col, r, rot=(.1, 0, (1 - k) * .22), bevel=.02)
+        box(n + "_Cadeira_Haste_Encosto", (.06, .03, .3), (0, -1.16, .56), M["plast"], col, r)
+        cyl(n + "_Cadeira_Coluna", .025, .025, .36, (0, -.95, .26), M["metal"], col, r, seg=8)
+        for k in range(5):
+            a = 2 * PI * k / 5 + .3
+            box(n + "_Cadeira_Pe", (.27, .035, .03), (.13 * math.cos(a), -.95 + .13 * math.sin(a), .075), M["plast"], col, r, rot=(0, 0, a))
+            cyl(n + "_Cadeira_Rodizio", .025, .025, .03, (.26 * math.cos(a), -.95 + .26 * math.sin(a), .025), M["preto_b"], col, r, rot=(PI / 2, 0, a), seg=8)
         ponto("Maquina_%02d" % i, x, y, olha)
     else:
-        box(n + "_Tela_Apagada", (.38, .012, .32), (-.075, -.277, 1.14), M["preto_b"], col, r)
+        box(n + "_Tela_Apagada", (.43, .012, .37), (-.06, -.237, 1.13), M["preto_b"], col, r)
     return r
 
 MAQUINAS = [(-2.9 + k * .8, 12.6, (0, -1)) for k in range(5)] + [(-3.1, 9.0 + k * .9, (1, 0)) for k in range(3)]
@@ -1133,6 +1154,80 @@ luz("Luz_Sala_Sofa_Sul", "POINT", 80, "#ff7ab0", (9.4, 7.2, FZ + 2.6), C_LUZ, sh
 luz("Luz_Sala_Bar", "POINT", 80, "#7aa0ff", (7.3, 10.6, FZ + 2.5), C_LUZ, shadow_soft_size=.4)
 luz("Luz_Sala_Palco_Frente", "POINT", 160, "#ffd0f0", (9, 10.2, FZ + 2.7), C_LUZ, shadow_soft_size=.3)
 camera("Camera_Sala_Reservada", (6.7, 7.2, 1.75), (10.0, 11.6, 1.2), 14)
+
+
+# ================================================================== 6c. DESGASTE (manchas, tomadas, conduites, rodapes)
+def np_image_rgba(name, arr):
+    h, w, _ = arr.shape
+    img = bpy.data.images.new(name, w, h, alpha=True); img.pixels.foreach_set(np.flipud(arr).astype(np.float32).ravel()); img.pack()
+    return img
+def tex_mancha(seed, S=128):
+    """Mancha de umidade/sujeira: borroes escuros com borda suave e transparencia."""
+    r = np.random.default_rng(seed); yy, xx = np.mgrid[0:S, 0:S] / S; al = np.zeros((S, S))
+    for k in range(9):
+        cx, cy = r.uniform(.25, .75, 2); sx, sy = r.uniform(.05, .2, 2)
+        al += r.uniform(.3, .8) * np.exp(-(((xx - cx) / sx) ** 2 + ((yy - cy) / sy) ** 2))
+    al = np.clip(al, 0, 1) * np.clip(1 - ((xx - .5) ** 2 + (yy - .5) ** 2) * 4.2, 0, 1) * (.75 + .25 * r.random((S, S)))
+    out = np.zeros((S, S, 4)); out[..., :3] = np.array(hx(("#2a2218", "#1c1a16", "#33291a")[seed % 3])); out[..., 3] = np.clip(al * .8, 0, .8)
+    return out
+def mancha_mat(nome, img):
+    m = bpy.data.materials.new("Img_" + nome); nt = m.node_tree; b = nt.nodes.get("Principled BSDF")
+    t = nt.nodes.new("ShaderNodeTexImage"); t.image = img
+    nt.links.new(t.outputs["Color"], b.inputs["Base Color"]); nt.links.new(t.outputs["Alpha"], b.inputs["Alpha"]); b.inputs["Roughness"].default_value = .95
+    for attr, val in (("surface_render_method", "BLENDED"), ("blend_method", "BLEND")):
+        try: setattr(m, attr, val)
+        except Exception: pass
+    return m
+MANCHAS = [mancha_mat("Mancha_%d" % i, np_image_rgba("mancha_%d" % i, tex_mancha(40 + i))) for i in range(3)]
+def sujeira(nome, pos, virado, larg, alt, col, k=0):
+    """Mancha colada numa parede (virado = lado de quem ve), no piso ('cima') ou no teto ('baixo')."""
+    c = Vector(pos)
+    if virado in ("cima", "baixo"):
+        return adesivo(nome, lambda u, v: c + Vector(((u - .5) * larg, (v - .5) * alt, 0)), 1, 1, col, mat=MANCHAS[k % 3])
+    return quadro(nome, pos, virado, larg, alt, MANCHAS[k % 3], col)
+def tomada(nome, pos, virado, col, interruptor=False):
+    e = {"-y": (0, -1), "+y": (0, 1), "-x": (-1, 0), "+x": (1, 0)}[virado]; x, y, z = pos
+    box(nome, (.075, .012, .115) if e[0] == 0 else (.012, .075, .115), pos, M["branco"], col, bevel=.004)
+    box(nome + "_Miolo", (.03, .006, .03 if not interruptor else .05) if e[0] == 0 else (.006, .03, .03 if not interruptor else .05), (x + e[0] * .008, y + e[1] * .008, z), M["cortina_br"] if interruptor else M["preto_b"], col)
+def conduite(nome, pts, col, r=.011):
+    for a, b in zip(pts, pts[1:]): barra(nome, a, b, r, M["esquadria"], col, seg=6)
+    for q in pts[1:-1]: box(nome + "_Caixa", (.09, .09, .05), q, M["esquadria"], col)
+T = FZ + PD - .004
+# teto: infiltracoes
+sujeira("Mancha_Teto_Bar", (-4.6, 4.9, T), "baixo", 2.2, 1.6, C_BAR, 0); sujeira("Mancha_Teto_Bar_B", (2.2, .9, T), "baixo", 1.4, 1.1, C_BAR, 1)
+sujeira("Mancha_Teto_Salao", (1.6, 12.1, T), "baixo", 1.7, 1.5, C_SAL, 2); sujeira("Mancha_Teto_Salao_B", (-2.6, 7.0, T), "baixo", 1.3, 1.0, C_SAL, 0)
+sujeira("Mancha_Teto_Corredor", (-4.9, 7.4, T), "baixo", 1.5, 1.2, C_ESC, 1); sujeira("Mancha_Teto_Escritorio", (5.3, 12.3, T), "baixo", 1.2, 1.2, C_ESC, 2)
+# paredes: escorridos e sujeira
+sujeira("Mancha_Parede_Bar", (-3.4, 5.905, FZ + 2.35), "-y", 1.5, 1.2, C_BAR, 2); sujeira("Mancha_Parede_Bar_B", (5.895, .7, FZ + 1.9), "-x", 1.0, 1.6, C_BAR, 0)
+sujeira("Mancha_Parede_Salao", (2.418, 12.2, FZ + 2.0), "-x", 1.3, 1.7, C_SAL, 1); sujeira("Mancha_Parede_Salao_B", (.9, 6.08, FZ + .6), "+y", 1.6, 1.1, C_SAL, 0)
+sujeira("Mancha_Parede_Corredor", (-5.895, 7.3, FZ + 1.2), "+x", 1.4, 2.0, C_ESC, 2); sujeira("Mancha_Parede_Deposito", (-4.9, 12.895, FZ + 1.6), "-y", 1.8, 2.2, C_ESC, 1)
+sujeira("Mancha_Muro_Quintal", (2.0, 16.895, FZ + 1.0), "-y", 2.6, 1.8, C_FUN, 0); sujeira("Mancha_Muro_Beco", (-7.94, 6.5, FZ + 1.3), "+x", 2.4, 2.2, C_FUN, 2)
+sujeira("Mancha_Fachada", (4.6, -.17, FZ + .7), "-y", 1.8, 1.1, C_PRED, 1)
+# pisos: gordura, pisoteio
+P = FZ + .004
+sujeira("Mancha_Piso_Bar", (2.5, 3.0, P), "cima", 1.6, 2.6, C_BAR, 0); sujeira("Mancha_Piso_Bar_B", (-2.0, .8, P), "cima", 2.0, 1.2, C_BAR, 1)
+sujeira("Mancha_Piso_Salao", (-1.4, 11.5, P), "cima", 3.2, 1.2, C_SAL, 2); sujeira("Mancha_Piso_Corredor", (-4.75, 6.9, P), "cima", 1.2, 1.6, C_ESC, 0)
+sujeira("Mancha_Piso_Beco", (-7.0, 5.0, P), "cima", 1.5, 3.0, C_FUN, 1); sujeira("Mancha_Piso_Quintal", (1.9, 14.0, P), "cima", 2.0, 1.4, C_FUN, 2)
+sujeira("Mancha_Calcada", (-2.0, -.9, P), "cima", 2.4, 1.4, C_RUA, 0)
+# tomadas e interruptores
+tomada("Tomada_Bar", (1.0, 5.9, FZ + .35), "-y", C_BAR); tomada("Interruptor_Bar", (-.75, .115, FZ + 1.15), "+y", C_BAR, True)
+tomada("Interruptor_Privativo", (-4.05, 5.9, FZ + 1.15), "-y", C_BAR, True); tomada("Tomada_Bar_B", (-5.89, 4.9, FZ + 1.5), "+x", C_BAR)
+tomada("Interruptor_Salao", (-3.41, 6.35, FZ + 1.15), "+x", C_SAL, True); tomada("Tomada_Salao", (2.415, 6.9, FZ + .35), "-x", C_SAL)
+tomada("Interruptor_Escritorio", (2.59, 10.55, FZ + 1.15), "+x", C_ESC, True); tomada("Tomada_Escritorio", (5.89, 11.0, FZ + .35), "-x", C_ESC)
+tomada("Interruptor_Sala", (6.13, 8.1, FZ + 1.15), "+x", C_SEC, True)
+# conduites aparentes e regua de tomadas das maquinas
+conduite("Conduite_Bar", [(-5.86, 5.5, FZ + 1.5), (-5.86, 5.5, FZ + 2.85), (-2.5, 5.86, FZ + 2.85)], C_BAR)
+conduite("Conduite_Corredor", [(-3.6, 6.3, FZ + 1.15), (-3.6, 6.3, FZ + 2.8), (-3.6, 8.3, FZ + 2.8)], C_ESC)
+conduite("Conduite_Salao", [(-1.9, 6.1, FZ + 1.9), (-1.9, 6.1, FZ + 2.85), (2.3, 6.1, FZ + 2.85)], C_SAL)
+conduite("Conduite_Escritorio", [(2.62, 10.55, FZ + 1.2), (2.62, 10.55, FZ + 2.85), (2.62, 12.8, FZ + 2.85)], C_ESC)
+for k in range(2):
+    box("Regua_Tomadas", (.42, .06, .04), (-.9 + k * 1.6, 12.2, FZ + .02), M["branco"], C_SAL)
+    barra("Fio_Regua", (-.9 + k * 1.6, 12.2, FZ + .02), (-1.2 + k * 1.6, 12.75, FZ + .02), .007, M["preto"], C_SAL, seg=5)
+# rodapes
+for nome_, tam, pos, col_ in (("Rodape_Salao_L", (.02, 6.8, .1), (2.41, 9.5, FZ + .05), C_SAL), ("Rodape_Corredor", (.02, 2.3, .1), (-5.89, 7.25, FZ + .05), C_ESC),
+                              ("Rodape_Escritorio", (3.3, .02, .1), (4.25, 9.09, FZ + .05), C_ESC), ("Rodape_Bar_O", (.02, 5.8, .1), (-5.88, 3.0, FZ + .05), C_BAR),
+                              ("Rodape_Bar_L", (.02, 5.8, .1), (5.89, 3.0, FZ + .05), C_BAR)):
+    box(nome_, tam, pos, M["rodape"], col_)
 
 # ------------------------------------------------------------------ 7. interativos (portas e material a apreender)
 def porta(nome, dobradica, rz, m, larg=.88, rotulo=None, lado_rotulo=-1):

@@ -219,7 +219,7 @@ export async function iniciar(ctx) {
     const p = vozSintetica(texto, voz);
     const f = npc && { sintetica: true, ate: performance.now() + (p ? seg + 6 : seg) * 1000 };
     if (npc) npc.userData.fala = f;
-    await (p ? Promise.race([p, espera(seg * 1000 + 6000)]) : espera(seg * 1000));
+    await (p ? Promise.race([p, espera(seg * 1000 + 1500)]) : espera(seg * 1000));      // nao fica preso se a voz do navegador nao avisar o fim
     if (npc?.userData.fala === f) npc.userData.fala = null;
     await espera(350);
   }

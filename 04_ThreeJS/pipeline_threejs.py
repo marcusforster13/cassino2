@@ -172,7 +172,7 @@ SEM_LIGHTMAP = {"09_Luzes_Cameras", "99_Colisao", "10_Carro_Abordado", "08_Inter
 ALTA = "alta" in ARGS
 RES = {"03_Bar_Estrutura": 2048, "01_Rua": 1024, "10_Viatura": 1024, "11_Sala_Reservada": 1024, "02_Vizinhos": 1024, "04_Bar_Moveis": 1024, "05_Salao_Jogos": 1024, "06_Escritorio_Depositos": 1024, "07_Fundos_Beco": 1024}
 RES_PADRAO = 512
-AMOSTRAS = 24 if RAPIDO else (640 if ALTA else 256)
+AMOSTRAS = 24 if RAPIDO else (600 if ALTA else 256)      # alta: so mais amostras (lightmaps maiores pesam no Quest)
 scene.render.engine = "CYCLES"; scene.cycles.device = "CPU"
 scene.cycles.samples = AMOSTRAS; scene.cycles.use_denoising = False
 scene.cycles.sample_clamp_indirect = 3.0; scene.cycles.sample_clamp_direct = 12.0      # interior com lampadas pequenas: sem vaga-lumes
@@ -198,8 +198,6 @@ for col in bpy.data.collections:
     res = RES.get(col.name, RES_PADRAO)
     if RAPIDO:
         res //= 2
-    elif ALTA:
-        res *= 2
     for o in objs:
         me = o.data
         if not me.uv_layers:
