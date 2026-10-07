@@ -1,1 +1,44 @@
-{}
+{
+ "placas.glb": {
+  "substitui": [
+   "Bar_Letreiro_Fundo",
+   "Bar_Letreiro_Texto",
+   "Bar_Neon_Cerveja",
+   "Calendario",
+   "Calendario_Faixa",
+   "Cartaz_Bar_A",
+   "Cartaz_Bar_A_Texto",
+   "Cartaz_Bar_A_Texto.001",
+   "Cartaz_Bar_A_Texto.002",
+   "Cartaz_Bar_A_Texto.003",
+   "Cartaz_Bar_B",
+   "Cartaz_Bar_B_Texto",
+   "Cartaz_Bar_B_Texto.001",
+   "Cartaz_Bar_B_Texto.002",
+   "Cartaz_Bar_C",
+   "Cartaz_Bar_C_Texto",
+   "Cartaz_Bar_C_Texto.001",
+   "Cartaz_Bar_C_Texto.002",
+   "Cavalete_Bar",
+   "Cavalete_Bar_Texto",
+   "Cavalete_Bar_Texto.001",
+   "Cavalete_Bar_Texto.002",
+   "Cavalete_Bar_Texto.003",
+   "Extintor_Placa",
+   "Extintor_Placa_Texto",
+   "Loja_Fechada_Aluga",
+   "Loja_Fechada_Aluga_Texto",
+   "Lousa_Precos",
+   "Lousa_Precos_Texto",
+   "Lousa_Precos_Texto.001",
+   "Lousa_Precos_Texto.002",
+   "Lousa_Precos_Texto.003",
+   "Placa_Banheiro",
+   "Placa_Banheiro_Texto",
+   "Placar_Acumulado",
+   "Placar_Acumulado_Texto",
+   "Quadro_Chaves"
+  ],
+  "colecao": "04_Bar_Moveis"
+ }
+}

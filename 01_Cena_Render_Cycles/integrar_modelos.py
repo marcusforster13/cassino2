@@ -83,6 +83,13 @@ else:
                         slot.material = existente; religados += 1
         for m in [m for m in bpy.data.materials if m.users == 0 and m not in mats_antes]:
             bpy.data.materials.remove(m)
+        # materiais novos com textura de imagem: o prefixo Modelo_ faz o pipeline manter a UV do autor e reduzir a
+        # imagem para JPG de ate 1024 px (as placas vieram com 23 MB de texturas)
+        n_img = 0
+        for m in [m for m in bpy.data.materials if m not in mats_antes and m.node_tree]:
+            if any(n.type == "TEX_IMAGE" and n.image for n in m.node_tree.nodes) and not m.name.startswith(("Modelo_", "Img_")):
+                m.name = "Modelo_%s_%d" % (os.path.splitext(arq)[0], n_img); n_img += 1
+        if n_img: say("%d materiais com textura de imagem marcados como Modelo_" % n_img)
         estado[arq] = mtime
         say("%s -> substituiu '%s' com %d objetos em %s (%d materiais religados aos da cena)"
             % (arq, info["substitui"], len(novos), col.name, religados))
