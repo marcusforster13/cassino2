@@ -38,6 +38,7 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   const fala = {};                                       // trecho util de cada fala gravada (sem os silencios das pontas)
   const V = new THREE.Vector3();
   let ligado = false, mudo = false, gesto = false, pronto = false;
+  const iniciados = new Set();
 
   // botao visivel enquanto o navegador nao liberar o audio (regra dos navegadores: precisa de um clique)
   const bt = document.createElement('button'); bt.type = 'button'; bt.textContent = 'Ativar som';
@@ -63,7 +64,8 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   const todos = Object.entries(arquivos).filter(([n]) => DEF[n] || n.startsWith('fala_'));
   const curtos = todos.filter(([n]) => DEF[n]?.tipo === 'evento');
   await Promise.all(curtos.map(carregar));
-  Promise.all(todos.filter(x => !curtos.includes(x)).map(carregar)).then(() => { pronto = true; if (gesto) ligar(); });
+  pronto = true; if (gesto) ligar();
+  for (const x of todos.filter(x => !curtos.includes(x))) carregar(x).then(() => { if (gesto) ligar(); });      // cada ambiente entra quando chega
 
   // normaliza cada arquivo para ~-20 dB RMS sem passar de 0,95 de pico (arquivos baixos ficam audiveis)
   // falas gravadas: descobre onde a voz comeca e termina, para tocar sem os silencios das pontas
@@ -94,20 +96,21 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   }
 
   function ligar() {
-    if (ligado || !pronto) return; ligado = true;
-    listener.context.resume?.().catch(() => { });
-    bt.remove();
+    if (!pronto) return;
+    const primeira = !ligado; ligado = true;
+    if (primeira) { listener.context.resume?.().catch(() => { }); bt.remove(); }
+    // pode ser chamada varias vezes: cada som de ambiente comeca assim que o proprio arquivo termina de carregar
     for (const [n, b] of Object.entries(buffers)) {
       const d = DEF[n];
-      if (!d) continue;                               // falas: so tocam quando o treinamento chama
+      if (!d || iniciados.has(n)) continue;           // falas: so tocam quando o treinamento chama
       if (d.tipo === 'ambiente') {
         const a = new THREE.Audio(listener); a.setBuffer(b); a.setLoop(true); a.setVolume(0); a.play();
-        ambientes.push({ a, d, n });
+        ambientes.push({ a, d, n }); iniciados.add(n);
       } else if (d.tipo === 'posicional' && !d.soTreino) {
-        posicional(n, d);
+        posicional(n, d); iniciados.add(n);
       }
     }
-    agendarEsporadicos();
+    if (primeira) agendarEsporadicos();
   }
   function posicional(n, d) {
     const a = new THREE.PositionalAudio(listener); a.setBuffer(buffers[n]); a.setLoop(true);
