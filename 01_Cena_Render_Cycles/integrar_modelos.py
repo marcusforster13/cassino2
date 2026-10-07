@@ -89,6 +89,16 @@ else:
                     existente = bpy.data.materials.get(base(m.name))
                     if existente and existente not in (m,) and existente in mats_antes:
                         slot.material = existente; religados += 1
+        # "pai": {"prefixo": "I_Raiz"} - pecas que passam a ser filhas de um item interativo (ex.: fichas que o aluno
+        # apreende): vao para a colecao da raiz e mantem a posicao em que o autor deixou
+        bpy.context.view_layer.update()
+        for pref, nome_pai in info.get("pai", {}).items():
+            pai = bpy.data.objects.get(nome_pai)
+            if not pai: say("AVISO: raiz %s nao existe" % nome_pai); continue
+            for o in [o for o in novos if o.name.startswith(pref)]:
+                for c in list(o.users_collection): c.objects.unlink(o)
+                for c in pai.users_collection: c.objects.link(o)
+                o.parent = pai; o.matrix_parent_inverse = pai.matrix_world.inverted()
         for m in [m for m in bpy.data.materials if m.users == 0 and m not in mats_antes]:
             bpy.data.materials.remove(m)
         # materiais novos com textura de imagem: o prefixo Modelo_ faz o pipeline manter a UV do autor e reduzir a

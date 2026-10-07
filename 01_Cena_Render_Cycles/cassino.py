@@ -1022,8 +1022,11 @@ for sx in (-1, 1):
     for sy in (-1, 1):
         box("Sinuca_Pe", (.13, .13, .62), (SX + sx * .98, SY + sy * .5, FZ + .31), M["mad"], C_BAR)
         cyl("Sinuca_Cacapa", .055, .055, .02, (SX + sx * 1.0, SY + sy * .5, FZ + .845), M["preto_b"], C_BAR, seg=12)
-for k in range(7):
-    esfera("Sinuca_Bola", .027, (SX + rnd.uniform(-.8, .8), SY + rnd.uniform(-.38, .38), FZ + .867), M["bola_b"] if k == 0 else M["bola_a"], C_BAR, sub=1)
+# bolas da sinuca brasileira: uma de cada cor (branca, vermelha, amarela, verde, marrom, azul, rosa, preta), bem redondas
+CORES_BOLAS = (("Branca", "#efece2"), ("Vermelha", "#b01818"), ("Amarela", "#e0b416"), ("Verde", "#1c7a3a"), ("Marrom", "#6a3a1c"), ("Azul", "#1e4fb8"), ("Rosa", "#e07a9a"), ("Preta", "#121212"))
+POS_BOLAS = ((-.62, -.2), (.05, .12), (.42, -.3), (-.28, .3), (.7, .22), (-.85, .18), (.25, -.05), (.82, -.28))
+for (nome_, cor_), (dx, dy) in zip(CORES_BOLAS, POS_BOLAS):
+    esfera("Sinuca_Bola_" + nome_, .027, (SX + dx, SY + dy, FZ + .867), mat("Bola_Sinuca_" + nome_, cor_, .18), C_BAR, sub=3)
 barra("Sinuca_Taco", (SX - .7, SY - .5, FZ + .9), (SX + .6, SY - .62, FZ + .9), .012, M["mad_cl"], C_BAR, seg=6)
 box("Sinuca_Luminaria", (1.2, .3, .1), (SX, SY, FZ + 2.0), M["feltro"], C_BAR, bevel=.02)
 box("Sinuca_Luminaria_Luz", (1.1, .2, .02), (SX, SY, FZ + 1.945), M["lamp_q"], C_BAR)

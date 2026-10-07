@@ -43,13 +43,35 @@
  },
  "sinuca_relogio.glb": {
   "substitui": [
-   "Sinuca_*",
    "Relogio_*"
   ],
   "colecao": "04_Bar_Moveis",
   "ignorar": [
    "Cadeira_",
-   "Luz"
+   "Luz",
+   "Sinuca_",
+   "Sphere"
   ]
+ },
+ "poker.glb": {
+  "substitui": [
+   "Carta",
+   "Carta.001",
+   "Carta.002",
+   "Carta.003",
+   "Carta.004",
+   "Carta.005",
+   "Carta.006",
+   "Carta.007",
+   "Carta.008",
+   "I_Fichas_Pilha*"
+  ],
+  "colecao": "05_Salao_Jogos",
+  "ignorar": [
+   "Mesa_Carteado_"
+  ],
+  "pai": {
+   "Cylinder": "I_Fichas"
+  }
  }
 }
