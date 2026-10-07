@@ -866,11 +866,65 @@ for k in range(5):
         box("Caixa_Bebida", (.38, .38, .3), (2.85, 6.8 + k * .42, FZ + 1.95 + .15), M["papelao"], C_ESC)
 
 # ------------------------------------------------------------------ 4. salao de jogos
+def cadeira_maquina(n, r, col):
+    # cadeira de escritorio: assento, encosto curvo, coluna, base de cinco pes com rodizios
+    box(n + "_Cadeira_Assento", (.46, .44, .07), (0, -.95, .47), M["preto"], col, r, bevel=.03, seg=3)
+    for k in range(3):
+        box(n + "_Cadeira_Encosto", (.16, .05, .44), ((k - 1) * .15, -1.17 + abs(k - 1) * .025, .83), M["preto"], col, r, rot=(.1, 0, (1 - k) * .22), bevel=.02)
+    box(n + "_Cadeira_Haste_Encosto", (.06, .03, .3), (0, -1.16, .56), M["plast"], col, r)
+    cyl(n + "_Cadeira_Coluna", .025, .025, .36, (0, -.95, .26), M["metal"], col, r, seg=8)
+    for k in range(5):
+        a = 2 * PI * k / 5 + .3
+        box(n + "_Cadeira_Pe", (.27, .035, .03), (.13 * math.cos(a), -.95 + .13 * math.sin(a), .075), M["plast"], col, r, rot=(0, 0, a))
+        cyl(n + "_Cadeira_Rodizio", .025, .025, .03, (.26 * math.cos(a), -.95 + .26 * math.sin(a), .025), M["preto_b"], col, r, rot=(PI / 2, 0, a), seg=8)
+
+# ---- maquina do autor (modelos/maquina_caca_niquel.glb). Todas as maquinas da cena usam esse modelo; sem o arquivo, vale a do script.
+_maquina_autor = {}
+def pecas_maquina(n, r, col):
+    if "pecas" not in _maquina_autor:
+        _maquina_autor["pecas"] = []; cam = os.path.join(AQUI, "modelos", "maquina_caca_niquel.glb")
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); antes_m = set(bpy.data.materials)
+            bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]; k = 0; tris = 0
+            for mt in [m for m in bpy.data.materials if m not in antes_m]:
+                tex = [nd for nd in mt.node_tree.nodes if nd.type == "TEX_IMAGE" and nd.image] if mt.node_tree else []
+                if tex:                                                          # frente com imagem: mantem a UV e acende como tela
+                    mt.name = "Modelo_Maquina_%d" % k; k += 1
+                    bs = next(nd for nd in mt.node_tree.nodes if nd.type == "BSDF_PRINCIPLED")
+                    mt.node_tree.links.new(tex[0].outputs["Color"], bs.inputs["Emission Color"]); bs.inputs["Emission Strength"].default_value = 1.0
+                else:
+                    igual = bpy.data.materials.get(mt.name.split(".")[0])        # materiais que ja sao da cena (Cromado, Gabinete_Maquina...)
+                    if igual and igual in antes_m and not igual.name.startswith("Material"): mt.user_remap(igual)   # "Material.00X" sao as cores do autor (botoes acesos)
+                    else: mt.name = "Maquina_Autor_%d" % k; k += 1
+            for o in novos:
+                if o.type != "MESH": continue
+                mw = o.matrix_world.copy(); o.parent = None; o.data.transform(mw); o.matrix_world = Matrix.Identity(4)
+                xs = [v.co.x for v in o.data.vertices]
+                if abs((min(xs) + max(xs)) / 2) > .45: continue                  # pecas soltas ao lado da maquina, sobras da edicao
+                t = sum(len(pl.vertices) - 2 for pl in o.data.polygons)
+                if False:                                                     # sem reducao: os botoes redondos ficavam serrilhados
+                    d = o.modifiers.new("Reduzir", "DECIMATE"); d.ratio = .35
+                    me = bpy.data.meshes.new_from_object(o.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+                else: me = o.data.copy()
+                if not [m for m in me.materials if m]:
+                    me.materials.clear(); me.materials.append(M["preto_b"])
+                me.name = "Maquina_" + o.name.replace("Caca_Niquel_01_", ""); tris += sum(len(pl.vertices) - 2 for pl in me.polygons)
+                _maquina_autor["pecas"].append(me)
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+            say("maquina do autor: %d pecas, %d triangulos por maquina" % (len(_maquina_autor["pecas"]), tris))
+    for me in _maquina_autor["pecas"]:
+        ob = bpy.data.objects.new(n + "_" + me.name[8:], me); col.objects.link(ob); ob.parent = r
+    return bool(_maquina_autor["pecas"])
+
 def maquina(i, x, y, olha, col=C_SAL, ligada=True):
     """Caca-niquel de gabinete, no formato comum nas apreensoes (desenho proprio, sem marcas): gabinete preto de cantos
     arredondados com frisos cromados, topo em arco iluminado com aro, tela com moldura, noteiro, mesa de botoes redondos
     iluminados, porta do cofre com fechadura e bandeja de moedas. Na frente, cadeira de escritorio."""
     n = "Caca_Niquel_%02d" % i; rz = math.atan2(olha[0], -olha[1]); r = vazio(n, (x, y, FZ), col, rz)
+    if pecas_maquina(n, r, col):
+        if ligada: cadeira_maquina(n, r, col); ponto("Maquina_%02d" % i, x, y, olha)
+        return r
     RX = (PI / 2, 0, 0); INC = (.28, 0, 0)
     box(n + "_Base", (.62, .56, .1), (0, 0, .05), M["plast"], col, r, bevel=.01)
     box(n + "_Gabinete", (.6, .55, .72), (0, 0, .46), M["gab"], col, r, bevel=.03, seg=3)
@@ -901,16 +955,7 @@ def maquina(i, x, y, olha, col=C_SAL, ligada=True):
             cyl(n + "_Botao", .022, .022, .018, (-.23 + k * .082, -.41, .852), cores[k], col, r, rot=INC, seg=12)
             cyl(n + "_Botao_Menor", .014, .014, .014, (-.23 + k * .082, -.335, .873), M["branco"], col, r, rot=INC, seg=10)
         cyl(n + "_Botao_Gira", .036, .036, .022, (.215, -.39, .858), M["neon_r"], col, r, rot=INC, seg=16)
-        # cadeira de escritorio: assento, encosto curvo, coluna, base de cinco pes com rodizios
-        box(n + "_Cadeira_Assento", (.46, .44, .07), (0, -.95, .47), M["preto"], col, r, bevel=.03, seg=3)
-        for k in range(3):
-            box(n + "_Cadeira_Encosto", (.16, .05, .44), ((k - 1) * .15, -1.17 + abs(k - 1) * .025, .83), M["preto"], col, r, rot=(.1, 0, (1 - k) * .22), bevel=.02)
-        box(n + "_Cadeira_Haste_Encosto", (.06, .03, .3), (0, -1.16, .56), M["plast"], col, r)
-        cyl(n + "_Cadeira_Coluna", .025, .025, .36, (0, -.95, .26), M["metal"], col, r, seg=8)
-        for k in range(5):
-            a = 2 * PI * k / 5 + .3
-            box(n + "_Cadeira_Pe", (.27, .035, .03), (.13 * math.cos(a), -.95 + .13 * math.sin(a), .075), M["plast"], col, r, rot=(0, 0, a))
-            cyl(n + "_Cadeira_Rodizio", .025, .025, .03, (.26 * math.cos(a), -.95 + .26 * math.sin(a), .025), M["preto_b"], col, r, rot=(PI / 2, 0, a), seg=8)
+        cadeira_maquina(n, r, col)
         ponto("Maquina_%02d" % i, x, y, olha)
     else:
         box(n + "_Tela_Apagada", (.43, .012, .37), (-.06, -.237, 1.13), M["preto_b"], col, r)
