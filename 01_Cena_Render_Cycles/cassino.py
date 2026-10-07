@@ -770,7 +770,8 @@ box("Bar_Letreiro_Fundo", (5.0, .06, .7), (-2, -.14, 3.75), LETREIROS[0], C_PRED
 texto("Bar_Letreiro_Texto", "BAR E PETISCOS", .34, (-2, -.18, 3.75), "-y", M["texto_letreiro"], C_PRED)
 box("Bar_Porta_Enrolada", (2.1, .3, .3), (-2, .05, FZ + 2.75), M["porta_enrolar"], C_EST)        # porta de enrolar aberta (recolhida)
 box("Bar_Porta_Loja_Fechada", (3.0, .06, 2.7), (2.6, -.13, FZ + 1.35), M["porta_enrolar"], C_PRED)   # segunda porta, sempre fechada
-box("Bar_Rodape_Fachada", (12, .05, .5), (0, -.125, FZ + .25), M["rodape"], C_PRED)
+box("Bar_Rodape_Fachada", (2.9, .05, .5), (-4.55, -.125, FZ + .25), M["rodape"], C_PRED)      # o rodape para nos dois lados da entrada
+box("Bar_Rodape_Fachada", (7.0, .05, .5), (2.5, -.125, FZ + .25), M["rodape"], C_PRED)
 for x, y in ((-5.8, 5.7), (0, 12.7), (5.7, 5.7)):                                                 # cameras de seguranca (cupulas)
     cyl("Camera_Seguranca", .07, .05, .07, (x * .97, y, FZ + PD - .04), M["preto_b"], C_EST, seg=12)
 
@@ -1045,7 +1046,8 @@ ventilador("Ventilador_Bar_A", -3.6, 1.6, C_BAR); ventilador("Ventilador_Bar_B",
 cyl("Relogio_Parede", .16, .16, .03, (-1.6, 5.9, FZ + 2.3), M["branco"], C_BAR, rot=(PI / 2, 0, 0), seg=24)
 for a_, l_ in ((.5, .1), (2.2, .13)):
     barra("Relogio_Ponteiro", (-1.6, 5.88, FZ + 2.3), (-1.6 + l_ * math.sin(a_), 5.88, FZ + 2.3 + l_ * math.cos(a_)), .006, M["preto"], C_BAR, seg=4)
-box("Rodape_Bar", (11.8, .02, .1), (0, .115, FZ + .05), M["rodape"], C_BAR)
+box("Rodape_Bar", (2.8, .02, .1), (-4.5, .115, FZ + .05), M["rodape"], C_BAR)
+box("Rodape_Bar", (6.8, .02, .1), (2.5, .115, FZ + .05), M["rodape"], C_BAR)
 saco_lixo("Saco_Lixo_Bar", 5.5, .55, C_BAR)
 
 # ---- salao: placar, ar-condicionado, luminarias, extintor, lixeira, mesinhas
@@ -1205,10 +1207,9 @@ sujeira("Mancha_Muro_Quintal", (2.0, 16.895, FZ + 1.0), "-y", 2.6, 1.8, C_FUN, 0
 sujeira("Mancha_Fachada", (4.6, -.17, FZ + .7), "-y", 1.8, 1.1, C_PRED, 1)
 # pisos: gordura, pisoteio
 P = FZ + .004
-sujeira("Mancha_Piso_Bar", (2.5, 3.0, P), "cima", 1.6, 2.6, C_BAR, 0); sujeira("Mancha_Piso_Bar_B", (-2.0, .8, P), "cima", 2.0, 1.2, C_BAR, 1)
+sujeira("Mancha_Piso_Bar", (2.5, 3.0, P), "cima", 1.6, 2.6, C_BAR, 0)
 sujeira("Mancha_Piso_Salao", (-1.4, 11.5, P), "cima", 3.2, 1.2, C_SAL, 2); sujeira("Mancha_Piso_Corredor", (-4.75, 6.9, P), "cima", 1.2, 1.6, C_ESC, 0)
 sujeira("Mancha_Piso_Beco", (-7.0, 5.0, P), "cima", 1.5, 3.0, C_FUN, 1); sujeira("Mancha_Piso_Quintal", (1.9, 14.0, P), "cima", 2.0, 1.4, C_FUN, 2)
-sujeira("Mancha_Calcada", (-2.0, -.9, P), "cima", 2.4, 1.4, C_RUA, 0)
 # tomadas e interruptores
 tomada("Tomada_Bar", (1.0, 5.9, FZ + .35), "-y", C_BAR); tomada("Interruptor_Bar", (-.75, .115, FZ + 1.15), "+y", C_BAR, True)
 tomada("Interruptor_Privativo", (-4.05, 5.9, FZ + 1.15), "-y", C_BAR, True); tomada("Tomada_Bar_B", (-5.89, 4.9, FZ + 1.5), "+x", C_BAR)

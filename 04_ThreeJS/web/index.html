@@ -39,7 +39,7 @@
 <div id="loading"><div>Cassino clandestino<br>Carregando cena… <b id="pct">0%</b></div></div>
 
 <aside id="hud">
-  <p class="eyebrow">Treinamento VR · jogo de azar ilegal</p>
+  <p class="eyebrow">Treinamento VR · jogo de azar ilegal · <span id="versao"></span></p>
   <h1>Cassino clandestino</h1>
   <dl>
     <dt>Arrastar</dt><dd>olhar ao redor</dd>
@@ -85,7 +85,10 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const CFG = await fetch('cena.json').then(r => r.json());
+const VERSAO = '1007-1044';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+window.__versao = VERSAO; const V = '?v=' + VERSAO;
+$('versao').textContent = 'versão ' + VERSAO;
+const CFG = await fetch('cena.json' + V).then(r => r.json());
 
 /* ---------- renderer e cena ---------- */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -149,12 +152,12 @@ function alternarCeu() {
 
 /* ---------- carregar cena e lightmaps ---------- */
 const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
-const gltf = await new GLTFLoader().setDRACOLoader(draco).loadAsync('cena.glb', e => {
+const gltf = await new GLTFLoader().setDRACOLoader(draco).loadAsync('cena.glb' + V, e => {
   if (e.total) $('pct').textContent = Math.round(e.loaded / e.total * 100) + '%';
 });
 const tl = new THREE.TextureLoader(), lmTex = {};
 await Promise.all([...new Set(Object.values(CFG.lightmaps).map(v => v.lm))].map(f =>
-  tl.loadAsync(f).then(t => { t.flipY = false; t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; lmTex[f] = t; })));
+  tl.loadAsync(f + V).then(t => { t.flipY = false; t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; lmTex[f] = t; })));
 
 const lmMats = [], lentes = [], colisores = [];
 // objetos que se movem (carro abordado, equipamentos, personagens) nao tem lightmap: recebem uma luz ambiente
@@ -186,7 +189,7 @@ scene.add(gltf.scene);
 /* ---------- colisao: malha simplificada (uma caixa por parede/movel/carro), invisivel ---------- */
 let alvosCol = colisores, colisaoAtiva = true;
 try {
-  const col = await new GLTFLoader().loadAsync('colisao.glb');
+  const col = await new GLTFLoader().loadAsync('colisao.glb' + V);
   col.scene.updateMatrixWorld(true);
   const ms = []; col.scene.traverse(o => { if (o.isMesh) { o.geometry.computeBoundsTree(); ms.push(o); } });
   if (ms.length) alvosCol = ms;
@@ -383,6 +386,7 @@ for (const i of [0, 1]) {
   c.addEventListener('squeezestart', () => { window.__som?.desbloquear(); setLanterna(!lantOn, c); });
   rig.add(c); controles.push(c);
   const grip = renderer.xr.getControllerGrip(i); grip.add(cmf.createControllerModel(grip)); rig.add(grip); grips.push(grip);
+  grip.addEventListener('connected', e => { grip.userData.mao = e.data.handedness; });
 }
 function mirar(c) { mirarEm(ray, c); }
 function mirarEm(r, c) { tmpM.identity().extractRotation(c.matrixWorld); r.ray.origin.setFromMatrixPosition(c.matrixWorld); r.ray.direction.set(0, 0, -1).applyMatrix4(tmpM); return r; }
@@ -465,12 +469,12 @@ renderer.setAnimationLoop(() => {
 });
 
 /* ---------- sons (ambiente, posicionais, eventos) ---------- */
-import('./audio.js').then(m => m.iniciarAudio({ scene, camera, renderer })).catch(e => console.warn('Áudio não carregou:', e));
+import('./audio.js' + V).then(m => m.iniciarAudio({ scene, camera, renderer })).catch(e => console.warn('Áudio não carregou:', e));
 let somMudo = false;
 addEventListener('keydown', e => { if (e.code === 'KeyM' && window.__som) { somMudo = !somMudo; window.__som.mudo(somMudo); } });
 
 /* ---------- motor do treinamento (fase 2) ---------- */
-import('./treinamento.js').then(m => m.iniciar({
+import('./treinamento.js' + V).then(m => m.iniciar({
   scene, camera, rig, renderer, hotspots, setLanterna, cena: gltf.scene, CFG, iluminar, irPara, controles, grips,
   lanternaLigada: () => lantOn, colisao: () => alvosCol,
   setYaw: y => { yaw = y; pitch = 0; }

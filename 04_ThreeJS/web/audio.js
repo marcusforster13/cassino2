@@ -29,8 +29,9 @@ const DEF = {
 
 export async function iniciarAudio({ scene, camera, renderer }) {
   let manifest = [];
-  try { manifest = await fetch('audio/manifest.json').then(r => r.ok ? r.json() : []); } catch (e) { }
-  const arquivos = Object.fromEntries(manifest.map(f => [f.replace(/\.(mp3|ogg|wav)$/i, ''), 'audio/' + f]));
+  try { manifest = await fetch('audio/manifest.json?v=' + (window.__versao || '')).then(r => r.ok ? r.json() : []); } catch (e) { }
+  const VQ = '?v=' + (window.__versao || '');
+  const arquivos = Object.fromEntries(manifest.map(f => [f.replace(/\.(mp3|ogg|wav)$/i, ''), 'audio/' + f + VQ]));
   const listener = new THREE.AudioListener(); camera.add(listener);
   const loader = new THREE.AudioLoader(), buffers = {}, ganho = {}, ambientes = [], posicionais = [];
   const fala = {};                                       // trecho util de cada fala gravada (sem os silencios das pontas)

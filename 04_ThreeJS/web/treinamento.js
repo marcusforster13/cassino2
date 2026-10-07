@@ -14,7 +14,8 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 export async function iniciar(ctx) {
   const { scene, camera, rig, renderer, CFG } = ctx;
-  const CEN = await fetch('treinamento/cenario_cs_01.json').then(r => r.json());
+  const VQ = '?v=' + (window.__versao || '');
+  const CEN = await fetch('treinamento/cenario_cs_01.json' + VQ).then(r => r.json());
   const V = new THREE.Vector3(), V2 = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 
   /* ================= estado ================= */
@@ -248,9 +249,9 @@ export async function iniciar(ctx) {
   }
   /* personagens reais (Rocketbox, licenca MIT) convertidos para personagens/*.glb; se faltar, usa o boneco */
   const modelos = {};
-  const modelosProntos = fetch('personagens/manifest.json').then(r => r.ok ? r.json() : {}).then(man => {
+  const modelosProntos = fetch('personagens/manifest.json' + VQ).then(r => r.ok ? r.json() : {}).then(man => {
     const gl = new GLTFLoader();
-    return Promise.all(Object.entries(man).map(([papel, info]) => gl.loadAsync(info.arquivo).then(g => { modelos[papel] = g; }).catch(() => { })));
+    return Promise.all(Object.entries(man).map(([papel, info]) => gl.loadAsync(info.arquivo + VQ).then(g => { modelos[papel] = g; }).catch(() => { })));
   }).catch(() => { });
   function personagem(papel, nome, cor, altura, calca) {
     const base = modelos[papel];
@@ -606,8 +607,8 @@ export async function iniciar(ctx) {
   }
   let armaModelo = null, granadaModelo = null;
   const prep = raiz => { raiz.traverse(o => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(m => ctx.iluminar(m.clone())) : ctx.iluminar(o.material.clone()); }); return raiz; };
-  gl.loadAsync('modelos/arma.glb').then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); }).catch(() => { });
-  gl.loadAsync('modelos/granada.glb').then(g => { granadaModelo = prep(g.scene); }).catch(() => { });
+  gl.loadAsync('modelos/arma.glb' + VQ).then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); }).catch(() => { });
+  gl.loadAsync('modelos/granada.glb' + VQ).then(g => { granadaModelo = prep(g.scene); }).catch(() => { });
   const controle = mao => (ctx.controles || []).find(c => c.userData.mao === mao);
   function sacar(on) {
     S.armaNaMao = on;
@@ -618,9 +619,10 @@ export async function iniciar(ctx) {
   }
   // no Quest, o modelo do controle some enquanto a mao segura a arma ou a granada
   function mostrarControle(mao, visivel) {
-    const i = (ctx.controles || []).findIndex(c => c.userData.mao === mao); if (i < 0) return;
-    if (ctx.grips?.[i]) ctx.grips[i].visible = visivel;
-    if (mao === 'left' && ctx.controles[i].userData.linha) ctx.controles[i].userData.linha.visible = visivel;
+    const i = (ctx.controles || []).findIndex(c => c.userData.mao === mao);
+    for (const [k, g] of (ctx.grips || []).entries()) if (g.userData.mao === mao || (g.userData.mao === undefined && k === i)) g.visible = visivel;
+    if (i >= 0 && mao === 'left' && ctx.controles[i].userData.linha) ctx.controles[i].userData.linha.visible = visivel;
+    S.controles = { ...(S.controles || {}), [mao]: visivel };
   }
   // granada na mao esquerda: X pega; segurar o gatilho esquerdo puxa o pino; soltar no fim do movimento arremessa
   const granadaMao = new THREE.Group(); granadaMao.visible = false; let granadaMaoPronta = false;
@@ -796,7 +798,7 @@ export async function iniciar(ctx) {
   const armaNPC = new THREE.Group(), armaNPC2 = new THREE.Group(), armaSolta = new THREE.Group(), armaSolta2 = new THREE.Group();
   for (const g of [armaNPC, armaNPC2, armaSolta, armaSolta2]) { g.visible = false; scene.add(g); }
   for (const g of [armaNPC, armaNPC2]) { const f = criarFlash(.24); f.position.set(0, 0, -.2); g.add(f); g.userData.flash = f; }
-  gl.loadAsync('modelos/arma.glb').then(g => { for (const a of [armaNPC, armaNPC2, armaSolta, armaSolta2]) a.add(prep(g.scene.clone())); }).catch(() => { });
+  gl.loadAsync('modelos/arma.glb' + VQ).then(g => { for (const a of [armaNPC, armaNPC2, armaSolta, armaSolta2]) a.add(prep(g.scene.clone())); }).catch(() => { });
   const hitArma = new THREE.Mesh(new THREE.SphereGeometry(.2, 8, 6), invisivel()); hitArma.userData.item = 'arma'; armaSolta.add(hitArma);
   function armaChao(p, chave) {
     const g = chave === 'seguranca_2' ? armaSolta2 : armaSolta;
@@ -1172,7 +1174,7 @@ export async function iniciar(ctx) {
   function aviso() {
     fecharPaineis();
     menu.mostrar({
-      tag: 'Treinamento · conteúdo sensível', titulo: 'Cassino clandestino',
+      tag: 'Treinamento · conteúdo sensível · versão ' + (window.__versao || '?'), titulo: 'Cassino clandestino',
       texto: 'Você é policial militar e atende uma denúncia de jogo de azar nos fundos de um bar. O treinamento simula abordagem, uso da força (arma de fogo e granada de efeito moral), apreensão e condução.\n\n' +
         'Há cenas de confronto armado, com disparos e sangue.\n' +
         'Computador: clique fala/usa · T menu · Q saca ou guarda a arma (com ela na mão, o clique dispara) · R recarrega · E lança granada · K checklist.\n' +
@@ -1387,6 +1389,7 @@ export async function iniciar(ctx) {
     const agora = performance.now(), dt = Math.min(.1, (agora - ultimo) / 1000); ultimo = agora;
     if (agora > legAte) { leg.visible = false; const hl = document.getElementById('legendaHTML'); if (hl && !hl.hidden) hl.hidden = true; }
     efeitos(dt); if (S.ativo) confronto();
+    if (renderer.xr.isPresenting) for (const g of ctx.grips || []) { const quer = !((g.userData.mao === 'right' && S.armaNaMao) || (g.userData.mao === 'left' && S.granadaNaMao)); if (g.visible !== quer) g.visible = quer; }
     if (S.granadaNaMao && granadaMao.parent !== camera) {      // guarda as ultimas posicoes da mao para medir a velocidade do arremesso
       granadaMao.getWorldPosition(AM); amostras.push({ p: AM.clone(), t: agora }); if (amostras.length > 12) amostras.shift();
     }
