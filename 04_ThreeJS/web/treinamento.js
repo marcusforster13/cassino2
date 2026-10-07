@@ -459,27 +459,28 @@ export async function iniciar(ctx) {
     if (seg > .3 && !window.__som?.tocar('movel_arrastado', estante.col.position, false, { ini: .3, dur: 1.6 })) estouro(.5, 300, .35, .7);      // som de movel arrastado
     return suave(seg, e => { estante.o.position.z = a0 + (alvo - a0) * e; });
   }
-  function emboscada() {                                      // o homem sentado no sofa da sala reservada reage a abertura da estante
-    const n = npcs.atirador; if (!n || !A) return;
+  function emboscada() {                                      // o homem sentado no sofa da sala reservada reage assim que a estante abre (treino ou modo livre)
+    const n = npcs.atirador; if (!n) return;
     setTimeout(() => {
-      const u = n.userData; if (!A || A.fase === 'fim' || u.caido || u.atordoado > performance.now()) return;
-      u.ameaca = true; u.atira = true; u.proxTiro = performance.now() + 1400; u.semVirar = false; u.base = 'sentado_apontando'; animar(n, 'sentado_apontando', 1e6, .25);
+      const u = n.userData; if ((A && A.fase === 'fim') || u.caido || u.ameaca || u.atordoado > performance.now() || !u.sentado) return;
+      u.ameaca = true; u.atira = true; u.proxTiro = performance.now() + 600; u.semVirar = false; u.base = 'sentado_apontando'; animar(n, 'sentado_apontando', 1e6, .2);
       if (u.arma) u.arma.visible = true;
-      if (!S.variacao.decisao.includes('_porte')) S.variacao.decisao += '_porte';      // passa a haver preso por arma de fogo
+      if (S.ativo && A && !S.variacao.decisao.includes('_porte')) S.variacao.decisao += '_porte';      // passa a haver preso por arma de fogo
       sincAmeaca(); status();
       legenda('Alerta', 'Há um homem armado no sofá da sala e ele começou a atirar! Proteja-se na parede e reaja.', 6);
-    }, 900);
+    }, 300);
   }
   function usarEstante() {
     if (!estante) return;
     if (S.ativo && A) {
-      if (!A.entrou) return legenda('Depósito', 'Depósito do bar: engradados, caixas e uma estante.', 4);
       if (!A.salaSecreta) {
+        // o deposito e a sala sao compartimentos fechados: mexer neles antes de uma entrada legitima e entrada irregular
+        if (!A.entrada) { registrar('entrada_ilegal', 'sala reservada'); if (S.modo === 'treino') legenda('Instrutor', 'Você entrou em área fechada sem decidir a entrada de forma legítima (consentimento, mandado ou flagrante).', 7); }
         A.salaSecreta = true; registrar('localizar_sala_secreta'); moverEstante(true); S.variacao.sala = 'aberta'; emboscada();
         return legenda('Vistoria', 'As marcas no piso e a luz por baixo indicam uma passagem. A estante corre para o lado: há uma sala escondida.', 7);
       }
     }
-    moverEstante(!estante.aberta);
+    const abrir = !estante.aberta; moverEstante(abrir); if (abrir) emboscada();
   }
 
   const ITENS = { dinheiro_mesa: 'I_Dinheiro_Mesa', fichas: 'I_Fichas', caderno_apostas: 'I_Caderno_Apostas', notebook: 'I_Notebook', celular: 'I_Celular',
@@ -838,7 +839,8 @@ export async function iniciar(ctx) {
   function policialAtingido() {
     S.vida = (S.vida ?? 3) - 1; veuVermelho(); registrar('atingido');
     if (S.vida <= 0) {
-      legenda('Instrutor', 'Você foi gravemente ferido. O parceiro e o apoio assumem. Ocorrência encerrada.', 7);
+      legenda('Instrutor', S.ativo ? 'Você foi gravemente ferido. O parceiro e o apoio assumem. Ocorrência encerrada.' : 'Você foi gravemente ferido. No modo livre nada é registrado.', 7);
+      if (!S.ativo) S.vida = 3;
       for (const n of ameacando()) renderNPC(n, true);
       setTimeout(finalizar, 4500);
     } else legenda('Alerta', `Você foi atingido (${S.vida} de 3). Proteja-se atrás da parede e reaja.`, 4);
@@ -852,7 +854,7 @@ export async function iniciar(ctx) {
     rayG.set(de, GV.normalize()); rayG.far = 30; const h = rayG.intersectObjects(ctx.colisao(), false)[0]; if (h?.face) marcar(h);
   }
   function confronto() {                                      // agressores que atiram: um disparo a cada 1,5 a 2,8 s
-    if (!A || A.fase === 'fim') return; const agora = performance.now();
+    if (A && A.fase === 'fim') return; const agora = performance.now();
     for (const n of ameacando()) {
       const u = n.userData; if (!u.atira || u.destino || u.rota?.length || u.atordoado > agora) continue;
       if (agora > u.proxTiro) { u.proxTiro = agora + 1500 + Math.random() * 1300; tiroInimigo(n); }
@@ -1305,7 +1307,7 @@ export async function iniciar(ctx) {
 
   /* ================= modo exploracao (antes de iniciar): cena livre, personagens respondem ================= */
   function cenaExploracao() {
-    S.variacao = derivar({ ...CEN.historia[0].variacao }); criarNPCs(S.variacao);
+    S.variacao = derivar({ ...CEN.historia[0].variacao }); criarNPCs(S.variacao); S.vida = 3; S.municao = CARREGADOR; limparSangue();
     for (const it of Object.values(itens)) it.o.visible = true;
     lacres.visible = false; moverEstante(false, .1); moverPorta('salao', 1, .1); moverPorta('escritorio', 1, .1); moverPorta('fundos', 0, .1);
   }
@@ -1410,7 +1412,7 @@ export async function iniciar(ctx) {
   function quadro() {
     const agora = performance.now(), dt = Math.min(.1, (agora - ultimo) / 1000); ultimo = agora;
     if (agora > legAte) { leg.visible = false; const hl = document.getElementById('legendaHTML'); if (hl && !hl.hidden) hl.hidden = true; }
-    efeitos(dt); if (S.ativo) confronto();
+    efeitos(dt); confronto();
     if (renderer.xr.isPresenting) for (const g of ctx.grips || []) { const quer = !((g.userData.mao === 'right' && S.armaNaMao) || (g.userData.mao === 'left' && S.granadaNaMao)); if (g.visible !== quer) g.visible = quer; }
     if (S.granadaNaMao && granadaMao.parent !== camera) {      // guarda as ultimas posicoes da mao para medir a velocidade do arremesso
       granadaMao.getWorldPosition(AM); amostras.push({ p: AM.clone(), t: agora }); if (amostras.length > 12) amostras.shift();
