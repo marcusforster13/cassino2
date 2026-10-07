@@ -630,6 +630,7 @@ C_RUA = collection("01_Rua"); C_PRED = collection("02_Vizinhos"); C_EST = collec
 C_BAR = collection("04_Bar_Moveis"); C_SAL = collection("05_Salao_Jogos"); C_ESC = collection("06_Escritorio_Depositos")
 C_FUN = collection("07_Fundos_Beco"); C_INT = collection("08_Interativos"); C_LUZ = collection("09_Luzes_Cameras")
 C_VEIC = collection("10_Viatura"); C_CAD = collection("12_Cadeiras_Plastico")
+C_GAR = collection("13_Garrafas"); C_GAR_E = collection("14_Garrafas_Escuro")      # sem lightmap: bar (claro) e demais comodos (escuros)
 C_VEG = C_RUA; C_BLITZ = C_BAR
 
 def parede(nome, a, b, m, col, vaos=(), h=PD, t=.2, z0=FZ, ext=None):
@@ -712,6 +713,54 @@ def cadeira(nome, x, y, rz, col=None):
     col = col or C_BAR
     if col is C_BAR: col = C_CAD      # cadeiras do bar ficam fora do lightmap: as ripas finas saiam com faixas pretas no site
     return modelo_ph(nome, "plastic_monobloc_chair_01", (x, y, 0), rz, col, max_tris=4000) or _cadeira_de_caixas(nome, x, y, rz, col)
+
+# ---- garrafa do autor (modelos/garrafa.glb: corpo e tampa em pecas separadas). Todas as garrafas da cena usam esse modelo:
+#      vidro na cor de cada garrafa (verde, ambar, transparente) e tampa de metal. Sem o arquivo, vale a garrafa torneada.
+_garrafa = {}; _rg = random.Random(7)
+def malha_garrafa(m):
+    if "base" not in _garrafa:
+        _garrafa["base"] = None; cam = os.path.join(AQUI, "modelos", "garrafa.glb")
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]; pecas = [o for o in novos if o.type == "MESH"]
+            for o in pecas:
+                mw = o.matrix_world.copy(); o.parent = None; o.data.transform(mw); o.matrix_world = Matrix.Identity(4)
+            pecas.sort(key=lambda o: min(v.co.z for v in o.data.vertices))      # o corpo primeiro; a tampa e a peca mais alta
+            malhas = []
+            for i, o in enumerate(pecas):                                       # sao ~80 copias: reduz para ~300 triangulos por garrafa
+                tris = sum(len(pl.vertices) - 2 for pl in o.data.polygons); lim = (240, 60)[min(i, 1)]
+                if tris > lim:
+                    d = o.modifiers.new("Reduzir", "DECIMATE"); d.ratio = lim / tris
+                    malhas.append(bpy.data.meshes.new_from_object(o.evaluated_get(bpy.context.evaluated_depsgraph_get())))
+                else: malhas.append(o.data.copy())
+            bm = bmesh.new()
+            for i, me in enumerate(malhas):                                     # material 0 = vidro (corpo), material 1 = metal (tampa)
+                n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table()
+                for f in bm.faces[n0:]: f.material_index = min(i, 1); f.smooth = True
+            vs = [v.co for v in bm.verts]
+            cx = (min(v.x for v in vs) + max(v.x for v in vs)) / 2; cy = (min(v.y for v in vs) + max(v.y for v in vs)) / 2; z0 = min(v.z for v in vs)
+            bmesh.ops.translate(bm, verts=bm.verts, vec=(-cx, -cy, -z0))        # base no chao, centrada
+            base = bpy.data.meshes.new("Garrafa_Autor"); bm.to_mesh(base); bm.free(); _garrafa["base"] = base
+            say("garrafa do autor: %d pecas, %d triangulos depois da reducao, %.1f cm de altura" % (len(pecas), sum(len(pl.vertices) - 2 for pl in base.polygons), max(v.co.z for v in base.vertices) * 100))
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    if not _garrafa["base"]: return None
+    if m.name not in _garrafa:
+        if "tampa" not in M: M["tampa"] = mat("Tampa_Metal", "#b9bcc0", .3, .4)   # metal moderado: metal puro fica preto no site, a noite
+        me = _garrafa["base"].copy(); me.name = "Garrafa_" + m.name; me.materials.append(m); me.materials.append(M["tampa"]); _garrafa[m.name] = me
+    return _garrafa[m.name]
+
+_torno_original = torno
+def torno(name, perfil, mats, col, parent=None, pos=(0, 0, 0), rot=(0, 0, 0), seg=32, idx=None):
+    """Igual ao torno original; as pecas com 'Garrafa' no nome viram a garrafa do autor, quando o arquivo existe."""
+    if "Garrafa" in name and not isinstance(mats, (list, tuple)):
+        me = malha_garrafa(mats)
+        if me:
+            if col is not C_INT: col = C_GAR if col is C_BAR else C_GAR_E      # as da estante falsa continuam no item interativo
+            ob = bpy.data.objects.new(name, me); col.objects.link(ob)
+            if parent: ob.parent = parent
+            ob.location = pos; ob.rotation_euler = (0, 0, _rg.uniform(0, 2 * PI))
+            return ob
+    return _torno_original(name, perfil, mats, col, parent, pos, rot, seg, idx)
 
 def ponto(nome, x, y, olha=(0, -1), z=FZ):
     """Ponto usado pelo site (personagens, maquinas, rotas): vazio P_<nome>; rz = para onde a pessoa olha."""

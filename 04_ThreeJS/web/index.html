@@ -85,7 +85,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1007-1502';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1007-1605';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -177,8 +177,8 @@ const iluminar = m => { if (m.metalness > .25) m.metalness = .25;      // metal 
   if (!m.lightMap) { m.lightMap = lmBranco; m.lightMapIntensity = CFG.luz_dinamica ?? 1.1; } return m; };
 gltf.scene.traverse(o => {
   if (!o.isMesh) return;
-  let p = o, lm = null, estatico = false;
-  while (p) { lm = lm || CFG.lightmaps[p.name]; estatico = estatico || /_Estatico/.test(p.name); p = p.parent; }
+  let p = o, lm = null, estatico = false, escuro = false;
+  while (p) { lm = lm || CFG.lightmaps[p.name]; estatico = estatico || /_Estatico/.test(p.name); escuro = escuro || /Garrafas_Escuro/.test(p.name); p = p.parent; }
   const conv = m0 => {
     const m = m0.clone();
     if (/Mancha/.test(m.name)) { m.opacity = .32; m.transparent = true; m.depthWrite = false; }      // manchas de umidade: discretas
@@ -187,7 +187,7 @@ gltf.scene.traverse(o => {
     if (lm && o.geometry.attributes.uv1) {
       m.lightMap = lmTex[lm.lm]; m.userData.lmBase = lm.max * CFG.lightmap_ganho;
       m.lightMapIntensity = m.userData.lmBase; lmMats.push(m);
-    } else if (!lm) iluminar(m);
+    } else if (!lm) { iluminar(m); if (escuro) m.lightMapIntensity *= .4; }      // pecas sem lightmap em comodo escuro: menos luz ambiente
     return m;
   };
   o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
