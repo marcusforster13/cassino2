@@ -4,7 +4,7 @@
 
   Controles
     Computador: clique = falar / usar / botoes   T = menu   K = checklist   Q = saca ou guarda a arma (clique dispara)   R = recarrega   E = granada
-    Quest:      gatilho = falar / usar / botoes / teleporte   A = saca a arma (gatilho direito dispara; apertar o analogico direito recarrega)   X = granada
+    Quest:      gatilho = falar / usar / botoes / teleporte   A = saca a arma (gatilho direito dispara; apertar o analogico direito recarrega)   X = pega a granada na mao esquerda; segurar e soltar o gatilho esquerdo arremessa
                 grip (qualquer mao) = lanterna   botao Y ou B = menu do treinamento
   Variacoes forcadas pela URL (para o instrutor):  ?v=indicios:visiveis,seguranca:armado_reage,fuga:tentam_sair
 */
@@ -614,7 +614,34 @@ export async function iniciar(ctx) {
     const pai = renderer.xr.isPresenting ? (controle('right') || ctx.controles?.[0] || camera) : camera;
     pai.add(arma);
     if (pai === camera) { arma.position.set(.17, -.13, -.38); arma.rotation.set(0, 0, 0); } else { arma.position.set(0, 0, -.02); arma.rotation.set(0, 0, 0); }      // no Quest o cano coincide com o raio do controle
-    arma.visible = on; status();
+    arma.visible = on; mostrarControle('right', !on); status();
+  }
+  // no Quest, o modelo do controle some enquanto a mao segura a arma ou a granada
+  function mostrarControle(mao, visivel) {
+    const i = (ctx.controles || []).findIndex(c => c.userData.mao === mao); if (i < 0) return;
+    if (ctx.grips?.[i]) ctx.grips[i].visible = visivel;
+    if (mao === 'left' && ctx.controles[i].userData.linha) ctx.controles[i].userData.linha.visible = visivel;
+  }
+  // granada na mao esquerda: X pega; segurar o gatilho esquerdo puxa o pino; soltar no fim do movimento arremessa
+  const granadaMao = new THREE.Group(); granadaMao.visible = false; let granadaMaoPronta = false;
+  const amostras = [], AM = new THREE.Vector3();
+  function pegarGranada(on) {
+    if (on && S.ativo && S.granadas <= 0) return legenda('Equipamento', 'Não há mais granadas.', 2.5);
+    if (on && !granadaModelo) return;
+    if (!granadaMaoPronta && granadaModelo) { granadaMao.add(granadaModelo.clone()); granadaMaoPronta = true; }
+    const pai = renderer.xr.isPresenting ? (controle('left') || camera) : camera;
+    pai.add(granadaMao); granadaMao.position.set(pai === camera ? -.2 : 0, pai === camera ? -.2 : -.01, pai === camera ? -.45 : -.04);
+    S.granadaNaMao = on; S.granadaArmada = false; granadaMao.visible = on; amostras.length = 0; mostrarControle('left', !on); status();
+    if (on) dica('Granada na mão esquerda. Segure o gatilho esquerdo, faça o movimento e solte para arremessar.', 6);
+  }
+  function soltar(c) {                                        // gatilho solto
+    if (!S.granadaNaMao || !S.granadaArmada || c?.userData.mao !== 'left') return;
+    const agora = performance.now(), rec = amostras.filter(a => agora - a.t < 130);
+    const v = new THREE.Vector3();
+    if (rec.length >= 2) { const a = rec[0], b = rec[rec.length - 1]; v.copy(b.p).sub(a.p).multiplyScalar(1000 / Math.max(16, b.t - a.t)); }
+    v.multiplyScalar(1.35); if (v.length() > 15) v.setLength(15);            // um pouco de ajuda: sem o peso real, o braco freia antes
+    granadaMao.getWorldPosition(AM);
+    pegarGranada(false); lancarGranada(AM.clone(), v.clone().normalize(), v);
   }
   // marcas de tiro nas paredes
   const marcas = [], geoMarca = new THREE.CircleGeometry(.014, 10), matMarca = new THREE.MeshBasicMaterial({ color: 0x050505 });
@@ -679,11 +706,11 @@ export async function iniciar(ctx) {
   // granada de efeito moral: arremesso em arco, quique no chao e nas paredes, estouro com clarao depois de 2,2 s
   const granadas = [], rayG = new THREE.Raycaster(); rayG.firstHitOnly = true;
   const GV = new THREE.Vector3(), GN = new THREE.Vector3(), GT = new THREE.Vector3();
-  function lancarGranada(origem, dir) {
+  function lancarGranada(origem, dir, vel = null) {          // vel = velocidade real da mao (Quest); sem ela, arremesso padrao
     if (!granadaModelo) return;
     if (S.ativo && S.granadas <= 0) return legenda('Equipamento', 'Não há mais granadas.', 2.5);
-    const g = granadaModelo.clone(); g.position.copy(origem).addScaledVector(dir, .25); scene.add(g);
-    granadas.push({ g, v: dir.clone().multiplyScalar(8).add(new THREE.Vector3(0, 2.4, 0)), t: 0, parada: false, giro: 9 + Math.random() * 6 });
+    const g = granadaModelo.clone(); g.position.copy(origem); if (!vel) g.position.addScaledVector(dir, .25); scene.add(g);
+    granadas.push({ g, v: vel ? vel.clone() : dir.clone().multiplyScalar(8).add(new THREE.Vector3(0, 2.4, 0)), t: 0, parada: false, giro: 9 + Math.random() * 6 });
     if (S.ativo) { S.granadas--; status(); }
   }
   function fisicaGranadas(dt) {
@@ -897,7 +924,7 @@ export async function iniciar(ctx) {
   function novaOcorrencia(v, cap) {
     S.variacao = v; S.feitos = new Map(); S.granadas = 2; S.vida = 3; S.municao = CARREGADOR; S.recarregando = false; limparSangue();
     A = { n: HIST.length + 1, fase: 'chegada', titulo: cap?.titulo || `Ocorrência ${HIST.length + 1}` };
-    criarNPCs(v); sacar(false);
+    criarNPCs(v); sacar(false); pegarGranada(false);
     for (const it of Object.values(itens)) it.o.visible = true;
     lacres.visible = false; moverEstante(false, .1);
     moverPorta('salao', v.indicios === 'visiveis' ? .13 : 0, .1); moverPorta('escritorio', 0, .1); moverPorta('fundos', 0, .1);
@@ -1149,7 +1176,7 @@ export async function iniciar(ctx) {
       texto: 'Você é policial militar e atende uma denúncia de jogo de azar nos fundos de um bar. O treinamento simula abordagem, uso da força (arma de fogo e granada de efeito moral), apreensão e condução.\n\n' +
         'Há cenas de confronto armado, com disparos e sangue.\n' +
         'Computador: clique fala/usa · T menu · Q saca ou guarda a arma (com ela na mão, o clique dispara) · R recarrega · E lança granada · K checklist.\n' +
-        'Quest: gatilho usa/clica · A saca a arma (gatilho direito dispara, apertar o analógico direito recarrega) · X lança granada · Y ou B abre o menu · grip liga a lanterna.',
+        'Quest: gatilho usa/clica · A saca a arma (gatilho direito dispara, apertar o analógico direito recarrega) · X pega a granada na mão esquerda (segure o gatilho esquerdo, faça o movimento e solte) · Y ou B abre o menu · grip liga a lanterna.',
       botoes: [
         { label: 'Modo história (4 ocorrências guiadas)', acao: () => comecar('historia') },
         { label: 'Modo treino (objetivos e dicas na tela)', acao: () => comecar('treino') },
@@ -1195,7 +1222,7 @@ export async function iniciar(ctx) {
     if (A?.entrou && !A.decidiu) b.push({ label: 'Rádio: enquadramento e condução (encerrar a ocorrência)', acao: decidirFinal });
     if (S.armaNaMao) b.push({ label: `Recarregar a arma (${S.municao ?? CARREGADOR}/${CARREGADOR})`, acao: () => { menu.esconder(); recarregar(); } });
     b.push({ label: S.armaNaMao ? 'Guardar a arma no coldre' : 'Sacar a arma', acao: () => { sacar(!S.armaNaMao); menu.esconder(); } },
-      { label: `Lançar granada de efeito moral (${S.granadas ?? 2})`, acao: () => { menu.esconder(); arremessar(); } },
+      { label: renderer.xr.isPresenting ? (S.granadaNaMao ? 'Guardar a granada' : `Pegar granada de efeito moral (${S.granadas ?? 2})`) : `Lançar granada de efeito moral (${S.granadas ?? 2})`, acao: () => { menu.esconder(); renderer.xr.isPresenting ? pegarGranada(!S.granadaNaMao) : arremessar(); } },
       { label: 'Checklist desta ocorrência', acao: abrirChecklist },
       { label: 'Lanterna (liga/desliga)', acao: () => { ctx.setLanterna(!ctx.lanternaLigada(), camera); menu.esconder(); } },
       { label: 'Encerrar e ver o relatório', cor: 'rgba(240,80,64,.22)', acao: encerrar },
@@ -1278,6 +1305,7 @@ export async function iniciar(ctx) {
   /* ================= clique / gatilho ================= */
   function usar(ray, c) {
     for (const p of paineis) if (p.clique(ray)) return true;
+    if (S.granadaNaMao && c?.userData.mao === 'left') { S.granadaArmada = true; window.__som?.tocar('algemas', null, false, { vol: .3 }); legenda('Granada', 'Pino puxado. Solte o gatilho no fim do movimento.', 2.5); return true; }
     if (S.armaNaMao && (!c || c.userData.mao !== 'left')) return disparar(ray);
     if (!S.ativo) return explorar(ray);
     if (!A || A.fase === 'fim') return false;
@@ -1313,7 +1341,7 @@ export async function iniciar(ctx) {
     if (fonte === camera) o.y -= .15;
     lancarGranada(o, d);
   }
-  function botao(mao) { if (mao === 'right') sacar(!S.armaNaMao); else arremessar(controle('left')); }
+  function botao(mao) { if (mao === 'right') sacar(!S.armaNaMao); else if (renderer.xr.isPresenting) pegarGranada(!S.granadaNaMao); else arremessar(); }
 
   /* ================= objetivos (modo treino) e status ================= */
   function objetivos() {
@@ -1359,6 +1387,9 @@ export async function iniciar(ctx) {
     const agora = performance.now(), dt = Math.min(.1, (agora - ultimo) / 1000); ultimo = agora;
     if (agora > legAte) { leg.visible = false; const hl = document.getElementById('legendaHTML'); if (hl && !hl.hidden) hl.hidden = true; }
     efeitos(dt); if (S.ativo) confronto();
+    if (S.granadaNaMao && granadaMao.parent !== camera) {      // guarda as ultimas posicoes da mao para medir a velocidade do arremesso
+      granadaMao.getWorldPosition(AM); amostras.push({ p: AM.clone(), t: agora }); if (amostras.length > 12) amostras.shift();
+    }
     camera.getWorldPosition(V); camera.getWorldDirection(V2);
     if (S.ativo && A && A.entrada && !A.entrou && noSalao(V)) aoEntrarNoSalao();
     if (S.ativo && A && !A.parceiroNoBar && A.parceiroJunto && noBar(V) && !A.decidiuEntrada && npcs.parceiro && !npcs.parceiro.userData.rota?.length && !npcs.parceiro.userData.destino) { A.parceiroNoBar = true; rota(npcs.parceiro, [[-3.6, 4.6]], 1.5, 'andando'); }
@@ -1401,11 +1432,11 @@ export async function iniciar(ctx) {
   modelosProntos.then(() => { if (!S.ativo) cenaExploracao(); });
 
   window.__trein = {
-    clique: ray => usar(ray), gatilho: (ray, c) => usar(ray, c), botao, recarregar,
+    clique: ray => usar(ray), gatilho: (ray, c) => usar(ray, c), botao, recarregar, soltar,
     apontar, painelAberto: () => paineis.some(p => p.mesh.visible),
     menu: abrirMenu, quadro, estado: S, relatorio,
     // acesso para testes automatizados e para o instrutor
-    _t: { comecar, encerrar, objetivos, sortear, derivar, novaOcorrencia, npcs, portas, moverPorta, itens, usarItem, sacar, disparar, lancarGranada, detonar, granadas, arremessar, falarRadio, menuParceiro, menuAtendente, menuPortaSalao, menuSeguranca, menuPessoa, menuResponsavel, menuEscritorio, decidirFinal, finalizar, reacoes, aoEntrarNoSalao, usar, arma, armaNPC, armaSolta, lacres, B, armaNPC2, armaSolta2, ameacando, tiroInimigo, policialAtingido, sangue, manchas, soltos, recarregar, clarao, estante, moverEstante, usarEstante,
+    _t: { comecar, encerrar, objetivos, sortear, derivar, novaOcorrencia, npcs, portas, moverPorta, itens, usarItem, sacar, disparar, lancarGranada, detonar, granadas, arremessar, falarRadio, menuParceiro, menuAtendente, menuPortaSalao, menuSeguranca, menuPessoa, menuResponsavel, menuEscritorio, decidirFinal, finalizar, reacoes, aoEntrarNoSalao, usar, arma, armaNPC, armaSolta, lacres, B, armaNPC2, armaSolta2, ameacando, tiroInimigo, policialAtingido, sangue, manchas, soltos, recarregar, clarao, pegarGranada, soltar, granadaMao, amostras, mostrarControle, estante, moverEstante, usarEstante,
       ocorrencia: () => A, historico: HIST, botoes: () => (dialogo.mesh.visible ? dialogo : menu).botoes, painel: () => (dialogo.mesh.visible ? dialogo : menu.mesh.visible ? menu : null) }
   };
   return window.__trein;
