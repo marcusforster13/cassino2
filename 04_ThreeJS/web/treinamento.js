@@ -529,9 +529,11 @@ export async function iniciar(ctx) {
       o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + seg);
     } catch (e) { }
   }
-  const somTiro = () => window.__som?.tocar('tiro_pistola') || estouro(.3, 3200, .9, .25);
-  const somGranada = () => window.__som?.tocar('granada_efeito_moral') || estouro(1.5, 1100, 1.0, .5);
-  const somQuique = () => window.__som?.tocar('granada_quique') || estouro(.06, 5000, .25);
+  // som gravado; o sintetizado so entra quando NAO existe arquivo com esse nome (nunca no lugar de um que ainda esta carregando)
+  const somOu = (n, sintetico) => window.__som?.tocar(n) || window.__somArquivos?.[n] || sintetico();
+  const somTiro = () => somOu('tiro_pistola', () => estouro(.3, 3200, .9, .25));
+  const somGranada = () => somOu('granada_efeito_moral', () => estouro(1.5, 1100, 1.0, .5));
+  const somQuique = () => somOu('granada_quique', () => estouro(.06, 5000, .25));
 
   const gl = new GLTFLoader();
   const arma = new THREE.Group(); arma.visible = false;       // pistola na mao do policial

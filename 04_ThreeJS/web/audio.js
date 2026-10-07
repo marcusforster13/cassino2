@@ -32,6 +32,7 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   try { manifest = await fetch('audio/manifest.json?v=' + (window.__versao || '')).then(r => r.ok ? r.json() : []); } catch (e) { }
   const VQ = '?v=' + (window.__versao || '');
   const arquivos = Object.fromEntries(manifest.map(f => [f.replace(/\.(mp3|ogg|wav)$/i, ''), 'audio/' + f + VQ]));
+  window.__somArquivos = arquivos;                        // o treinamento consulta: se o arquivo existe, nao usa o som sintetizado
   const listener = new THREE.AudioListener(); camera.add(listener);
   const loader = new THREE.AudioLoader(), buffers = {}, ganho = {}, ambientes = [], posicionais = [];
   const fala = {};                                       // trecho util de cada fala gravada (sem os silencios das pontas)
@@ -56,10 +57,13 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   bt.onclick = desbloquear;
   if (navigator.userActivation?.hasBeenActive) desbloquear();     // ja houve clique antes deste modulo carregar
 
-  await Promise.all(Object.entries(arquivos).filter(([n]) => DEF[n] || n.startsWith('fala_')).map(([n, url]) =>
-    loader.loadAsync(url).then(b => { buffers[n] = b; ganho[n] = normalizar(b); if (n.startsWith('fala_')) fala[n] = silencio(b); }).catch(() => console.warn('som nao carregou:', url))));
-  pronto = true;
-  if (gesto) ligar();
+  // Os sons de evento (tiro, recarga, estouro, radio) sao pequenos e carregam primeiro; os ambientes, que sao grandes,
+  // seguem em segundo plano. Antes, tudo esperava o maior arquivo e, ate la, o tiro saia com o som sintetizado.
+  const carregar = ([n, url]) => loader.loadAsync(url).then(b => { buffers[n] = b; ganho[n] = normalizar(b); if (n.startsWith('fala_')) fala[n] = silencio(b); }).catch(() => console.warn('som nao carregou:', url));
+  const todos = Object.entries(arquivos).filter(([n]) => DEF[n] || n.startsWith('fala_'));
+  const curtos = todos.filter(([n]) => DEF[n]?.tipo === 'evento');
+  await Promise.all(curtos.map(carregar));
+  Promise.all(todos.filter(x => !curtos.includes(x)).map(carregar)).then(() => { pronto = true; if (gesto) ligar(); });
 
   // normaliza cada arquivo para ~-20 dB RMS sem passar de 0,95 de pico (arquivos baixos ficam audiveis)
   // falas gravadas: descobre onde a voz comeca e termina, para tocar sem os silencios das pontas
