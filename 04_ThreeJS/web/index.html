@@ -85,9 +85,16 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1007-1054';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1007-1057';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; const V = '?v=' + VERSAO;
 $('versao').textContent = 'versão ' + VERSAO;
+// Ao abrir, confere no servidor (sem usar copia guardada) se ha versao mais nova que esta pagina; se houver, recarrega
+// sozinha com o numero novo no endereco. Assim o navegador do Quest nunca fica preso numa pagina antiga.
+try {
+  const nova = (await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json())).versao;
+  const u = new URL(location.href);
+  if (nova && nova !== VERSAO && u.searchParams.get('_') !== nova) { u.searchParams.set('_', nova); location.replace(u); await new Promise(() => { }); }
+} catch (e) { }
 const CFG = await fetch('cena.json' + V).then(r => r.json());
 
 /* ---------- renderer e cena ---------- */
