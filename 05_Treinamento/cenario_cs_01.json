@@ -172,6 +172,14 @@
           "texto": "Apostadores que tentaram sair foram contidos pela equipe de apoio",
           "pontos": 3,
           "condicao": "variacao.fuga == 'tentam_sair'"
+        },
+        {
+          "id": "resposta_sala",
+          "texto": "Reagir à emboscada na sala reservada de forma necessária e proporcional, usando a parede como proteção",
+          "pontos": 6,
+          "condicao": "variacao.sala == 'aberta'",
+          "base": "CP art. 25; Lei 13.060/2014",
+          "validar": true
         }
       ],
       "erros": [
@@ -783,7 +791,8 @@
     "atendente": "Boa noite. Vai querer alguma coisa?",
     "responsavel": "Isso aqui é só um joguinho entre amigos.",
     "seguranca": "Aqui é área reservada.",
-    "apostador": "Hoje a máquina tá pagando…"
+    "apostador": "Hoje a máquina tá pagando…",
+    "atirador": "Aqui é reservado. Dá o fora."
   },
   "vozes": {
     "_nota": "Falas com voz gravada: salve 06_Audio/brutos/<arquivo>.wav ou .mp3. Sem arquivo, o site usa a voz sintética. O texto precisa ser igual ao que o site fala.",
@@ -943,6 +952,12 @@
         "personagem": "Apostador (voz masculina)",
         "quando": "Entrega o documento · sem graça",
         "texto": "Tá aqui. Eu só vim jogar um pouquinho…"
+      },
+      {
+        "arquivo": "fala_atirador_01",
+        "personagem": "Homem do sofá (sala reservada)",
+        "quando": "Modo exploração · ameaçador, sem se levantar",
+        "texto": "Aqui é reservado. Dá o fora."
       }
     ]
   }

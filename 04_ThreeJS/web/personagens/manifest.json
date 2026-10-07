@@ -72,6 +72,22 @@
    "apontando"
   ]
  },
+ "atirador": {
+  "arquivo": "personagens/atirador.glb",
+  "animacoes": [
+   "parada",
+   "falando",
+   "nervoso",
+   "andando",
+   "correndo",
+   "rendido",
+   "algemado",
+   "algemado_andando",
+   "sentado_parado",
+   "sentado_apontando",
+   "apontando"
+  ]
+ },
  "apostador_a": {
   "arquivo": "personagens/apostador_a.glb",
   "animacoes": [

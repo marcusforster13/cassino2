@@ -33,6 +33,7 @@ PAPEIS = {
     "atendente": ("Female_Adult_08", _civil("f")),
     "seguranca": ("Male_Adult_20", _civil("m", {"irritado": "m_idle_angry_01", "apontando": "m_idle_neutral_01+apontando"})),
     "seguranca_2": ("Male_Adult_10", _civil("m", {"apontando": "m_idle_neutral_01+apontando"})),
+    "atirador": ("Male_Adult_04", _civil("m", {"sentado_parado": "m_idle_neutral_01+sentado_parado", "sentado_apontando": "m_idle_neutral_01+sentado_apontando", "apontando": "m_idle_neutral_01+apontando"})),
     "apostador_a": ("Male_Adult_13", _civil("m")),
     "apostador_b": ("Male_Adult_16", _civil("m")),
     "apostador_c": ("Female_Adult_01", _civil("f")),
@@ -247,7 +248,7 @@ def pose_bracos(arm, desejado, f, tgt_inv, tipo):
             dir_braco = -cima * .5 + frente * .8 + lado * .12
         elif tipo == "soprando":                         # em pe, uma mao perto da boca (segurando o bocal)
             dir_braco = (-cima * .75 + frente * .55 + lado * .2) if sgn > 0 else (-cima * 1.0 + lado * .12)
-        elif tipo == "apontando":                        # arma empunhada com as duas maos, bracos estendidos a frente
+        elif tipo in ("apontando", "sentado_apontando"):      # sentado_apontando: pernas de quem esta sentado, bracos empunhando a arma                        # arma empunhada com as duas maos, bracos estendidos a frente
             dir_braco = frente * .92 - lado * .22 + cima * .04
         else:  # bracos_para_cima
             dir_braco = cima * .9 + frente * .35 + lado * .16
@@ -263,7 +264,7 @@ def pose_bracos(arm, desejado, f, tgt_inv, tipo):
             dir_ante = frente * .9 + cima * .3 - lado * .12
         elif tipo == "soprando":
             dir_ante = (cabeca + frente * l_ua * .45 - cima * l_ua * .1 - cotovelo) if sgn > 0 else (-cima * .9 + frente * .3)
-        elif tipo == "apontando":
+        elif tipo in ("apontando", "sentado_apontando"):      # sentado_apontando: pernas de quem esta sentado, bracos empunhando a arma
             dir_ante = frente * .9 - lado * .3 + cima * .06
         else:
             dir_ante = cima * .95 + frente * .22 + lado * .04

@@ -44,6 +44,7 @@ Aprovação: nota 70 ou mais e nenhuma falha grave.
 8. **Funcionários:** tratamento de quem trabalha no local e diz não ser dono.
 9. **Julgamento do STF (RE 966.177, Tema 924)** sobre a validade do art. 50 da Lei das Contravenções Penais: suspenso em agosto de 2026. Atualizar o cenário quando houver decisão.
 10. **Pesos da pontuação** e nota de aprovação.
+12. **Emboscada na sala reservada:** ao abrir a estante, um homem sentado no sofá atira. O treinamento aceita a reação armada e inclui prisão por arma de fogo no enquadramento; confirmar a tipificação (tentativa de homicídio contra agente, porte) e a conduta esperada.
 11. **Sala reservada (boate escondida):** o treinamento trata só da vistoria e da apreensão do dinheiro. Se a instituição quiser tratar de outras infrações ligadas a esse tipo de local, definir com o instrutor.
 
 ## Base legal usada
