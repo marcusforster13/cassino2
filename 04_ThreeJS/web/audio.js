@@ -31,7 +31,7 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   let manifest = [];
   try { manifest = await fetch('audio/manifest.json?v=' + (window.__versao || '')).then(r => r.ok ? r.json() : []); } catch (e) { }
   const VQ = '?v=' + (window.__versao || '');
-  const arquivos = Object.fromEntries(manifest.map(f => [f.replace(/\.(mp3|ogg|wav)$/i, ''), 'audio/' + f + VQ]));
+  const arquivos = Object.fromEntries(manifest.map(f => [f.replace(/\.(mp3|ogg|wav)$/i, ''), (window.__h ? window.__h('audio/' + f) : 'audio/' + f + VQ)]));
   window.__somArquivos = arquivos;                        // o treinamento consulta: se o arquivo existe, nao usa o som sintetizado
   const listener = new THREE.AudioListener(); camera.add(listener);
   const loader = new THREE.AudioLoader(), buffers = {}, ganho = {}, ambientes = [], posicionais = [];

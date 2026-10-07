@@ -85,17 +85,20 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1007-1057';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
-window.__versao = VERSAO; const V = '?v=' + VERSAO;
+const VERSAO = '1007-1101';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+window.__versao = VERSAO; window.__arq = {};
+// endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
+const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
 $('versao').textContent = 'versão ' + VERSAO;
 // Ao abrir, confere no servidor (sem usar copia guardada) se ha versao mais nova que esta pagina; se houver, recarrega
 // sozinha com o numero novo no endereco. Assim o navegador do Quest nunca fica preso numa pagina antiga.
 try {
-  const nova = (await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json())).versao;
+  const info = await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json());
+  window.__arq = info.arquivos || {}; const nova = info.versao;
   const u = new URL(location.href);
   if (nova && nova !== VERSAO && u.searchParams.get('_') !== nova) { u.searchParams.set('_', nova); location.replace(u); await new Promise(() => { }); }
 } catch (e) { }
-const CFG = await fetch('cena.json' + V).then(r => r.json());
+const CFG = await fetch(H('cena.json')).then(r => r.json());
 
 /* ---------- renderer e cena ---------- */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -145,7 +148,7 @@ const ceu = new THREE.Mesh(new THREE.SphereGeometry(250, 64, 32), new THREE.Shad
 ceu.renderOrder = -1; ceu.frustumCulled = false; scene.add(ceu);
 let hdriFundo = null;
 if (CFG.env) {
-  new RGBELoader().load(CFG.env, tex => {
+  new RGBELoader().load(H(CFG.env), tex => {
     tex.mapping = THREE.EquirectangularReflectionMapping;
     const pm = new THREE.PMREMGenerator(renderer);
     scene.environment = pm.fromEquirectangular(tex).texture;
@@ -159,12 +162,12 @@ function alternarCeu() {
 
 /* ---------- carregar cena e lightmaps ---------- */
 const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
-const gltf = await new GLTFLoader().setDRACOLoader(draco).loadAsync('cena.glb' + V, e => {
+const gltf = await new GLTFLoader().setDRACOLoader(draco).loadAsync(H('cena.glb'), e => {
   if (e.total) $('pct').textContent = Math.round(e.loaded / e.total * 100) + '%';
 });
 const tl = new THREE.TextureLoader(), lmTex = {};
 await Promise.all([...new Set(Object.values(CFG.lightmaps).map(v => v.lm))].map(f =>
-  tl.loadAsync(f + V).then(t => { t.flipY = false; t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; lmTex[f] = t; })));
+  tl.loadAsync(H(f)).then(t => { t.flipY = false; t.channel = 1; t.colorSpace = THREE.SRGBColorSpace; lmTex[f] = t; })));
 
 const lmMats = [], lentes = [], colisores = [];
 // objetos que se movem (carro abordado, equipamentos, personagens) nao tem lightmap: recebem uma luz ambiente
@@ -196,7 +199,7 @@ scene.add(gltf.scene);
 /* ---------- colisao: malha simplificada (uma caixa por parede/movel/carro), invisivel ---------- */
 let alvosCol = colisores, colisaoAtiva = true;
 try {
-  const col = await new GLTFLoader().loadAsync('colisao.glb' + V);
+  const col = await new GLTFLoader().loadAsync(H('colisao.glb'));
   col.scene.updateMatrixWorld(true);
   const ms = []; col.scene.traverse(o => { if (o.isMesh) { o.geometry.computeBoundsTree(); ms.push(o); } });
   if (ms.length) alvosCol = ms;
@@ -476,12 +479,12 @@ renderer.setAnimationLoop(() => {
 });
 
 /* ---------- sons (ambiente, posicionais, eventos) ---------- */
-import('./audio.js' + V).then(m => m.iniciarAudio({ scene, camera, renderer })).catch(e => console.warn('Áudio não carregou:', e));
+import('./' + H('audio.js')).then(m => m.iniciarAudio({ scene, camera, renderer })).catch(e => console.warn('Áudio não carregou:', e));
 let somMudo = false;
 addEventListener('keydown', e => { if (e.code === 'KeyM' && window.__som) { somMudo = !somMudo; window.__som.mudo(somMudo); } });
 
 /* ---------- motor do treinamento (fase 2) ---------- */
-import('./treinamento.js' + V).then(m => m.iniciar({
+import('./' + H('treinamento.js')).then(m => m.iniciar({
   scene, camera, rig, renderer, hotspots, setLanterna, cena: gltf.scene, CFG, iluminar, irPara, controles, grips,
   lanternaLigada: () => lantOn, colisao: () => alvosCol,
   setYaw: y => { yaw = y; pitch = 0; }

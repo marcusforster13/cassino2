@@ -14,8 +14,8 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 export async function iniciar(ctx) {
   const { scene, camera, rig, renderer, CFG } = ctx;
-  const VQ = '?v=' + (window.__versao || '');
-  const CEN = await fetch('treinamento/cenario_cs_01.json' + VQ).then(r => r.json());
+  const HQ = p => window.__h ? window.__h(p) : p;      // endereco com a marca do conteudo do arquivo
+  const CEN = await fetch(HQ('treinamento/cenario_cs_01.json')).then(r => r.json());
   const V = new THREE.Vector3(), V2 = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 
   /* ================= estado ================= */
@@ -249,9 +249,9 @@ export async function iniciar(ctx) {
   }
   /* personagens reais (Rocketbox, licenca MIT) convertidos para personagens/*.glb; se faltar, usa o boneco */
   const modelos = {};
-  const modelosProntos = fetch('personagens/manifest.json' + VQ).then(r => r.ok ? r.json() : {}).then(man => {
+  const modelosProntos = fetch(HQ('personagens/manifest.json')).then(r => r.ok ? r.json() : {}).then(man => {
     const gl = new GLTFLoader();
-    return Promise.all(Object.entries(man).map(([papel, info]) => gl.loadAsync(info.arquivo + VQ).then(g => { modelos[papel] = g; }).catch(() => { })));
+    return Promise.all(Object.entries(man).map(([papel, info]) => gl.loadAsync(HQ(info.arquivo)).then(g => { modelos[papel] = g; }).catch(() => { })));
   }).catch(() => { });
   function personagem(papel, nome, cor, altura, calca) {
     const base = modelos[papel];
@@ -609,8 +609,8 @@ export async function iniciar(ctx) {
   }
   let armaModelo = null, granadaModelo = null;
   const prep = raiz => { raiz.traverse(o => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(m => ctx.iluminar(m.clone())) : ctx.iluminar(o.material.clone()); }); return raiz; };
-  gl.loadAsync('modelos/arma.glb' + VQ).then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); }).catch(() => { });
-  gl.loadAsync('modelos/granada.glb' + VQ).then(g => { granadaModelo = prep(g.scene); }).catch(() => { });
+  gl.loadAsync(HQ('modelos/arma.glb')).then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); }).catch(() => { });
+  gl.loadAsync(HQ('modelos/granada.glb')).then(g => { granadaModelo = prep(g.scene); }).catch(() => { });
   const controle = mao => (ctx.controles || []).find(c => c.userData.mao === mao);
   function sacar(on) {
     S.armaNaMao = on;
@@ -800,7 +800,7 @@ export async function iniciar(ctx) {
   const armaNPC = new THREE.Group(), armaNPC2 = new THREE.Group(), armaSolta = new THREE.Group(), armaSolta2 = new THREE.Group();
   for (const g of [armaNPC, armaNPC2, armaSolta, armaSolta2]) { g.visible = false; scene.add(g); }
   for (const g of [armaNPC, armaNPC2]) { const f = criarFlash(.24); f.position.set(0, 0, -.2); g.add(f); g.userData.flash = f; }
-  gl.loadAsync('modelos/arma.glb' + VQ).then(g => { for (const a of [armaNPC, armaNPC2, armaSolta, armaSolta2]) a.add(prep(g.scene.clone())); }).catch(() => { });
+  gl.loadAsync(HQ('modelos/arma.glb')).then(g => { for (const a of [armaNPC, armaNPC2, armaSolta, armaSolta2]) a.add(prep(g.scene.clone())); }).catch(() => { });
   const hitArma = new THREE.Mesh(new THREE.SphereGeometry(.2, 8, 6), invisivel()); hitArma.userData.item = 'arma'; armaSolta.add(hitArma);
   function armaChao(p, chave) {
     const g = chave === 'seguranca_2' ? armaSolta2 : armaSolta;
