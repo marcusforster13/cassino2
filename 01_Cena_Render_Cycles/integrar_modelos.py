@@ -77,7 +77,9 @@ else:
             o["modelo_usuario"] = arq          # os scripts de detalhamento nao mexem em modelos feitos a mao
             for slot in o.material_slots:
                 m = slot.material
-                if m and m not in mats_antes:
+                # materiais com textura de imagem sao do autor e nunca sao trocados (um "Material.008" com a foto da
+                # placa era religado ao "Material" branco que ja existia na cena)
+                if m and m not in mats_antes and not (m.node_tree and any(n.type == "TEX_IMAGE" and n.image for n in m.node_tree.nodes)):
                     existente = bpy.data.materials.get(base(m.name))
                     if existente and existente not in (m,) and existente in mats_antes:
                         slot.material = existente; religados += 1

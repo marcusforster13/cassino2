@@ -1,14 +1,15 @@
 CASSINO CLANDESTINO - VERSAO VR OTIMIZADA
 
-DEPOIS: 145319 tris | 36 malhas | 250 slots de material (~draw calls) | 29 luzes
+DEPOIS: 163991 tris | 37 malhas | 251 slots de material (~draw calls) | 29 luzes
 
 Triangulos por colecao:
-  04_Bar_Moveis                         37738
+  12_Cadeiras_Plastico                  33560
   05_Salao_Jogos                        30894
   06_Escritorio_Depositos               21660
+  04_Bar_Moveis                         19738
   11_Sala_Reservada                     17518
+  01_Rua                                12028
   02_Vizinhos                            9274
-  01_Rua                                 8916
   10_Viatura                             8394
   07_Fundos_Beco                         7804
   08_Interativos                         2377

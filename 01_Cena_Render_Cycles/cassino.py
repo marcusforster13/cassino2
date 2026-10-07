@@ -629,7 +629,7 @@ TELA_CAM = tela_mat("Monitor_Cameras", np_image("monitor_cameras", tex_cameras()
 C_RUA = collection("01_Rua"); C_PRED = collection("02_Vizinhos"); C_EST = collection("03_Bar_Estrutura")
 C_BAR = collection("04_Bar_Moveis"); C_SAL = collection("05_Salao_Jogos"); C_ESC = collection("06_Escritorio_Depositos")
 C_FUN = collection("07_Fundos_Beco"); C_INT = collection("08_Interativos"); C_LUZ = collection("09_Luzes_Cameras")
-C_VEIC = collection("10_Viatura")
+C_VEIC = collection("10_Viatura"); C_CAD = collection("12_Cadeiras_Plastico")
 C_VEG = C_RUA; C_BLITZ = C_BAR
 
 def parede(nome, a, b, m, col, vaos=(), h=PD, t=.2, z0=FZ, ext=None):
@@ -709,7 +709,9 @@ def modelo_ph(nome, asset, pos, rz=0.0, col=None, escala=1.0, max_tris=2000, alt
 _cadeira_de_caixas = cadeira
 def cadeira(nome, x, y, rz, col=None):
     """Cadeira de plastico (monobloco). Sem o modelo baixado, usa a cadeira feita de caixas."""
-    return modelo_ph(nome, "plastic_monobloc_chair_01", (x, y, 0), rz, col or C_BAR, max_tris=1800) or _cadeira_de_caixas(nome, x, y, rz, col or C_BAR)
+    col = col or C_BAR
+    if col is C_BAR: col = C_CAD      # cadeiras do bar ficam fora do lightmap: as ripas finas saiam com faixas pretas no site
+    return modelo_ph(nome, "plastic_monobloc_chair_01", (x, y, 0), rz, col, max_tris=4000) or _cadeira_de_caixas(nome, x, y, rz, col)
 
 def ponto(nome, x, y, olha=(0, -1), z=FZ):
     """Ponto usado pelo site (personagens, maquinas, rotas): vazio P_<nome>; rz = para onde a pessoa olha."""
