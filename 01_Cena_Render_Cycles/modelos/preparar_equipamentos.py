@@ -48,21 +48,30 @@ def exportar(ob, nome):
     say("%s: %d tris, caixa %s a %s" % (nome, sum(len(p.vertices) - 2 for p in ob.data.polygons), [round(v, 3) for v in mn], [round(v, 3) for v in mx]))
 
 # ---------------------------------------------------------------- pistola
+import numpy as np
 objs = importar("arma.glb")
-boca = next(o for o in objs if o.name.startswith("Muzzle"))
-boca_y = (boca.matrix_world @ Vector(boca.bound_box[0])).y
+def pontos(prefixo):
+    return [o.matrix_world @ v.co for o in objs if o.name.startswith(prefixo) for v in o.data.vertices]
+media = lambda vs: sum(vs, Vector()) / len(vs)
+# O modelo vem girado no arquivo (cano ~46 graus para baixo). A direcao real do cano e a normal do aro da boca,
+# no sentido da alca de mira para a boca; "para cima" e o lado da massa de mira.
+aro = pontos("Muzzle outer rim"); boca = media(aro); alca = media(pontos("Rear sight base")); massa = media(pontos("Front sight"))
+a = np.array([list(v - boca) for v in aro]); _, vec = np.linalg.eigh(np.cov(a.T))
+frente = Vector([float(x) for x in vec[:, 0]]).normalized()
+if frente.dot(boca - alca) < 0: frente = -frente
+cima = (massa - boca); cima = (cima - frente * cima.dot(frente)).normalized()
+lado = frente.cross(cima).normalized()
 arma = juntar(objs, "Arma")
+R = Matrix((lado, frente, cima)).to_4x4()                 # leva o cano para +Y e a mira para +Z
+arma.data.transform(R); boca = R @ boca
 mn, mx = caixa(arma)
-if abs(boca_y - mn.y) < abs(boca_y - mx.y):            # cano para -Y: vira para +Y (frente no site)
-    arma.data.transform(Matrix.Rotation(3.14159265, 4, "Z")); mn, mx = caixa(arma)
-k = .21 / (mx.y - mn.y)
-arma.data.transform(Matrix.Scale(k, 4)); mn, mx = caixa(arma)
-# origem na empunhadura: meio do punho (parte de baixo e de tras), para a mao/controle segurar ali
-arma.data.transform(Matrix.Translation((-(mn.x + mx.x) / 2, -(mn.y + (mx.y - mn.y) * .22), -(mn.z + (mx.z - mn.z) * .45))))
+k = .20 / (mx.y - mn.y)                                   # 20 cm de comprimento, medido ao longo do cano
+arma.data.transform(Matrix.Scale(k, 4)); boca = boca * k
+# origem SOBRE o eixo do cano, 15 cm atras da boca: no site o cano coincide com o raio de mira (frente = -Z)
+arma.data.transform(Matrix.Translation((-boca.x, -boca.y + .15, -boca.z)))
 for p in arma.data.polygons: p.use_smooth = False
-arma["boca"] = [0, caixa(arma)[1].y, caixa(arma)[1].z - .012]
 exportar(arma, "arma.glb")
-say("boca do cano (Blender): %s" % [round(v, 3) for v in arma["boca"]])
+say("cano alinhado: boca em (0, 0.15, 0) no Blender = (0, 0, -0.15) no site; inclinacao corrigida de %.1f graus" % __import__("math").degrees(__import__("math").asin(abs(frente.z))))
 
 # ---------------------------------------------------------------- granada de efeito moral
 objs = importar("granada.glb")

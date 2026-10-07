@@ -25,6 +25,7 @@ Modos: exploração (cena livre), história (3 ocorrências guiadas), treino (ob
 | Falar, abrir, apreender | clique | gatilho |
 | Menu (rádio, checklist) | T | botão Y ou B |
 | Sacar ou guardar a arma | Q (com ela na mão, o clique dispara) | botão A (gatilho direito dispara) |
+| Recarregar (15 tiros por carregador) | R | apertar o analógico direito |
 | Granada de efeito moral | E | botão X |
 | Lanterna | F | grip |
 

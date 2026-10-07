@@ -10,7 +10,8 @@ Os arquivos ficam em `06_Audio/brutos/`. O pipeline copia para o site. Fonte: **
 | `maquinas_caca_niquel` | Sons de máquinas de jogo (loop), saem do salão | "pseudobinaural old time casino ambience from optical sounds1", kb7clx, som 862557 |
 | `amb_bar` | Burburinho de bar (loop), dentro do prédio | "Spacious Bar Ambience With Music, Medium Crowd 02", HECKFRICKER, som 729330 |
 | `musica_sala_reservada` | Música abafada (loop), sai da sala reservada | "Distant Dance Club.wav", DeVern, som 586173 |
-| `tiro_pistola` | Disparo, do policial e dos agressores | "Small pistol gunshot indoors", acidsnowflake, som 402789 |
+| `tiro_pistola` | Disparo, do policial e dos agressores | **fornecido pelo autor do projeto** (`tiro.mp3`) |
+| `recarregar_pistola` | Troca de carregador | **fornecido pelo autor do projeto** (`pistolacarrego.mp3`) |
 | `granada_efeito_moral` | Estouro da granada de efeito moral | "Flashbang", modusmogulus, som 737326 |
 | `granada_quique` | Granada batendo no chão ou na parede | "Iron Clang.wav", Unstableuranium, som 98867 |
 | `algemas` | Algemas fechando | "ratchet.wav", Nomadyag, som 193058 |

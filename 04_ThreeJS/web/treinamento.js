@@ -3,8 +3,8 @@
   Le treinamento/cenario_cs_01.json (fases, acoes, pontos, falhas graves, variacoes, dialogos, historia).
 
   Controles
-    Computador: clique = falar / usar / botoes   T = menu   K = checklist   Q = saca ou guarda a arma (clique dispara)   E = granada
-    Quest:      gatilho = falar / usar / botoes / teleporte   A = saca a arma (gatilho direito dispara)   X = granada
+    Computador: clique = falar / usar / botoes   T = menu   K = checklist   Q = saca ou guarda a arma (clique dispara)   R = recarrega   E = granada
+    Quest:      gatilho = falar / usar / botoes / teleporte   A = saca a arma (gatilho direito dispara; apertar o analogico direito recarrega)   X = granada
                 grip (qualquer mao) = lanterna   botao Y ou B = menu do treinamento
   Variacoes forcadas pela URL (para o instrutor):  ?v=indicios:visiveis,seguranca:armado_reage,fuga:tentam_sair
 */
@@ -561,13 +561,13 @@ export async function iniciar(ctx) {
     const m = new THREE.Mesh(geoFum, new THREE.MeshBasicMaterial({ color: 0xbfbfbf, transparent: true, opacity: .22, depthWrite: false }));
     m.position.copy(GT); m.scale.setScalar(.04); scene.add(m); fumacas.push({ f: m, t: 0, v: new THREE.Vector3(0, .25, 0), s0: .04, cres: .22, vida: 1.1, op: .22 });
   }
-  const clarao = criarFlash(); clarao.position.set(0, .071, -.25); arma.add(clarao);
+  const clarao = criarFlash(); clarao.position.set(0, 0, -.2); arma.add(clarao);      // a boca do cano fica em (0, 0, -0,15)
   const luzTiro = clarao.userData.luz;
   // capsulas ejetadas e gotas de sangue: pequenas pecas com gravidade e vida curta
   const soltos = [], geoCaps = new THREE.CylinderGeometry(.0045, .0045, .019, 6), matCaps = new THREE.MeshBasicMaterial({ color: 0xb8923a });
   const geoGota = new THREE.SphereGeometry(.011, 5, 4), matGota = new THREE.MeshBasicMaterial({ color: 0x6a0505 });
   function capsula(arm) {
-    const m = new THREE.Mesh(geoCaps, matCaps); arm.getWorldPosition(m.position); m.position.y += .07;
+    const m = new THREE.Mesh(geoCaps, matCaps); arm.getWorldPosition(m.position); m.position.y += .015;
     const lado = new THREE.Vector3(1, 0, 0).applyQuaternion(arm.getWorldQuaternion(new THREE.Quaternion()));
     scene.add(m); soltos.push({ m, v: lado.multiplyScalar(1.6 + Math.random()).add(new THREE.Vector3(0, 1.8, 0)), t: 0, vida: 1.1, giro: 20 });
   }
@@ -613,7 +613,7 @@ export async function iniciar(ctx) {
     S.armaNaMao = on;
     const pai = renderer.xr.isPresenting ? (controle('right') || ctx.controles?.[0] || camera) : camera;
     pai.add(arma);
-    if (pai === camera) { arma.position.set(.19, -.2, -.42); arma.rotation.set(.02, .05, 0); } else { arma.position.set(0, -.035, -.02); arma.rotation.set(0, 0, 0); }
+    if (pai === camera) { arma.position.set(.17, -.13, -.38); arma.rotation.set(0, 0, 0); } else { arma.position.set(0, 0, -.02); arma.rotation.set(0, 0, 0); }      // no Quest o cano coincide com o raio do controle
     arma.visible = on; status();
   }
   // marcas de tiro nas paredes
@@ -624,9 +624,32 @@ export async function iniciar(ctx) {
     m.position.copy(h.point).addScaledVector(n, .004); m.lookAt(h.point.clone().add(n)); scene.add(m); marcas.push(m);
   }
   let ultimoTiro = 0;
+  const CARREGADOR = 15, MIRA = new THREE.Vector3(), BOCA = new THREE.Vector3();
+  function recarregar() {
+    if (S.recarregando || !S.armaNaMao || (S.municao ?? CARREGADOR) >= CARREGADOR) return;
+    S.recarregando = true; status();
+    const som = window.__som, seg = Math.min(4, (som?.tem('recarregar_pistola') && som.duracao('recarregar_pistola')) || 1.6);
+    if (!som?.tocar('recarregar_pistola')) estouro(.08, 2500, .3);
+    const rx = arma.rotation.x, rz = arma.rotation.z;         // a arma inclina enquanto troca o carregador
+    suave(Math.min(.35, seg / 3), e => { arma.rotation.x = rx + .5 * e; arma.rotation.z = rz + .35 * e; });
+    setTimeout(() => suave(.3, e => { arma.rotation.x = rx + .5 * (1 - e); arma.rotation.z = rz + .35 * (1 - e); }), Math.max(300, seg * 1000 - 320));
+    setTimeout(() => { S.municao = CARREGADOR; S.recarregando = false; status(); }, seg * 1000);
+  }
   function disparar(ray) {
-    const agora = performance.now(); if (agora - ultimoTiro < 280) return true; ultimoTiro = agora;
-    somTiro(); acenderFlash(clarao); capsula(arma); const rx = arma.rotation.x; arma.rotation.x = rx + .22;
+    const agora = performance.now(); if (agora - ultimoTiro < 280 || S.recarregando) return true; ultimoTiro = agora;
+    if ((S.municao ?? CARREGADOR) <= 0) { estouro(.03, 5000, .25); recarregar(); return true; }      // clique seco e recarga
+    S.municao = (S.municao ?? CARREGADOR) - 1;
+    // o tiro sai da boca do cano. No computador a arma gira para o ponto clicado; no Quest vale para onde o cano aponta
+    if (arma.parent === camera) {
+      const h0 = ray.intersectObjects(ctx.colisao(), false)[0];
+      MIRA.copy(h0 ? h0.point : ray.ray.origin.clone().addScaledVector(ray.ray.direction, 30));
+      arma.lookAt(MIRA); arma.rotateY(Math.PI); arma.updateMatrixWorld(true);
+      clarao.getWorldPosition(BOCA); ray.set(BOCA, MIRA.clone().sub(BOCA).normalize());
+    } else {
+      arma.updateMatrixWorld(true); clarao.getWorldPosition(BOCA);
+      ray.set(BOCA, MIRA.set(0, 0, -1).applyQuaternion(arma.getWorldQuaternion(new THREE.Quaternion())).normalize());
+    }
+    somTiro(); acenderFlash(clarao); capsula(arma); status(); const rx = arma.rotation.x; arma.rotation.x = rx + .22;
     setTimeout(() => { arma.rotation.x = rx; }, 130);
     const pessoas = Object.values(npcs).filter(n => n.visible && !n.userData.caido);
     const hn = ray.intersectObjects(pessoas.map(n => n.userData.hit), false)[0];
@@ -745,7 +768,7 @@ export async function iniciar(ctx) {
   // armas dos agressores (o mesmo modelo): na mao quando apontam; no chao depois que largam
   const armaNPC = new THREE.Group(), armaNPC2 = new THREE.Group(), armaSolta = new THREE.Group(), armaSolta2 = new THREE.Group();
   for (const g of [armaNPC, armaNPC2, armaSolta, armaSolta2]) { g.visible = false; scene.add(g); }
-  for (const g of [armaNPC, armaNPC2]) { const f = criarFlash(.24); f.position.set(0, .071, -.25); g.add(f); g.userData.flash = f; }
+  for (const g of [armaNPC, armaNPC2]) { const f = criarFlash(.24); f.position.set(0, 0, -.2); g.add(f); g.userData.flash = f; }
   gl.loadAsync('modelos/arma.glb').then(g => { for (const a of [armaNPC, armaNPC2, armaSolta, armaSolta2]) a.add(prep(g.scene.clone())); }).catch(() => { });
   const hitArma = new THREE.Mesh(new THREE.SphereGeometry(.2, 8, 6), invisivel()); hitArma.userData.item = 'arma'; armaSolta.add(hitArma);
   function armaChao(p, chave) {
@@ -757,7 +780,7 @@ export async function iniciar(ctx) {
       const g = n.userData.arma; if (!g?.visible) continue;
       const mao = n.userData.modelo?.getObjectByName('Bip01_R_Hand'); if (!mao) continue;
       mao.getWorldPosition(g.position); camera.getWorldPosition(GT);
-      g.lookAt(GT); g.rotateY(Math.PI); g.translateZ(-.06); g.translateY(.03);
+      g.lookAt(GT); g.rotateY(Math.PI); g.translateZ(-.05); g.translateY(.075);      // a mao segura a empunhadura, abaixo do cano
     }
   }
   const ameacando = () => Object.values(npcs).filter(n => n.userData.ameaca && !n.userData.caido);
@@ -872,7 +895,7 @@ export async function iniciar(ctx) {
 
   /* ================= fluxo da ocorrencia ================= */
   function novaOcorrencia(v, cap) {
-    S.variacao = v; S.feitos = new Map(); S.granadas = 2; S.vida = 3; limparSangue();
+    S.variacao = v; S.feitos = new Map(); S.granadas = 2; S.vida = 3; S.municao = CARREGADOR; S.recarregando = false; limparSangue();
     A = { n: HIST.length + 1, fase: 'chegada', titulo: cap?.titulo || `Ocorrência ${HIST.length + 1}` };
     criarNPCs(v); sacar(false);
     for (const it of Object.values(itens)) it.o.visible = true;
@@ -1125,8 +1148,8 @@ export async function iniciar(ctx) {
       tag: 'Treinamento · conteúdo sensível', titulo: 'Cassino clandestino',
       texto: 'Você é policial militar e atende uma denúncia de jogo de azar nos fundos de um bar. O treinamento simula abordagem, uso da força (arma de fogo e granada de efeito moral), apreensão e condução.\n\n' +
         'Há cenas de confronto armado, com disparos e sangue.\n' +
-        'Computador: clique fala/usa · T menu · Q saca ou guarda a arma (com ela na mão, o clique dispara) · E lança granada · K checklist.\n' +
-        'Quest: gatilho usa/clica · A saca a arma (gatilho direito dispara) · X lança granada · Y ou B abre o menu · grip liga a lanterna.',
+        'Computador: clique fala/usa · T menu · Q saca ou guarda a arma (com ela na mão, o clique dispara) · R recarrega · E lança granada · K checklist.\n' +
+        'Quest: gatilho usa/clica · A saca a arma (gatilho direito dispara, apertar o analógico direito recarrega) · X lança granada · Y ou B abre o menu · grip liga a lanterna.',
       botoes: [
         { label: 'Modo história (4 ocorrências guiadas)', acao: () => comecar('historia') },
         { label: 'Modo treino (objetivos e dicas na tela)', acao: () => comecar('treino') },
@@ -1170,6 +1193,7 @@ export async function iniciar(ctx) {
     if (A && !A.apoio && !A.entrou) b.push({ label: 'Rádio: pedir apoio para cobrir os fundos', acao: () => falarRadio('apoio') });
     if (A?.ferido && !A.socorro) b.push({ label: 'Rádio: pedir socorro médico e comunicar o disparo', acao: () => { fecharPaineis(); A.socorro = true; registrar('socorro'); radio(CEN.radio.socorro); } });
     if (A?.entrou && !A.decidiu) b.push({ label: 'Rádio: enquadramento e condução (encerrar a ocorrência)', acao: decidirFinal });
+    if (S.armaNaMao) b.push({ label: `Recarregar a arma (${S.municao ?? CARREGADOR}/${CARREGADOR})`, acao: () => { menu.esconder(); recarregar(); } });
     b.push({ label: S.armaNaMao ? 'Guardar a arma no coldre' : 'Sacar a arma', acao: () => { sacar(!S.armaNaMao); menu.esconder(); } },
       { label: `Lançar granada de efeito moral (${S.granadas ?? 2})`, acao: () => { menu.esconder(); arremessar(); } },
       { label: 'Checklist desta ocorrência', acao: abrirChecklist },
@@ -1325,7 +1349,7 @@ export async function iniciar(ctx) {
   function status() {
     const el = document.getElementById('statusTrein'); if (!el) return;
     el.hidden = !S.ativo || S.modo === 'treino';
-    el.innerHTML = `<b>${A ? A.titulo : 'Cassino clandestino'}</b> · ${fmt(tempo())}<br>Na mão: ${S.armaNaMao ? 'arma' : 'nada'} · granadas: ${S.granadas ?? 2}`;
+    el.innerHTML = `<b>${A ? A.titulo : 'Cassino clandestino'}</b> · ${fmt(tempo())}<br>Na mão: ${S.armaNaMao ? (S.recarregando ? 'arma (recarregando…)' : `arma · ${S.municao ?? CARREGADOR}/${CARREGADOR}`) : 'nada'} · granadas: ${S.granadas ?? 2}`;
     mostrarObjetivos();
   }
 
@@ -1370,17 +1394,18 @@ export async function iniciar(ctx) {
     if (e.code === 'KeyK' && S.ativo) abrirChecklist();
     if (e.code === 'KeyQ') sacar(!S.armaNaMao);
     if (e.code === 'KeyE') arremessar();
+    if (e.code === 'KeyR') recarregar();
   });
   const bt = document.createElement('button'); bt.type = 'button'; bt.textContent = 'Iniciar treinamento'; bt.id = 'bTrein';
   bt.onclick = aviso; document.getElementById('acoes')?.prepend(bt);
   modelosProntos.then(() => { if (!S.ativo) cenaExploracao(); });
 
   window.__trein = {
-    clique: ray => usar(ray), gatilho: (ray, c) => usar(ray, c), botao,
+    clique: ray => usar(ray), gatilho: (ray, c) => usar(ray, c), botao, recarregar,
     apontar, painelAberto: () => paineis.some(p => p.mesh.visible),
     menu: abrirMenu, quadro, estado: S, relatorio,
     // acesso para testes automatizados e para o instrutor
-    _t: { comecar, encerrar, objetivos, sortear, derivar, novaOcorrencia, npcs, portas, moverPorta, itens, usarItem, sacar, disparar, lancarGranada, detonar, granadas, arremessar, falarRadio, menuParceiro, menuAtendente, menuPortaSalao, menuSeguranca, menuPessoa, menuResponsavel, menuEscritorio, decidirFinal, finalizar, reacoes, aoEntrarNoSalao, usar, arma, armaNPC, armaSolta, lacres, B, armaNPC2, armaSolta2, ameacando, tiroInimigo, policialAtingido, sangue, manchas, soltos, estante, moverEstante, usarEstante,
+    _t: { comecar, encerrar, objetivos, sortear, derivar, novaOcorrencia, npcs, portas, moverPorta, itens, usarItem, sacar, disparar, lancarGranada, detonar, granadas, arremessar, falarRadio, menuParceiro, menuAtendente, menuPortaSalao, menuSeguranca, menuPessoa, menuResponsavel, menuEscritorio, decidirFinal, finalizar, reacoes, aoEntrarNoSalao, usar, arma, armaNPC, armaSolta, lacres, B, armaNPC2, armaSolta2, ameacando, tiroInimigo, policialAtingido, sangue, manchas, soltos, recarregar, clarao, estante, moverEstante, usarEstante,
       ocorrencia: () => A, historico: HIST, botoes: () => (dialogo.mesh.visible ? dialogo : menu).botoes, painel: () => (dialogo.mesh.visible ? dialogo : menu.mesh.visible ? menu : null) }
   };
   return window.__trein;

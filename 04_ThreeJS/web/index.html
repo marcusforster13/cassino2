@@ -45,10 +45,10 @@
     <dt>Arrastar</dt><dd>olhar ao redor</dd>
     <dt>W A S D</dt><dd>andar · Shift corre · setas giram</dd>
     <dt>Clique</dt><dd>ler um marcador · falar · abrir porta · apreender</dd>
-    <dt>Q · E · T</dt><dd>sacar/guardar a arma (clique dispara) · granada de efeito moral · menu</dd>
+    <dt>Q · R · E · T</dt><dd>sacar/guardar a arma (clique dispara) · recarregar · granada de efeito moral · menu</dd>
     <dt>F · G · H · L</dt><dd>lanterna · giroflex · marcadores · luz pré-calculada</dd>
     <dt>I · C · N · M</dt><dd>inverter o olhar · alternar céu · colisão · som liga/desliga</dd>
-    <dt>VR</dt><dd>gatilho teleporta / usa · A saca a arma (gatilho direito dispara) · X lança granada · grip liga a lanterna · Y ou B abre o menu · analógicos andam e giram</dd>
+    <dt>VR</dt><dd>gatilho teleporta / usa · A saca a arma (gatilho direito dispara, apertar o analógico direito recarrega) · X lança granada · grip liga a lanterna · Y ou B abre o menu · analógicos andam e giram</dd>
   </dl>
   <label>Exposição <input id="exp" type="range" min="0.2" max="3" step="0.05" value="1"></label>
   <label>Luz pré-calculada <input id="lmg" type="range" min="0" max="3" step="0.05" value="1"></label>
@@ -168,6 +168,7 @@ gltf.scene.traverse(o => {
   while (p) { lm = lm || CFG.lightmaps[p.name]; estatico = estatico || /_Estatico/.test(p.name); p = p.parent; }
   const conv = m0 => {
     const m = m0.clone();
+    if (/Mancha/.test(m.name)) { m.opacity = .32; m.transparent = true; m.depthWrite = false; }      // manchas de umidade: discretas
     if (m.transmission > 0) { m.transmission = 0; m.transparent = true; m.opacity = 0.45; m.roughness = 0.05; }
     m.envMapIntensity = CFG.env_intensidade ?? 0.35;
     if (lm && o.geometry.attributes.uv1) {
@@ -404,6 +405,10 @@ function vrMove(dt) {
     const ax = !!gp.buttons[4]?.pressed, k2 = 'ax_' + src.handedness;
     if (ax && !botoesAntes[k2]) window.__trein?.botao?.(src.handedness);
     botoesAntes[k2] = ax;
+    // apertar o analogico direito = recarregar a arma
+    const an = src.handedness === 'right' && !!gp.buttons[3]?.pressed;
+    if (an && !botoesAntes.analogico) window.__trein?.recarregar?.();
+    if (src.handedness === 'right') botoesAntes.analogico = an;
     const x = gp.axes[2] ?? gp.axes[0] ?? 0, y = gp.axes[3] ?? gp.axes[1] ?? 0;
     if (src.handedness === 'left' && Math.hypot(x, y) > .15) {
       viewer().getWorldDirection(V2); V2.y = 0; V2.normalize();
