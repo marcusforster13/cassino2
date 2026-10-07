@@ -1244,9 +1244,30 @@ porta("I_Porta_Salao", (-5.2, 6.0), 0, M["porta_mad"], rotulo="PRIVATIVO")
 porta("I_Porta_Escritorio", (2.5, 9.4), PI / 2, M["porta_mad"], rotulo="GERÊNCIA", lado_rotulo=1)
 porta("I_Porta_Fundos", (1.4, 13.0), 0, M["porta_ferro"])
 
+_nota = {}
 def maco(nome, pai, x, y, z, m, rz=0.0):
-    box(nome, (.155, .066, .022), (x, y, z), m, C_INT, pai, rot=(0, 0, rz))
-    box(nome + "_Elastico", (.012, .07, .024), (x, y, z), M["elastico"], C_INT, pai, rot=(0, 0, rz))
+    """Maco de notas. Com modelos/maco_de_notas_usuario.glb (nota texturizada pelo autor do projeto) usa esse modelo;
+    sem o arquivo, uma caixa lisa da cor m. Os materiais ganham o prefixo Modelo_ (o pipeline mantem a UV e reduz a
+    textura) e a imagem e escurecida 20%: os objetos soltos recebem luz uniforme e a nota clara ficava "acesa"."""
+    if "me" not in _nota:
+        _nota["me"] = None; cam = os.path.join(AQUI, "modelos", "maco_de_notas_usuario.glb")
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam)
+            novos = [o for o in bpy.data.objects if o not in antes]; ob = next(o for o in novos if o.type == "MESH")
+            for i, sl in enumerate(ob.material_slots):
+                mt = sl.material; mt.name = "Modelo_Nota_%d" % i
+                b = next(n for n in mt.node_tree.nodes if n.type == "BSDF_PRINCIPLED"); b.inputs["Roughness"].default_value = .82
+                for n in mt.node_tree.nodes:
+                    if n.type == "TEX_IMAGE" and n.image and not n.image.get("escurecida"):
+                        w, h = n.image.size; px = np.empty(w * h * 4, np.float32); n.image.pixels.foreach_get(px)
+                        px = px.reshape(-1, 4); px[:, :3] *= .8; n.image.pixels.foreach_set(px.ravel()); n.image.pack(); n.image["escurecida"] = 1
+            _nota["me"] = ob.data
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    if _nota["me"]:
+        ob = bpy.data.objects.new(nome, _nota["me"]); C_INT.objects.link(ob); ob.parent = pai; ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
+    else:
+        box(nome, (.155, .066, .022), (x, y, z), m, C_INT, pai, rot=(0, 0, rz))
+    box(nome + "_Elastico", (.006, .068, .0235), (x, y, z), M["elastico"], C_INT, pai, rot=(0, 0, rz))
 
 zt = FZ + .791                                                                                    # tampo da mesa de carteado
 r = vazio("I_Dinheiro_Mesa", (CX - .25, CY + .18, zt), C_INT, .4)
