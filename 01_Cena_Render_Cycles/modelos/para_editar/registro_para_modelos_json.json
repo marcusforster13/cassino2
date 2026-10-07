@@ -2,44 +2,18 @@
  "placas.glb": {
   "substitui": [
    "Bar_Letreiro_Fundo",
-   "Bar_Letreiro_Texto",
    "Bar_Neon_Cerveja",
    "Calendario",
    "Calendario_Faixa",
-   "Cartaz_Bar_A",
-   "Cartaz_Bar_A_Texto",
-   "Cartaz_Bar_A_Texto.001",
-   "Cartaz_Bar_A_Texto.002",
-   "Cartaz_Bar_A_Texto.003",
-   "Cartaz_Bar_B",
-   "Cartaz_Bar_B_Texto",
-   "Cartaz_Bar_B_Texto.001",
-   "Cartaz_Bar_B_Texto.002",
-   "Cartaz_Bar_C",
-   "Cartaz_Bar_C_Texto",
-   "Cartaz_Bar_C_Texto.001",
-   "Cartaz_Bar_C_Texto.002",
-   "Cavalete_Bar",
-   "Cavalete_Bar_Texto",
-   "Cavalete_Bar_Texto.001",
-   "Cavalete_Bar_Texto.002",
-   "Cavalete_Bar_Texto.003",
    "Extintor_Placa",
    "Extintor_Placa_Texto",
    "Loja_Fechada_Aluga",
-   "Loja_Fechada_Aluga_Texto",
-   "Lousa_Precos",
-   "Lousa_Precos_Texto",
-   "Lousa_Precos_Texto.001",
-   "Lousa_Precos_Texto.002",
-   "Lousa_Precos_Texto.003",
    "Placa_Banheiro",
-   "Placa_Banheiro_Texto",
    "Placar_Acumulado",
    "Placar_Acumulado_Texto",
    "Quadro_Chaves"
   ],
-  "colecao": "02_Vizinhos"
+  "colecao": "04_Bar_Moveis"
  },
  "relogio.glb": {
   "substitui": [
@@ -48,5 +22,29 @@
    "Relogio_Ponteiro.001"
   ],
   "colecao": "04_Bar_Moveis"
+ },
+ "fichas_cartas.glb": {
+  "substitui": [
+   "Carta",
+   "Carta.001",
+   "Carta.002",
+   "Carta.003",
+   "Carta.004",
+   "Carta.005",
+   "Carta.006",
+   "Carta.007",
+   "Carta.008",
+   "I_Fichas_Pilha",
+   "I_Fichas_Pilha.001",
+   "I_Fichas_Pilha.002",
+   "I_Fichas_Pilha.003",
+   "I_Fichas_Pilha.004",
+   "I_Fichas_Pilha.005",
+   "I_Fichas_Pilha.006",
+   "Mesa_Carteado_Borda",
+   "Mesa_Carteado_Feltro",
+   "Mesa_Carteado_Pe"
+  ],
+  "colecao": "05_Salao_Jogos"
  }
 }

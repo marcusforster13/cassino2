@@ -60,7 +60,11 @@ else:
 
     for arq, caminho, mtime, info in pendentes:
         nomes = info["substitui"] if isinstance(info["substitui"], list) else [info["substitui"]]
-        for nome in nomes:                          # aceita um nome ou uma lista de nomes
+        for nome in nomes:                          # aceita um nome, uma lista de nomes ou um prefixo terminado em *
+            if nome.endswith("*"):
+                for alvo in [o for o in bpy.data.objects if o.name.startswith(nome[:-1]) and o.type == "MESH"]:
+                    bpy.data.objects.remove(alvo, do_unlink=True)
+                continue
             alvo = bpy.data.objects.get(nome)
             if alvo:
                 apagar_hierarquia(alvo)
@@ -68,6 +72,8 @@ else:
         mats_antes = set(bpy.data.materials)
         bpy.ops.import_scene.gltf(filepath=caminho)
         novos = [o for o in bpy.data.objects if o not in antes]
+        for o in [o for o in novos if o.name.startswith(tuple(info.get("ignorar", ()))) ] if info.get("ignorar") else []:
+            novos.remove(o); bpy.data.objects.remove(o, do_unlink=True)      # pecas que vieram no arquivo so como referencia
         col = bpy.data.collections.get(info.get("colecao", "")) or bpy.context.scene.collection
         religados = 0
         for o in novos:

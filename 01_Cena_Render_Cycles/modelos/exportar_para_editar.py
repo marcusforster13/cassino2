@@ -15,6 +15,7 @@ GRUPOS = {
     "placas": ("Cartaz_Bar_", "Lousa_Precos", "Placa_Banheiro", "Cavalete_Bar", "Bar_Letreiro_", "Bar_Neon_Cerveja", "Placar_Acumulado",
                "Loja_Fechada_Aluga", "Extintor_Placa", "Calendario", "Quadro_Chaves"),
     "relogio": ("Relogio_",),
+    "fichas_cartas": ("I_Fichas_Pilha", "Carta", "Mesa_Carteado_"),      # fichas (item que se apreende), cartas e a mesa como referencia
 }
 def uv_simples(ob):
     """UV de 0 a 1 em cada face (projecao pela direcao da face), para aceitar textura de imagem."""

@@ -40,5 +40,16 @@
    "Quadro_Chaves"
   ],
   "colecao": "04_Bar_Moveis"
+ },
+ "sinuca_relogio.glb": {
+  "substitui": [
+   "Sinuca_*",
+   "Relogio_*"
+  ],
+  "colecao": "04_Bar_Moveis",
+  "ignorar": [
+   "Cadeira_",
+   "Luz"
+  ]
  }
 }

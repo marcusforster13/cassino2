@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-07 14:02",
+ "gerado_em": "2026-10-07 14:26",
  "qualidade": "alta",
  "lightmaps": {
   "01_Rua_Estatico": {
@@ -12,11 +12,11 @@
   },
   "03_Bar_Estrutura_Estatico": {
    "lm": "lightmaps/LM_03_Bar_Estrutura.png",
-   "max": 1.89057
+   "max": 1.89044
   },
   "04_Bar_Moveis_Estatico": {
    "lm": "lightmaps/LM_04_Bar_Moveis.png",
-   "max": 2.26635
+   "max": 2.39425
   },
   "05_Salao_Jogos_Estatico": {
    "lm": "lightmaps/LM_05_Salao_Jogos.png",
