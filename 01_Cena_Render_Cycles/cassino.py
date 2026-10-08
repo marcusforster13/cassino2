@@ -1406,7 +1406,11 @@ for sy in (-1, 1): box("I_Estante_Secreta_Lado", (.3, .03, 2.12), (-.03, sy * .6
 for k in range(6): box("I_Estante_Secreta_Prat", (.3, 1.2, .03), (-.03, 0, .015 + k * .418), M["mad"], C_INT, r)
 for k in range(5):
     for j in range(4):
-        if (k + j) % 3 == 0: box("I_Estante_Secreta_Caixa", (.24, .26, .3), (-.04, -.44 + j * .29, .18 + k * .418), M["papelao"], C_INT, r)
+        if (k + j) % 3 == 0:                                         # caixa de papelao igual as do deposito (sem o modelo, um cubo)
+            cx_ = modelo_ph("I_Estante_Secreta_Caixa", "cardboard_box_01", (-.04, -.44 + j * .29, .03 + k * .418), PI / 2 + rnd.uniform(-.12, .12), C_INT, max_tris=300, parent=r)
+            if cx_:
+                d_ = _ph["cardboard_box_01"][1]; e_ = min(.27 / d_.x, .25 / d_.y, .33 / d_.z); cx_.scale = (e_, e_, e_)
+            else: box("I_Estante_Secreta_Caixa", (.24, .26, .3), (-.04, -.44 + j * .29, .18 + k * .418), M["papelao"], C_INT, r)
         else: torno("I_Estante_Secreta_Garrafa", GARRAFA, M[("garrafa_a", "garrafa_v", "garrafa_c")[(k + j) % 3]], C_INT, r, pos=(-.04, -.44 + j * .29, .03 + k * .418), seg=8)
 # bolsa com dinheiro escondida atras do bar da sala reservada
 r = vazio("I_Dinheiro_Sala", (6.55, 11.25, FZ), C_INT, .3)

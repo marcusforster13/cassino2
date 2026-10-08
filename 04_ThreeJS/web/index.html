@@ -85,7 +85,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1007-1740';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1008-1128';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -187,7 +187,7 @@ gltf.scene.traverse(o => {
     if (lm && o.geometry.attributes.uv1) {
       m.lightMap = lmTex[lm.lm]; m.userData.lmBase = lm.max * CFG.lightmap_ganho;
       m.lightMapIntensity = m.userData.lmBase; lmMats.push(m);
-    } else if (!lm) { iluminar(m); if (escuro) m.lightMapIntensity *= .4; }      // pecas sem lightmap em comodo escuro: menos luz ambiente
+    } else if (!lm) { iluminar(m); if (escuro) m.lightMapIntensity *= .4; else if (/cardboard/.test(m.name)) m.lightMapIntensity *= .5; }      // pecas sem lightmap em comodo escuro: menos luz ambiente
     return m;
   };
   o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
