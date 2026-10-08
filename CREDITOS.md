@@ -8,6 +8,6 @@
 | Pistola (`modelos/arma.glb`), granada (`modelos/granada.glb`) e maço de notas texturizado (`modelos/maco_de_notas_usuario.glb`, com a marca "USO NO JOGO"), placas, relógio, fichas, cartas e garrafa (`modelos/placas.glb`, `sinuca_relogio.glb`, `poker.glb`, `garrafa.glb`, `maquina_caca_niquel.glb`, `placar_acumulado.glb`, `roleta.glb`, `salgado_coxinha.glb`, `salgado_kibe.glb`). Textura de madeira da roleta: coated_pine (Poly Haven, CC0) | Feitos pelo autor do projeto (Marcus) | deste projeto |
 | Sons de tiro e de recarga da pistola | Fornecidos pelo autor do projeto (Marcus) | deste projeto |
 | Sons (trânsito, rádio, bar, máquinas, música, estouro, algemas, porta) | Freesound, sons CC0 (lista com autor e número em `06_Audio/LISTA_SONS.md`) | CC0 |
-| Móveis e objetos (cadeiras, banquetas, sofás, engradados, caixas, estantes, ventiladores, extintor, vasos) | Poly Haven | CC0 |
+| Móveis e objetos (cadeiras, banquetas, sofás, engradados, caixas, estantes, ventiladores, extintor, vasos e plantas em vaso) | Poly Haven | CC0 |
 | Cena, máquinas, mesas de jogo, texturas das telas | Gerados por `cassino.py` (desenho próprio) | deste projeto |
 | three.js, three-mesh-bvh | bibliotecas | MIT |

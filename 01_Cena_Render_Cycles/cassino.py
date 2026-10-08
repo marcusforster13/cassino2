@@ -1071,6 +1071,10 @@ def saco_lixo(nome, x, y, col, z=FZ):
     esfera(nome, .27, (x, y, z + .2), M["saco_lixo"], col, sub=2, esc=(1, rnd.uniform(.8, 1.1), .78))
     esfera(nome + "_No", .06, (x + .03, y, z + .43), M["saco_lixo"], col, sub=1)
 def vaso(nome, x, y, col, z=FZ):
+    # planta em vaso realista (Poly Haven, CC0), uma especie em cada lado da porta. Fora do lightmap, como as garrafas dos
+    # comodos escuros: folha fina sai manchada na luz calculada. Sem o modelo baixado, o vaso com bolas de folhagem.
+    if modelo_ph(nome, "potted_plant_01" if nome.endswith("A") else "potted_plant_02", (x, y, z), rnd.uniform(0, 6), C_GAR_E,
+                 alt=1.3 if nome.endswith("A") else 1.0, max_tris=10000): return
     if not modelo_ph(nome, "planter_pot_clay", (x, y, z), rnd.uniform(0, 6), col, escala=1.75, max_tris=500):
         torno(nome, [(0, 0), (.16, 0), (.22, .38), (.19, .38), (.15, .05), (0, .05)], M["vaso"], col, pos=(x, y, z), seg=14)
     for k in range(4):

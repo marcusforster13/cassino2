@@ -10,7 +10,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 DEST = os.path.join(AQUI, "polyhaven")
 MODELOS = ["plastic_monobloc_chair_01", "bar_chair_round_01", "sofa_02", "sofa_03", "coffee_table_round_01", "plastic_crate_01",
            "cardboard_box_01", "steel_frame_shelves_01", "ceiling_fan", "korean_fire_extinguisher_01", "trashbag", "metal_trash_can",
-           "planter_pot_clay", "utility_box_01", "modern_arm_chair_01", "painted_wooden_cabinet", "Television_01", "wooden_stool_01"]
+           "planter_pot_clay", "utility_box_01", "modern_arm_chair_01", "painted_wooden_cabinet", "Television_01", "wooden_stool_01", "potted_plant_01", "potted_plant_02"]
 
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "cassino-treinamento-vr/1.0"})

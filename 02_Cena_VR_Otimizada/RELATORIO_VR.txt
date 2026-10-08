@@ -1,34 +1,34 @@
 CASSINO CLANDESTINO - VERSAO VR OTIMIZADA
 
-DEPOIS: 231500 tris | 39 malhas | 267 slots de material (~draw calls) | 29 luzes
+DEPOIS: 250340 tris | 39 malhas | 269 slots de material (~draw calls) | 29 luzes
 
 Triangulos por colecao:
   05_Salao_Jogos                        58518
   12_Cadeiras_Plastico                  33560
   06_Escritorio_Depositos               28872
+  14_Garrafas_Escuro                    27176
   13_Garrafas                           25444
   04_Bar_Moveis                         18545
   11_Sala_Reservada                     15838
-  01_Rua                                11948
+  01_Rua                                10788
   02_Vizinhos                            9274
   10_Viatura                             8394
   07_Fundos_Beco                         7804
-  14_Garrafas_Escuro                     7176
   08_Interativos                         5383
   03_Bar_Estrutura                        744
 
 Etapas:
   - Grama instanciada removida de 0 gramados; subdivisao=1, remesh 0.16 m, decimate 35% na folhagem.
-  - Modificadores aplicados em 1781 objetos; textos e fios convertidos em malha.
+  - Modificadores aplicados em 1773 objetos; textos e fios convertidos em malha.
   - Bake de 0 materiais procedurais em texturas de imagem.
   - 25 materiais com texturas CC0 convertidos para UV + PNG (cor, rugosidade, normal).
   - UVs em caixa (escala real em metros) aplicadas em todas as malhas.
-  - Colisao: 721 caixas orientadas preparadas.
+  - Colisao: 713 caixas orientadas preparadas.
   - 10 conjuntos interativos unidos (1 malha por conjunto).
-  - 1695 objetos estaticos unidos em 1 malha por colecao (menos draw calls).
+  - 1687 objetos estaticos unidos em 1 malha por colecao (menos draw calls).
   - Exportado: cassino_VR.glb
   - Exportado: cassino_VR.fbx
-  - Colisao: 721 caixas, 8652 tris -> colisao.glb / colisao.fbx
+  - Colisao: 713 caixas, 8556 tris -> colisao.glb / colisao.fbx
 
 Proximos passos no motor (Unity/Unreal):
   - Iluminacao: marcar a geometria estatica como Static e fazer bake de lightmaps
