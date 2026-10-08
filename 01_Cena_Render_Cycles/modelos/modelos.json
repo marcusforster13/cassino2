@@ -39,7 +39,10 @@
    "Placar_Acumulado_Texto",
    "Quadro_Chaves"
   ],
-  "colecao": "04_Bar_Moveis"
+  "colecao": "04_Bar_Moveis",
+  "ignorar": [
+   "Placar_Acumulado"
+  ]
  },
  "sinuca_relogio.glb": {
   "substitui": [

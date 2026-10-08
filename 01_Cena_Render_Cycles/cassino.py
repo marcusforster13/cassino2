@@ -1150,8 +1150,22 @@ box("Rodape_Bar", (6.8, .02, .1), (2.5, .115, FZ + .05), M["rodape"], C_BAR)
 saco_lixo("Saco_Lixo_Bar", 5.5, .55, C_BAR)
 
 # ---- salao: placar, ar-condicionado, luminarias, extintor, lixeira, mesinhas
-box("Placar_Acumulado", (2.6, .05, .42), (-1.3, 12.78, FZ + 2.45), M["preto_b"], C_SAL)
-texto("Placar_Acumulado_Texto", "ACUMULADO  R$ 12.480", .17, (-1.3, 12.75, FZ + 2.45), "-y", M["neon_a"], C_SAL)
+_cam = os.path.join(AQUI, "modelos", "placar_acumulado.glb")      # placa do autor (imagem); sem o arquivo, a placa de texto
+if os.path.exists(_cam):
+    _antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=_cam); bpy.context.view_layer.update()
+    _novos = [o for o in bpy.data.objects if o not in _antes]
+    for _o in [o for o in _novos if o.type == "MESH"]:
+        _mw = _o.matrix_world.copy(); _o.parent = None; _o.data.transform(_mw); _o.matrix_world = Matrix.Identity(4)
+        for _c in list(_o.users_collection): _c.objects.unlink(_o)
+        C_SAL.objects.link(_o); _o.name = "Placa_Premio_Autor"; _o.location = (-1.3, 12.80, FZ + 2.45)
+        for _i, _sl in enumerate(_o.material_slots):                 # placa luminosa: a imagem tambem acende
+            _m = _sl.material; _m.name = "Modelo_Placar_%d" % _i
+            _t = [n for n in _m.node_tree.nodes if n.type == "TEX_IMAGE" and n.image]; _b = next(n for n in _m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+            if _t: _m.node_tree.links.new(_t[0].outputs["Color"], _b.inputs["Emission Color"]); _b.inputs["Emission Strength"].default_value = .8
+    for _o in [o for o in _novos if o.type != "MESH"]: bpy.data.objects.remove(_o, do_unlink=True)
+else:
+    box("Placar_Acumulado", (2.6, .05, .42), (-1.3, 12.78, FZ + 2.45), M["preto_b"], C_SAL)
+    texto("Placar_Acumulado_Texto", "ACUMULADO  R$ 12.480", .17, (-1.3, 12.75, FZ + 2.45), "-y", M["neon_a"], C_SAL)
 box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL, bevel=.03)
 for nome_, (x, y) in (("Carteado", (CX, CY)), ("Roleta", (RX, RY))):
     torno("Pendente_" + nome_, [(.04, .22), (.28, 0), (.3, 0), (.06, .24)], M["feltro"], C_SAL, pos=(x, y, FZ + 2.1), seg=20)
@@ -1404,14 +1418,20 @@ r = vazio("I_Estante_Secreta", (5.76, 7.35, FZ), C_INT)
 box("I_Estante_Secreta_Fundo", (.03, 1.2, 2.12), (.115, 0, 1.06), M["mad"], C_INT, r)
 for sy in (-1, 1): box("I_Estante_Secreta_Lado", (.3, .03, 2.12), (-.03, sy * .6, 1.06), M["mad"], C_INT, r)
 for k in range(6): box("I_Estante_Secreta_Prat", (.3, 1.2, .03), (-.03, 0, .015 + k * .418), M["mad"], C_INT, r)
-for k in range(5):
-    for j in range(4):
-        if (k + j) % 3 == 0:                                         # caixa de papelao igual as do deposito (sem o modelo, um cubo)
-            cx_ = modelo_ph("I_Estante_Secreta_Caixa", "cardboard_box_01", (-.04, -.44 + j * .29, .03 + k * .418), PI / 2 + rnd.uniform(-.12, .12), C_INT, max_tris=300, parent=r)
-            if cx_:
-                d_ = _ph["cardboard_box_01"][1]; e_ = min(.27 / d_.x, .25 / d_.y, .33 / d_.z); cx_.scale = (e_, e_, e_)
-            else: box("I_Estante_Secreta_Caixa", (.24, .26, .3), (-.04, -.44 + j * .29, .18 + k * .418), M["papelao"], C_INT, r)
-        else: torno("I_Estante_Secreta_Garrafa", GARRAFA, M[("garrafa_a", "garrafa_v", "garrafa_c")[(k + j) % 3]], C_INT, r, pos=(-.04, -.44 + j * .29, .03 + k * .418), seg=8)
+# so caixas de papelao, iguais as do deposito, no maior tamanho que cabe na prateleira (sem o modelo, cubos)
+if modelo_ph("I_Estante_Secreta_Caixa", "cardboard_box_01", (-.04, 0, .03), PI / 2, C_INT, max_tris=300, parent=r):
+    bpy.data.objects.remove(bpy.data.objects["I_Estante_Secreta_Caixa"], do_unlink=True)
+    d_ = _ph["cardboard_box_01"][1]; e_ = min(1.0, .37 / d_.z, .34 / d_.x); w_ = d_.y * e_; n_ = max(1, int(1.14 // (w_ + .02))); passo_ = 1.14 / n_      # lado maior ao longo da prateleira
+    say("estante secreta: caixas de %.0f x %.0f x %.0f cm (escala %.2f), %d por prateleira" % (w_ * 100, d_.x * e_ * 100, d_.z * e_ * 100, e_, n_))
+    for k in range(5):
+        falta = rnd.randrange(n_) if (k % 2 and n_ > 2) else -1                # uma vaga em algumas prateleiras
+        for j in range(n_):
+            if j == falta: continue
+            cx_ = modelo_ph("I_Estante_Secreta_Caixa", "cardboard_box_01", (-.05, -.57 + passo_ * (j + .5) + rnd.uniform(-.01, .01), .03 + k * .418), rnd.uniform(-.08, .08) + PI * rnd.randrange(2), C_INT, max_tris=300, parent=r)
+            cx_.scale = (e_, e_, e_)
+else:
+    for k in range(5):
+        for j in range(4): box("I_Estante_Secreta_Caixa", (.24, .26, .3), (-.04, -.44 + j * .29, .18 + k * .418), M["papelao"], C_INT, r)
 # bolsa com dinheiro escondida atras do bar da sala reservada
 r = vazio("I_Dinheiro_Sala", (6.55, 11.25, FZ), C_INT, .3)
 box("I_Dinheiro_Sala_Bolsa", (.52, .28, .22), (0, 0, .11), M["bolsa"], C_INT, r, bevel=.04)
