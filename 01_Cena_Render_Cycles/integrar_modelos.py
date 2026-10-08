@@ -89,6 +89,23 @@ else:
                     existente = bpy.data.materials.get(base(m.name))
                     if existente and existente not in (m,) and existente in mats_antes:
                         slot.material = existente; religados += 1
+        # "materiais": {"prefixo": "Material_Da_Cena"} - pecas que vieram sem material (vale o prefixo mais longo)
+        # "*maior" vale para a maior peca sem material e "*" para as outras (os nomes mudam na importacao: Cylinder -> Cylinder.006)
+        sem = [o for o in novos if o.type == "MESH" and not [s for s in o.material_slots if s.material]]
+        maior = max(sem, key=lambda o: max(o.dimensions), default=None) if "*maior" in info.get("materiais", {}) else None
+        for o in sem:
+            pref = max((p for p in info.get("materiais", {}) if not p.startswith("*") and o.name.startswith(p)), key=len, default=None)
+            chave = pref or ("*maior" if o is maior else "*")
+            mt = bpy.data.materials.get(info.get("materiais", {}).get(chave, ""))
+            if mt: o.data.materials.clear(); o.data.materials.append(mt)
+        # "virar": ["prefixo"] - pecas planas que vieram com a face para baixo (a luz calculada caia no lado de baixo e a peca ficava preta)
+        for pref in info.get("virar", []):
+            for o in [o for o in novos if o.name.startswith(pref) and o.type == "MESH"]:
+                o.data.flip_normals(); o.data.update()
+        # "deslocar": {"prefixo": [x, y, z]} - ajuste fino de posicao (ex.: disco no mesmo plano do fundo da bacia, que pisca)
+        for pref, d in info.get("deslocar", {}).items():
+            for o in [o for o in novos if o.name.startswith(pref)]:
+                mw = o.matrix_world.copy(); mw.translation.x += d[0]; mw.translation.y += d[1]; mw.translation.z += d[2]; o.matrix_world = mw
         # "pai": {"prefixo": "I_Raiz"} - pecas que passam a ser filhas de um item interativo (ex.: fichas que o aluno
         # apreende): vao para a colecao da raiz e mantem a posicao em que o autor deixou
         bpy.context.view_layer.update()

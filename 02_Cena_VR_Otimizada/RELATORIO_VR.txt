@@ -1,9 +1,9 @@
 CASSINO CLANDESTINO - VERSAO VR OTIMIZADA
 
-DEPOIS: 215096 tris | 39 malhas | 266 slots de material (~draw calls) | 29 luzes
+DEPOIS: 219372 tris | 39 malhas | 266 slots de material (~draw calls) | 29 luzes
 
 Triangulos por colecao:
-  05_Salao_Jogos                        54242
+  05_Salao_Jogos                        58518
   12_Cadeiras_Plastico                  33560
   06_Escritorio_Depositos               28872
   04_Bar_Moveis                         18705
@@ -19,16 +19,16 @@ Triangulos por colecao:
 
 Etapas:
   - Grama instanciada removida de 0 gramados; subdivisao=1, remesh 0.16 m, decimate 35% na folhagem.
-  - Modificadores aplicados em 1807 objetos; textos e fios convertidos em malha.
+  - Modificadores aplicados em 1777 objetos; textos e fios convertidos em malha.
   - Bake de 0 materiais procedurais em texturas de imagem.
-  - 24 materiais com texturas CC0 convertidos para UV + PNG (cor, rugosidade, normal).
+  - 25 materiais com texturas CC0 convertidos para UV + PNG (cor, rugosidade, normal).
   - UVs em caixa (escala real em metros) aplicadas em todas as malhas.
-  - Colisao: 732 caixas orientadas preparadas.
+  - Colisao: 721 caixas orientadas preparadas.
   - 10 conjuntos interativos unidos (1 malha por conjunto).
-  - 1721 objetos estaticos unidos em 1 malha por colecao (menos draw calls).
+  - 1691 objetos estaticos unidos em 1 malha por colecao (menos draw calls).
   - Exportado: cassino_VR.glb
   - Exportado: cassino_VR.fbx
-  - Colisao: 732 caixas, 8784 tris -> colisao.glb / colisao.fbx
+  - Colisao: 721 caixas, 8652 tris -> colisao.glb / colisao.fbx
 
 Proximos passos no motor (Unity/Unreal):
   - Iluminacao: marcar a geometria estatica como Static e fazer bake de lightmaps

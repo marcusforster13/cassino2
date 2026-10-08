@@ -923,7 +923,9 @@ def maquina(i, x, y, olha, col=C_SAL, ligada=True):
     iluminados, porta do cofre com fechadura e bandeja de moedas. Na frente, cadeira de escritorio."""
     n = "Caca_Niquel_%02d" % i; rz = math.atan2(olha[0], -olha[1]); r = vazio(n, (x, y, FZ), col, rz)
     if pecas_maquina(n, r, col):
-        if ligada: cadeira_maquina(n, r, col); ponto("Maquina_%02d" % i, x, y, olha)
+        if ligada:
+            if not (abs(x - .3) < .5 and y > 12): cadeira_maquina(n, r, col)      # a cadeira dessa maquina ficava dentro da mesa de roleta
+            ponto("Maquina_%02d" % i, x, y, olha)
         return r
     RX = (PI / 2, 0, 0); INC = (.28, 0, 0)
     box(n + "_Base", (.62, .56, .1), (0, 0, .05), M["plast"], col, r, bevel=.01)
@@ -979,6 +981,9 @@ for k in range(9):                                                              
     box("Carta", (.063, .088, .001), (CX + d * math.cos(a), CY + d * math.sin(a), FZ + .793 + k * .0006), M["papel"], C_SAL, rot=(0, 0, rnd.uniform(0, 3)))
 # mesa de roleta
 RX, RY = 0.3, 10.6
+# materiais da roleta do autor (modelos/roleta.glb): madeira de pinho envernizado na bacia e dourado nas pecas de cima.
+# Metal moderado: metal puro fica preto no site, a noite. Ficam guardados mesmo sem uso, para o integrar_modelos.py
+for _m in (mat("Madeira_Roleta", "#a8743f", .35), mat("Ouro_Roleta", "#e0ae3c", .25, .45)): _m.use_fake_user = True
 box("Mesa_Roleta_Corpo", (1.2, 2.3, .78), (RX, RY, FZ + .39), M["mad"], C_SAL, bevel=.02)
 box("Mesa_Roleta_Feltro", (1.06, 2.16, .012), (RX, RY, FZ + .787), M["feltro"], C_SAL)
 torno("Roleta_Bacia", [(0, .01), (.3, .01), (.4, .09), (.43, .09), (.43, 0), (0, 0)], M["mad_cl"], C_SAL, pos=(RX, RY + .65, FZ + .79), seg=32)

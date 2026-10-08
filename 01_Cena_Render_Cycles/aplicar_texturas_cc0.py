@@ -138,6 +138,7 @@ TABELA = {
     "Piso_Taco_Salao":    ("piso_madeira", 1.6, "#8a6a48", None, .25),
     "Madeira_Balcao":     ("madeira_escura", 1.2, "#5a3a26", None, .15),
     "Madeira_Clara":      ("madeira_tabuas", 1.2, "#9a7650", None, .2),
+    "Madeira_Roleta":     ("madeira_pinho", .7, "#ffffff", None, .15),      # coated_pine, enviada pelo autor: cor natural
     "Porta_Madeira":      ("madeira_escura", 1.4, "#6b4a30", None, .15),
     "Couro_Vinho":        ("couro", .6, "#5a1c1c", None, .3),
     "Feltro_Verde":       ("tecido", .4, "#1f6b3a", neutro, .15),

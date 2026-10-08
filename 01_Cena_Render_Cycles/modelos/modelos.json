@@ -76,5 +76,32 @@
   "pai": {
    "Cylinder": "I_Fichas"
   }
+ },
+ "roleta.glb": {
+  "substitui": [
+   "Roleta_Bacia",
+   "Roleta_Disco",
+   "Roleta_Eixo",
+   "Roleta_Casa*"
+  ],
+  "colecao": "05_Salao_Jogos",
+  "ignorar": [
+   "Mesa_Roleta_",
+   "Roleta_Quadro"
+  ],
+  "materiais": {
+   "*maior": "Madeira_Roleta",
+   "*": "Ouro_Roleta"
+  },
+  "deslocar": {
+   "Circle": [
+    0,
+    0,
+    0.003
+   ]
+  },
+  "virar": [
+   "Circle"
+  ]
  }
 }
