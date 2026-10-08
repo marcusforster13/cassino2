@@ -1134,8 +1134,43 @@ luz("Luz_Sinuca", "POINT", 22, "#ffe2b0", (SX, SY, FZ + 1.8), C_LUZ, shadow_soft
 box("Estufa_Base", (.46, .8, .06), (3.55, 1.9, FZ + 1.13), M["metal"], C_BAR)
 box("Estufa_Vidro", (.44, .78, .3), (3.55, 1.9, FZ + 1.31), M["vidro_estufa"], C_BAR)
 box("Estufa_Luz", (.4, .74, .02), (3.55, 1.9, FZ + 1.45), M["lamp_q"], C_BAR)
-for k in range(8):
-    esfera("Estufa_Salgado", .04, (3.45 + (k % 2) * .18, 1.62 + (k // 2) * .18, FZ + 1.2), M["salgado"], C_BAR, sub=1, esc=(1, 1.3, .8))
+# salgados do autor (modelos/salgado_coxinha.glb e salgado_kibe.glb, que vem em tamanho gigante: aqui ficam com 7,5 e 6 cm de
+# altura). Sem lightmap, como as garrafas: peca pequena sai manchada. Sem os arquivos, as bolinhas de antes.
+def malha_salgado(arq, alt):
+    cam = os.path.join(AQUI, "modelos", arq)
+    if not os.path.exists(cam): return None
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; ob = next(o for o in novos if o.type == "MESH")
+    me = ob.data.copy(); me.transform(ob.matrix_world)
+    vs = [v.co for v in me.vertices]; mn = [min(v[i] for v in vs) for i in range(3)]; mx = [max(v[i] for v in vs) for i in range(3)]
+    k = alt / (mx[2] - mn[2])
+    me.transform(Matrix.Scale(k, 4) @ Matrix.Translation((-(mn[0] + mx[0]) / 2, -(mn[1] + mx[1]) / 2, -mn[2])))
+    for i, mt in enumerate(me.materials):
+        if not mt: continue
+        mt.name = "Modelo_%s_%d" % (os.path.splitext(arq)[0], i)
+        # foto recortada (fundo transparente): no site o fundo virava mancha preta no salgado. Preenche o fundo com a cor media
+        for nd in [n for n in mt.node_tree.nodes if n.type == "TEX_IMAGE" and n.image]:
+            w, h = nd.image.size; px = np.empty(w * h * 4, np.float32); nd.image.pixels.foreach_get(px); px = px.reshape(-1, 4)
+            fundo = px[:, 3] < .9
+            if fundo.any() and not fundo.all():
+                px[fundo, :3] = px[~fundo, :3].mean(0); px[:, 3] = 1
+                dst = os.path.join(AQUI, "modelos", os.path.splitext(arq)[0] + "_textura.png")
+                im = bpy.data.images.new(os.path.splitext(arq)[0] + "_textura", w, h, alpha=False); im.pixels.foreach_set(px.ravel())
+                im.filepath_raw = dst; im.file_format = "PNG"; im.save(); bpy.data.images.remove(im)
+                nd.image = bpy.data.images.load(dst)
+                for l in [l for l in mt.node_tree.links if l.to_socket.name == "Alpha"]: mt.node_tree.links.remove(l)
+                mt.blend_method = "OPAQUE"
+    me.name = "Salgado_" + os.path.splitext(arq)[0]
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    return me
+_salg = [malha_salgado("salgado_coxinha.glb", .075), malha_salgado("salgado_kibe.glb", .06)]
+for k in range(12):
+    x_, y_ = 3.41 + (k % 3) * .14, 1.63 + (k // 3) * .18
+    me_ = _salg[k // 6]
+    if me_:
+        ob_ = bpy.data.objects.new("Estufa_Salgado", me_); C_GAR.objects.link(ob_)
+        ob_.location = (x_ + rnd.uniform(-.012, .012), y_ + rnd.uniform(-.012, .012), FZ + 1.161); ob_.rotation_euler = (0, 0, rnd.uniform(0, 2 * PI))
+    else: esfera("Estufa_Salgado", .04, (x_, y_, FZ + 1.2), M["salgado"], C_BAR, sub=1, esc=(1, 1.3, .8))
 box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_BAR, bevel=.02)
 box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
 for k in range(5):
