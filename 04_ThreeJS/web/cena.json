@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-09 14:03",
+ "gerado_em": "2026-10-09 14:47",
  "qualidade": "alta",
  "lightmaps": {
   "01_Rua_Estatico": {
@@ -8,27 +8,27 @@
   },
   "02_Vizinhos_Estatico": {
    "lm": "lightmaps/LM_02_Vizinhos.png",
-   "max": 0.61317
+   "max": 0.61316
   },
   "03_Bar_Estrutura_Estatico": {
    "lm": "lightmaps/LM_03_Bar_Estrutura.png",
-   "max": 1.89308
+   "max": 1.89299
   },
   "04_Bar_Moveis_Estatico": {
    "lm": "lightmaps/LM_04_Bar_Moveis.png",
-   "max": 1.39504
+   "max": 1.49645
   },
   "05_Salao_Jogos_Estatico": {
    "lm": "lightmaps/LM_05_Salao_Jogos.png",
-   "max": 0.6883
+   "max": 0.63423
   },
   "06_Escritorio_Depositos_Estatico": {
    "lm": "lightmaps/LM_06_Escritorio_Depositos.png",
-   "max": 0.3837
+   "max": 0.39429
   },
   "07_Fundos_Beco_Estatico": {
    "lm": "lightmaps/LM_07_Fundos_Beco.png",
-   "max": 0.14756
+   "max": 0.14817
   },
   "10_Viatura_Estatico": {
    "lm": "lightmaps/LM_10_Viatura.png",

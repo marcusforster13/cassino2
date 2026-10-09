@@ -714,6 +714,31 @@ def cadeira(nome, x, y, rz, col=None):
     if col is C_BAR: col = C_CAD      # cadeiras do bar ficam fora do lightmap: as ripas finas saiam com faixas pretas no site
     return modelo_ph(nome, "plastic_monobloc_chair_01", (x, y, 0), rz, col, max_tris=4000) or _cadeira_de_caixas(nome, x, y, rz, col)
 
+# ---- copo de cerveja do autor (modelos/copo.glb: a peca de fora e o copo, sem material; a de dentro e a cerveja com espuma,
+#      com as texturas do autor). O copo ganha um vidro translucido. Fora do lightmap, como as garrafas. Sem o arquivo, o
+#      cilindro de antes.
+_copo = {}
+def copo(nome, x, y, zbase, col, alt_antiga=.1, cheio=True):
+    if "vidro" not in _copo:
+        _copo["vidro"] = _copo["cerveja"] = None; cam = os.path.join(AQUI, "modelos", "copo.glb")
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]
+            for o in [o for o in novos if o.type == "MESH"]:
+                me = o.data.copy(); me.transform(o.matrix_world)
+                if [m for m in me.materials if m]:                              # cerveja e espuma: texturas do autor
+                    for i, m in enumerate(me.materials):
+                        if m: m.name = "Modelo_Copo_%d" % i
+                    me.name = "Copo_Cerveja"; _copo["cerveja"] = me
+                else:
+                    me.materials.clear(); me.materials.append(mat("Vidro_Copo", "#e6eeee", .05, alpha=.28)); me.name = "Copo_Vidro"; _copo["vidro"] = me
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    if not _copo["vidro"]:
+        return cyl(nome, .03, .025, alt_antiga, (x, y, zbase + alt_antiga / 2), M["garrafa_c"], col, seg=10)
+    dest = col if col is C_INT else (C_GAR if col is C_BAR else C_GAR_E); rz = rnd.uniform(0, 2 * PI)
+    for chave in (("vidro", "cerveja") if cheio and _copo["cerveja"] else ("vidro",)):
+        ob = bpy.data.objects.new(nome + ("" if chave == "vidro" else "_Cerveja"), _copo[chave]); dest.objects.link(ob); ob.location = (x, y, zbase + .001); ob.rotation_euler = (0, 0, rz)
+
 # ---- garrafa do autor (modelos/garrafa.glb: corpo e tampa em pecas separadas). Todas as garrafas da cena usam esse modelo:
 #      vidro na cor de cada garrafa (verde, ambar, transparente) e tampa de metal. Sem o arquivo, vale a garrafa torneada.
 _garrafa = {}; _rg = random.Random(7)
@@ -851,7 +876,7 @@ for i, (x, y, rz) in enumerate(((-.7, 1.75, .2), (-3.9, 2.2, -.15), (0.15, 4.8, 
     for k, (dx, dy, a) in enumerate(((0, -.62, PI), (0, .62, 0), (-.62, 0, -PI / 2), (.62, 0, PI / 2))[:3 + (i % 2)]):
         c = cadeira("Cadeira_Bar_%d_%d" % (i, k), x + dx, y + dy, rz + a + rnd.uniform(-.2, .2), C_BAR); c.location.z = FZ
     torno("Garrafa_Mesa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], M["garrafa_a"], C_BAR, pos=(x + .1, y + .05, FZ + .745), seg=10)
-    cyl("Copo_Mesa", .03, .025, .1, (x - .12, y - .1, FZ + .795), M["garrafa_c"], C_BAR, seg=10)
+    copo("Copo_Mesa", x - .12, y - .1, FZ + .745, C_BAR)
 for k in range(3):                                                                                # deposito do bar
     for j in range(2 + k % 2):
         if not modelo_ph("Engradado", "plastic_crate_01", (3.7 + k * .45, 8.7, FZ + j * .262), PI / 2 + rnd.uniform(-.06, .06), C_ESC, max_tris=700):
@@ -1139,7 +1164,7 @@ def mesinha(nome, x, y, col, garrafa=True):
         if me_:
             ob_ = bpy.data.objects.new(nome + "_Balde", me_); C_GAR_E.objects.link(ob_); ob_.location = (x - .14, y - .04, FZ + .471); ob_.rotation_euler = (0, 0, rnd.uniform(0, 2 * PI))
         else: cyl(nome + "_Balde", .08, .1, .16, (x - .1, y - .04, FZ + .55), M["cromo"], col, seg=14)
-        for k in range(2): cyl(nome + "_Copo", .026, .03, .09, (x + .02 + k * .1, y - .16, FZ + .515), M["garrafa_c"], col, seg=10)
+        for k in range(2): copo(nome + "_Copo", x + .02 + k * .1, y - .16, FZ + .47, col, .09)
 
 # ---- rua (sem carros estacionados: pesavam 30 mil triangulos e dezenas de materiais): postes do outro lado, lixo, mesa na calcada, vasos
 for i, x in enumerate((-22, 2, 21)):
@@ -1223,7 +1248,7 @@ box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_B
 box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
 for k in range(5):
     torno("Garrafa_Balcao", GARRAFA, M[("garrafa_a", "garrafa_v")[k % 2]], C_BAR, pos=(3.5 + rnd.uniform(-.1, .1), 2.7 + k * .28, FZ + 1.1), seg=10)
-    cyl("Copo_Balcao", .03, .025, .1, (3.38, 2.82 + k * .28, FZ + 1.15), M["garrafa_c"], C_BAR, seg=10)
+    copo("Copo_Balcao", 3.38, 2.82 + k * .28, FZ + 1.10, C_BAR, cheio=k % 2 == 0)      # no balcao, alguns copos vazios
 cartaz("Lousa_Precos", (2.6, 5.9, FZ + 1.95), "-y", (1.5, .9), M["lousa"], ["PRATO FEITO  R$ 22", "CERVEJA 600 ML  R$ 12", "CAIPIRINHA  R$ 14", "PORÇÃO DE FRITAS  R$ 25"], C_BAR, .075)
 cartaz("Cartaz_Bar_A", (-5.89, 1.4, FZ + 1.9), "+x", (.7, .95), M["cartaz_v"], ["PROMOÇÃO", "DE QUARTA", "BALDE", "R$ 45"], C_BAR, .085)
 cartaz("Cartaz_Bar_B", (-5.89, 2.6, FZ + 1.9), "+x", (.7, .95), M["cartaz_az"], ["SOM", "AO VIVO", "SÁBADO"], C_BAR, .1)
@@ -1265,7 +1290,7 @@ cyl("Lixeira_Salao", .16, .13, .42, (-3.2, 8.15, FZ + .21), M["plast"], C_SAL, s
 box("Quadro_de_Luz", (.4, .1, .55), (-1.9, 6.14, FZ + 1.6), M["metal"], C_SAL, bevel=.01)
 mesinha("Mesinha_Salao_A", 1.75, 12.2, C_SAL); mesinha("Mesinha_Salao_B", -2.0, 8.0, C_SAL, garrafa=False)
 cyl("Cinzeiro_Carteado", .05, .04, .02, (CX - .3, CY - .35, FZ + .8), M["garrafa_c"], C_SAL, seg=12)
-for k in range(3): cyl("Copo_Carteado", .028, .024, .09, (CX + .45 * math.cos(k * 2.1), CY + .45 * math.sin(k * 2.1), FZ + .835), M["garrafa_c"], C_SAL, seg=10)
+for k in range(3): copo("Copo_Carteado", CX + .45 * math.cos(k * 2.1), CY + .45 * math.sin(k * 2.1), FZ + .79, C_SAL, .09)
 torno("Garrafa_Carteado", GARRAFA, M["garrafa_a"], C_SAL, pos=(CX + .1, CY + .5, FZ + .79), seg=10)
 box("Rodape_Salao", (5.8, .02, .1), (-.5, 6.09, FZ + .05), M["rodape"], C_SAL)
 
