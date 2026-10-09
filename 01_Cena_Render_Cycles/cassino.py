@@ -1030,6 +1030,8 @@ box("Cadeira_Escritorio_Assento", (.46, .46, .08), (4.7, 11.1, FZ + .46), M["pre
 box("Cadeira_Escritorio_Encosto", (.06, .44, .5), (4.5, 11.1, FZ + .78), M["preto"], C_ESC, bevel=.02)
 cyl("Cadeira_Escritorio_Pe", .03, .22, .42, (4.7, 11.1, FZ + .21), M["metal"], C_ESC, seg=10)
 box("Cofre", (.6, .55, .8), (5.6, 12.6, FZ + .4), M["cofre"], C_ESC, bevel=.02)
+# aco do cofre do autor (modelos/cofre.glb): o cofre inteiro, menos o disco do segredo, que fica com a imagem que veio no modelo
+mat("Aco_Cofre", "#8d9094", .4, .5).use_fake_user = True
 cyl("Cofre_Segredo", .06, .06, .03, (5.29, 12.6, FZ + .5), M["dourado"], C_ESC, rot=(0, PI / 2, 0), seg=16)
 box("Estante_Escritorio", (1.6, .35, 1.8), (3.6, 12.75, FZ + .9), M["mad"], C_ESC)
 box("Monitor_Cameras", (.5, .04, .32), (3.3, 12.55, FZ + 1.45), M["preto_b"], C_ESC)

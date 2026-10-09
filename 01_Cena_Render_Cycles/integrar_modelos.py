@@ -102,6 +102,25 @@ else:
         for pref in info.get("virar", []):
             for o in [o for o in novos if o.name.startswith(pref) and o.type == "MESH"]:
                 o.data.flip_normals(); o.data.update()
+        # "vazios": {"prefixo": "Material_Da_Cena"} - a peca veio com parte das faces sem material (o autor so texturizou um
+        # detalhe, ex.: o segredo do cofre): os espacos de material vazios recebem o material indicado
+        for pref, nome_mat in info.get("vazios", {}).items():
+            mt = bpy.data.materials.get(nome_mat)
+            for o in [o for o in novos if o.name.startswith(pref) and o.type == "MESH"] if mt else []:
+                n = 0
+                for i, m_ in enumerate(o.data.materials):
+                    if m_ is None: o.data.materials[i] = mt; n += 1
+                say("%s: %d espaco(s) de material vazio(s) com %s" % (o.name, n, mt.name))
+        # "resto": {"prefixo": {"frente": [x, y, z], "material": "Nome"}} - a peca veio com uma imagem so, feita para a frente:
+        # as faces que nao olham para "frente" (laterais, topo, fundo) recebem o material indicado, da cena
+        from mathutils import Vector as _V
+        for pref, r in info.get("resto", {}).items():
+            mt = bpy.data.materials.get(r["material"]); fr = _V(r["frente"]).normalized()
+            for o in [o for o in novos if o.name.startswith(pref) and o.type == "MESH"] if mt else []:
+                o.data.materials.append(mt); i_novo = len(o.data.materials) - 1; rot = o.matrix_world.to_3x3(); n = 0
+                for pl in o.data.polygons:
+                    if (rot @ pl.normal).normalized().dot(fr) < r.get("limite", .35): pl.material_index = i_novo; n += 1
+                say("%s: %d de %d faces com %s" % (o.name, n, len(o.data.polygons), mt.name))
         # "deslocar": {"prefixo": [x, y, z]} - ajuste fino de posicao (ex.: disco no mesmo plano do fundo da bacia, que pisca)
         for pref, d in info.get("deslocar", {}).items():
             for o in [o for o in novos if o.name.startswith(pref)]:

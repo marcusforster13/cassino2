@@ -140,7 +140,8 @@ TABELA = {
     "Madeira_Balcao":     ("madeira_escura", 1.2, "#5a3a26", None, .15),
     "Madeira_Clara":      ("madeira_tabuas", 1.2, "#9a7650", None, .2),
     "Madeira_Roleta":     ("madeira_pinho", .7, "#ffffff", None, .15),
-    "Inox_Balde":         ("metal_inox", .3, "#ffffff", None, .1),          # Metal055A (ambientCG, CC0), enviada pelo autor      # coated_pine, enviada pelo autor: cor natural
+    "Inox_Balde":         ("metal_inox", .3, "#ffffff", None, .1),
+    "Aco_Cofre":          ("metal_cofre", .6, "#ffffff", None, .1),         # Metal038 (ambientCG, CC0), enviada pelo autor          # Metal055A (ambientCG, CC0), enviada pelo autor      # coated_pine, enviada pelo autor: cor natural
     "Porta_Madeira":      ("madeira_escura", 1.4, "#6b4a30", None, .15),
     "Couro_Vinho":        ("couro", .6, "#5a1c1c", None, .3),
     "Feltro_Verde":       ("tecido", .4, "#1f6b3a", neutro, .15),
@@ -151,7 +152,7 @@ TABELA = {
     "Porta_Loja_Metal":   ("metal_pintado", 1.0, "#5b5f66", grafite, .15),
     "Porta_Ferro":        ("metal_pintado", 1.0, "#4a4f55", grafite, .2),
 }
-METAL = {"Inox_Balde": .5}      # brilho de metal moderado: metal puro fica preto no site, a noite
+METAL = {"Inox_Balde": .5, "Aco_Cofre": .35}      # brilho de metal moderado: metal puro fica preto no site, a noite
 feitos = []
 for nome, (pasta, tile, tint, rec, relevo) in TABELA.items():
     m = bpy.data.materials.get(nome)
