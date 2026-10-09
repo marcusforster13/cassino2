@@ -884,7 +884,7 @@ export async function iniciar(ctx) {
     ['atendente', 'atendente', 'Funcionária', [4.6, 3.0], [-1, 0], 'f', 1.66],
     ['seguranca', 'seguranca', 'Segurança', [-2.7, 7.25], [-1, 0], 'm', 1.8],
     ['responsavel', 'responsavel', 'Responsável', [1.25, 10.9], [-1, 0], 'm', 1.78],
-    ['apostador_1', 'apostador_a', 'Apostador', [-2.5, 11.55], [.3, 1], 'm', 1.78],
+    ['apostador_1', 'apostador_a', 'Apostador', [-2.1, 11.74], [0, 1], 'm', 1.78],      // sentado, jogando na segunda maquina
     ['apostador_2', 'apostador_b', 'Apostador', [-1.75, 9.45], [-1, .3], 'm', 1.78],
     ['apostador_3', 'apostador_c', 'Apostadora', [0.4, 6.8], [0, 1], 'f', 1.68],
     ['seguranca_2', 'seguranca_2', 'Homem armado', [-4.9, 10.6], [0, -1], 'm', 1.8],
@@ -897,7 +897,7 @@ export async function iniciar(ctx) {
   const FUGA = [[1.85, 12.3], [1.85, 13.7], [-3.6, 15.1], [-7.0, 15.1], [-7.0, 1.0], [-7.0, -1.2], [-17.0, -1.2]];
   function limparNPCs() { Object.values(npcs).forEach(n => scene.remove(n)); for (const k in npcs) delete npcs[k]; }
   function criarNPCs(v) {
-    limparNPCs();
+    limparNPCs(); livreSaiu = false;
     for (const [chave, papel, nome, [x, y], [dx, dy], voz, alt] of ELENCO) {
       if (chave === 'responsavel' && v.responsavel === 'ausente') continue;
       if (chave === 'seguranca_2' && v.seguranca !== 'confronto') continue;
@@ -909,8 +909,40 @@ export async function iniciar(ctx) {
     if (npcs.apoio) npcs.apoio.visible = false;
     for (const g of ARMAS_NPC) g.visible = false;
     if (npcs.atirador) { const a = npcs.atirador, u = a.userData; u.arma = armaNPC3; u.sentado = true; u.semVirar = true; u.fig = false; u.base = 'sentado_parado'; animar(a, 'sentado_parado', 1e6, 0); a.position.y = ALTURA_SENTADO(u.altura); }
+    if (npcs.apostador_1) { const j = npcs.apostador_1, u = j.userData; u.sentado = true; u.jogando = true; u.semVirar = true; u.fig = false; u.base = 'sentado_jogando'; animar(j, 'sentado_jogando', 1e6, 0); j.position.y = ALTURA_SENTADO(u.altura) + .05; }
     if (npcs.seguranca) npcs.seguranca.userData.arma = armaNPC;
     if (npcs.seguranca_2) npcs.seguranca_2.userData.arma = armaNPC2;
+  }
+  // o apostador que joga sentado levanta (fica em pe atras da cadeira) e tenta sair pela porta dos fundos, andando.
+  // So para quando o policial aponta a arma para ele (ver miraNoApostador, no quadro).
+  const SAIDA_JOGADOR = [[-.9, 11.0], [-.9, 9.25], [1.6, 9.25], [1.7, 11.6]];      // contorna as cadeiras e a mesa de roleta
+  let livreSaiu = false;
+  function levantar(n) { const u = n.userData; if (!u.sentado) return; u.sentado = false; u.jogando = false; u.semVirar = false; u.fig = true; u.base = 'parada'; n.position.copy(B(-2.1, 11.15)); }
+  function tentarSair() {
+    const n = npcs.apostador_1, u = n?.userData; if (!n || u.saindo || u.parouArma || u.caido || u.fugiu || u.algemado || u.atordoado > performance.now()) return;
+    levantar(n); u.saindo = true; u.fugindo = true; u.tMira = 0; moverPorta('fundos', 1, .4);
+    if (A && A.apoio) rota(n, [...SAIDA_JOGADOR, ...FUGA.slice(0, 3)], 1.5, 'andando', () => {                 // a equipe de apoio contem no quintal e traz de volta
+      u.saindo = false; u.fugindo = false; registrar('fuga_contida');
+      setTimeout(() => rota(n, [[1.85, 13.7], [1.85, 12.3], ...DESTINO_CONTENCAO.apostador_1.slice(-1)], 1.3, 'andando', () => { u.reunido = true; conferirPessoas(); }), 1500);
+    });
+    else rota(n, [...SAIDA_JOGADOR, ...(A ? FUGA : FUGA.slice(0, 3))], 1.5, 'andando', () => { n.visible = false; u.fugiu = true; u.saindo = false; u.fugindo = false; if (A && !A.fugiram) { A.fugiram = true; registrar('apostadores_fugiram'); } conferirPessoas(); });
+    legenda('Alerta', 'O homem que jogava na máquina levantou e está indo para a porta dos fundos.', 4);
+  }
+  const P1 = new THREE.Vector3(), D1 = new THREE.Vector3(), T1 = new THREE.Vector3();
+  function miraNoApostador(dt) {
+    const n = npcs.apostador_1, u = n?.userData; if (!u?.saindo || !n.visible) return;
+    let naMira = false;
+    if (S.armaNaMao && arma?.visible) {
+      arma.getWorldPosition(P1); arma.getWorldDirection(D1).negate();                  // o cano aponta para -Z da arma
+      T1.copy(n.position); T1.y += 1.15; T1.sub(P1); const dist = T1.length();
+      naMira = dist < 14 && D1.angleTo(T1) < .14;
+    }
+    u.tMira = naMira ? (u.tMira || 0) + dt : 0;
+    if (u.tMira > .3) {
+      u.saindo = false; u.fugindo = false; u.parouArma = true; u.rota = null; u.destino = null; u.base = 'rendido'; animar(n, 'rendido', 1e6, .25);
+      n.rotation.y = Math.atan2(P1.x - n.position.x, P1.z - n.position.z); u.giroBase = n.rotation.y;
+      legenda('Apostador', 'Calma! Não atira, eu paro!', 4); conferirPessoas();
+    }
   }
   const rota = (n, pts, vel, anim, aoChegar) => {
     const u = n.userData; u.rota = pts.map(([x, y]) => B(x, y)); u.destino = null; u.vel = vel; u.aoChegar = () => { animar(n, u.base || 'parada', 1e6, .3); aoChegar?.(); };
@@ -1020,11 +1052,12 @@ export async function iniciar(ctx) {
   const renderSeguranca = largou => renderNPC(npcs.seguranca, largou);
   function reacoes() {
     const v = S.variacao, s = npcs.seguranca;
-    for (const n of apostadores()) { animar(n, 'rendido', 3.5, .3); n.userData.base = n.userData.acoes?.nervoso ? 'nervoso' : 'parada'; }
+    for (const n of apostadores()) { if (n.userData.jogando) continue; animar(n, 'rendido', 3.5, .3); n.userData.base = n.userData.acoes?.nervoso ? 'nervoso' : 'parada'; }
+    setTimeout(() => { if (A) tentarSair(); }, 900);
     if (npcs.responsavel) npcs.responsavel.userData.base = 'irritado', animar(npcs.responsavel, 'irritado', 1e6, .4);
     if (v.fuga === 'tentam_sair') setTimeout(() => {
       if (!A) return; moverPorta('fundos', 1, .4);
-      for (const k of ['apostador_1', 'apostador_2']) {
+      for (const k of ['apostador_2']) {
         const n = npcs[k]; if (!n || n.userData.atordoado > performance.now()) continue;
         n.userData.fugindo = true;
         if (A.apoio) rota(n, FUGA.slice(0, 3), 3.4, 'correndo', () => {                 // a equipe de apoio contem no quintal e traz de volta
@@ -1033,7 +1066,7 @@ export async function iniciar(ctx) {
         });
         else rota(n, FUGA, 3.4, 'correndo', () => { n.visible = false; n.userData.fugiu = true; n.userData.fugindo = false; if (!A.fugiram) { A.fugiram = true; registrar('apostadores_fugiram'); } conferirPessoas(); });
       }
-      legenda('Alerta', A.apoio ? 'Dois apostadores correm para os fundos. A equipe de apoio está lá.' : 'Dois apostadores correm para a porta dos fundos!', 4);
+      legenda('Alerta', A.apoio ? 'Outro apostador corre para os fundos. A equipe de apoio está lá.' : 'Outro apostador corre para a porta dos fundos!', 4);
     }, 1400);
     if (v.seguranca === 'armado_rende') setTimeout(() => { A && legenda('Alerta', 'O homem perto da entrada leva a mão à cintura: há um volume sob a camisa. Fale com ele.', 6); }, 1200);
     if (v.seguranca === 'armado_reage') setTimeout(() => {
@@ -1432,6 +1465,8 @@ export async function iniciar(ctx) {
       if (encarar) { let d = Math.atan2(V.x - n.position.x, V.z - n.position.z) - n.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); n.rotation.y += d * Math.min(1, dt * (A?.ameaca ? 6 : 2.5)); }
       else if (u.fig && !u.fala && !u.destino && !u.rota?.length) { let d = u.giroBase - n.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); n.rotation.y += d * Math.min(1, dt * 1.2); }
     }
+    miraNoApostador(dt);
+    if (!S.ativo && !livreSaiu && noSalao(V) && npcs.apostador_1?.userData.real) { livreSaiu = true; setTimeout(tentarSair, 1200); }      // modo livre: reage quando o policial entra no salao
     seguirArmaNPC();
     if (Math.floor(agora / 500) !== Math.floor((agora - dt * 1000) / 500)) {        // sons que saem dos comodos fechados
       const som = window.__som;

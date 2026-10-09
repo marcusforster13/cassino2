@@ -34,7 +34,7 @@ PAPEIS = {
     "seguranca": ("Male_Adult_20", _civil("m", {"irritado": "m_idle_angry_01", "apontando": "m_idle_neutral_01+apontando"})),
     "seguranca_2": ("Male_Adult_10", _civil("m", {"apontando": "m_idle_neutral_01+apontando"})),
     "atirador": ("Male_Adult_04", _civil("m", {"sentado_parado": "m_idle_neutral_01+sentado_parado", "sentado_apontando": "m_idle_neutral_01+sentado_apontando", "apontando": "m_idle_neutral_01+apontando"})),
-    "apostador_a": ("Male_Adult_13", _civil("m")),
+    "apostador_a": ("Male_Adult_13", _civil("m", {"sentado_jogando": "m_idle_neutral_01+sentado_jogando"})),
     "apostador_b": ("Male_Adult_16", _civil("m")),
     "apostador_c": ("Female_Adult_01", _civil("f")),
     "apostador_d": ("Male_Adult_01", _civil("m")),
@@ -173,7 +173,7 @@ def pose_bracos(arm, desejado, f, tgt_inv, tipo):
                     Mp, _ = mira(d0, d01, M_hd, t_des * .35 + dir_mao * .7 + p * .6)
                     if d02: mira(d01, d02, Mp, dir_mao * .8 - t_des * .35 + p * .45)
             continue
-        if tipo in ("sentado", "sentado_parado") or (tipo in ("sentado_entrega", "sentado_entrega_meio") and sgn > 0):
+        if tipo in ("sentado", "sentado_parado", "sentado_jogando") or (tipo in ("sentado_entrega", "sentado_entrega_meio") and sgn > 0):
             # sentado ao volante. "sentado" = dirigindo: maos fechadas no aro, na posicao 10h10, cotovelos dobrados para baixo.
             # "sentado_parado" (e a mao direita na entrega do documento) = carro parado: maos descansando sobre as coxas.
             from mathutils import Quaternion
@@ -193,6 +193,11 @@ def pose_bracos(arm, desejado, f, tgt_inv, tipo):
                 polo = -cima * .85 + lado * .5 - frente * .1
                 dir_mao = (frente * .62 + cima * .68 - lado * .32).normalized()      # dedos por cima do aro
                 angs, pol = (58, 66), (.45, .55, .6)
+            elif tipo == "sentado_jogando":      # sentado na maquina caca-niquel: maos a frente, sobre a mesa de botoes
+                punho = pelve + frente * L * .78 + cima * L * .50 + lado * L * (.30 if sgn > 0 else .16)
+                polo = -cima * .8 + lado * .6 - frente * .1
+                dir_mao = (frente * .95 - cima * .22 - lado * .1).normalized()
+                angs, pol = (18, 26), (.7, .6, .2)
             else:
                 punho = pelve + frente * L * .52 + cima * L * .23 + lado * L * .22
                 polo = lado * .8 - frente * .55 - cima * .15
