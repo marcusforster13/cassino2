@@ -992,9 +992,27 @@ cyl("Roleta_Eixo", .025, .012, .12, (RX, RY + .65, FZ + .89), M["dourado"], C_SA
 for k in range(18):
     a = 2 * PI * k / 18
     box("Roleta_Casa", (.07, .035, .004), (RX + .24 * math.cos(a), RY + .65 + .24 * math.sin(a), FZ + .818), M["ficha_r"] if k % 2 else M["ficha_b"], C_SAL, rot=(0, 0, a))
-for i in range(3):                                                                                # quadro de apostas pintado no feltro
-    for j in range(6):
-        box("Roleta_Quadro", (.26, .2, .002), (RX - .28 + i * .28, RY - .95 + j * .22, FZ + .794), M["ficha_r"] if (i + j) % 2 else M["ficha_p"], C_SAL)
+def pano_roleta():
+    """Quadro de apostas do autor (modelos/roleta_pano.webp, com fundo transparente) aplicado sobre o feltro da mesa, sem
+    alterar a imagem: o feltro aparece onde ela e transparente. Fica entre a roleta e a ponta da mesa, com o zero do lado da
+    roleta, legivel de quem esta do lado do salao. Devolve None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "roleta_pano.webp")
+    if not os.path.exists(cam): return None
+    src = bpy.data.images.load(cam); w, h = src.size
+    dst = os.path.join(AQUI, "modelos", "roleta_pano_textura.png")      # mesma imagem, em PNG com transparencia
+    src.filepath_raw = dst; src.file_format = "PNG"; src.save(); bpy.data.images.remove(src)
+    m = bpy.data.materials.new("Img_Pano_Roleta"); nt = m.node_tree; bs = nt.nodes.get("Principled BSDF")
+    tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = bpy.data.images.load(dst)
+    nt.links.new(tx.outputs["Color"], bs.inputs["Base Color"]); nt.links.new(tx.outputs["Alpha"], bs.inputs["Alpha"]); bs.inputs["Roughness"].default_value = .95
+    try: m.surface_render_method = "BLENDED"
+    except Exception: m.blend_method = "BLEND"
+    comp = 1.26; larg = comp * h / w                             # cabe entre a bacia da roleta e a ponta da mesa
+    ya = RY + .25; yb = ya - comp; x1, x2 = RX - larg / 2, RX + larg / 2
+    return adesivo("Roleta_Pano", lambda u, v: Vector((x1 + (x2 - x1) * v, ya + (yb - ya) * u, FZ + .7945)), 1, 1, C_SAL, None, mat=m)
+if not pano_roleta():
+    for i in range(3):                                                                            # quadro de apostas pintado no feltro
+        for j in range(6):
+            box("Roleta_Quadro", (.26, .2, .002), (RX - .28 + i * .28, RY - .95 + j * .22, FZ + .794), M["ficha_r"] if (i + j) % 2 else M["ficha_p"], C_SAL)
 cortina("Cortina_Salao_Fundo", (-3.4, 12.86), (1.2, 12.86), M["cortina_br"], C_SAL)
 cortina("Cortina_Salao_Oeste", (-3.39, 8.4), (-3.39, 12.8), M["cortina_br"], C_SAL)
 box("Neon_Salao", (2.4, .04, .08), (-.5, 6.1, FZ + 2.5), M["neon_r"], C_SAL)

@@ -926,7 +926,14 @@ export async function iniciar(ctx) {
       setTimeout(() => rota(n, [[1.85, 13.7], [1.85, 12.3], ...DESTINO_CONTENCAO.apostador_1.slice(-1)], 1.3, 'andando', () => { u.reunido = true; conferirPessoas(); }), 1500);
     });
     else rota(n, [...SAIDA_JOGADOR, ...(A ? FUGA : FUGA.slice(0, 3))], 1.5, 'andando', () => { n.visible = false; u.fugiu = true; u.saindo = false; u.fugindo = false; if (A && !A.fugiram) { A.fugiram = true; registrar('apostadores_fugiram'); } conferirPessoas(); });
-    legenda('Alerta', 'O homem que jogava na máquina levantou e está indo para a porta dos fundos.', 4);
+    legenda('Alerta', 'O homem que jogava na máquina levantou e está indo para a porta dos fundos. Aponte para ele e aperte o gatilho para dar a ordem de parar.', 5);
+  }
+  function ordemVerbal(n) {                                   // "Parado! Polícia!": a resposta proporcional para quem só está indo embora
+    const u = n?.userData; if (!u?.saindo) return;
+    u.saindo = false; u.fugindo = false; u.parouOrdem = true; u.rota = null; u.destino = null; u.base = u.acoes?.nervoso ? 'nervoso' : 'parada'; animar(n, u.base, 1e6, .3);
+    camera.getWorldPosition(P1); n.rotation.y = Math.atan2(P1.x - n.position.x, P1.z - n.position.z); u.giroBase = n.rotation.y;
+    legenda('Você', 'Parado! Polícia! Fique onde está.', 2.5); registrar('ordem_verbal_saida');
+    setTimeout(() => diz(n, 'Tá bom, tá bom… eu só ia embora.'), 1200); conferirPessoas();
   }
   const P1 = new THREE.Vector3(), D1 = new THREE.Vector3(), T1 = new THREE.Vector3();
   function miraNoApostador(dt) {
@@ -941,7 +948,7 @@ export async function iniciar(ctx) {
     if (u.tMira > .3) {
       u.saindo = false; u.fugindo = false; u.parouArma = true; u.rota = null; u.destino = null; u.base = 'rendido'; animar(n, 'rendido', 1e6, .25);
       n.rotation.y = Math.atan2(P1.x - n.position.x, P1.z - n.position.z); u.giroBase = n.rotation.y;
-      legenda('Apostador', 'Calma! Não atira, eu paro!', 4); conferirPessoas();
+      legenda('Apostador', 'Calma! Não atira, eu paro!', 4); if (!ameacando().length) registrar('arma_sem_ameaca'); conferirPessoas();
     }
   }
   const rota = (n, pts, vel, anim, aoChegar) => {
@@ -1277,6 +1284,7 @@ export async function iniciar(ctx) {
     if (A && !A.apoio && !A.entrou) b.push({ label: 'Rádio: pedir apoio para cobrir os fundos', acao: () => falarRadio('apoio') });
     if (A?.ferido && !A.socorro) b.push({ label: 'Rádio: pedir socorro médico e comunicar o disparo', acao: () => { fecharPaineis(); A.socorro = true; registrar('socorro'); radio(CEN.radio.socorro); } });
     if (A?.entrou && !A.decidiu) b.push({ label: 'Rádio: enquadramento e condução (encerrar a ocorrência)', acao: decidirFinal });
+    if (npcs.apostador_1?.userData.saindo) b.unshift({ label: 'Ordenar: "Parado! Polícia!"', acao: () => { menu.esconder(); ordemVerbal(npcs.apostador_1); } });
     if (S.armaNaMao) b.push({ label: `Recarregar a arma (${S.municao ?? CARREGADOR}/${CARREGADOR})`, acao: () => { menu.esconder(); recarregar(); } });
     b.push({ label: S.armaNaMao ? 'Guardar a arma no coldre' : 'Sacar a arma', acao: () => { sacar(!S.armaNaMao); menu.esconder(); } },
       { label: renderer.xr.isPresenting ? (S.granadaNaMao ? 'Guardar a granada' : `Pegar granada de efeito moral (${S.granadas ?? 2})`) : `Lançar granada de efeito moral (${S.granadas ?? 2})`, acao: () => { menu.esconder(); renderer.xr.isPresenting ? pegarGranada(!S.granadaNaMao) : arremessar(); } },
@@ -1364,6 +1372,7 @@ export async function iniciar(ctx) {
     for (const p of paineis) if (p.clique(ray)) return true;
     if (S.granadaNaMao && c?.userData.mao === 'left') { S.granadaArmada = true; window.__som?.tocar('algemas', null, false, { vol: .3 }); legenda('Granada', 'Pino puxado. Solte o gatilho no fim do movimento.', 2.5); return true; }
     if (S.armaNaMao && (!c || c.userData.mao !== 'left')) return disparar(ray);
+    { const sj = npcs.apostador_1; if (sj?.userData.saindo && sj.visible) { const h = ray.intersectObject(sj.userData.hit, false)[0]; if (h && h.distance < 14) { ordemVerbal(sj); return true; } } }      // apontar e clicar nele, mesmo de longe
     if (!S.ativo) return explorar(ray);
     if (!A || A.fase === 'fim') return false;
     const hn = ray.intersectObjects(Object.values(npcs).filter(n => n.visible).map(n => n.userData.hit), false)[0];

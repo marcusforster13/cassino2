@@ -162,6 +162,14 @@
           "base": "Súmula Vinculante 11"
         },
         {
+          "id": "ordem_verbal_saida",
+          "texto": "Conter com ordem verbal quem tentava sair do salão, sem apontar a arma",
+          "pontos": 3,
+          "condicao": "variacao.entra == 'sim'",
+          "base": "Lei 13.060/2014, art. 2º; Portaria 4.226/2010",
+          "validar": true
+        },
+        {
           "id": "reunir_pessoas",
           "texto": "Reunir as pessoas em um ponto, com as mãos visíveis",
           "pontos": 4,
@@ -210,6 +218,13 @@
           "texto": "Revista pessoal generalizada, sem fundada suspeita",
           "pontos": -3,
           "base": "CPP art. 244",
+          "validar": true
+        },
+        {
+          "id": "arma_sem_ameaca",
+          "texto": "Arma apontada para pessoa desarmada que só tentava sair (força acima do necessário)",
+          "pontos": -2,
+          "base": "Lei 13.060/2014, art. 2º",
           "validar": true
         }
       ],
