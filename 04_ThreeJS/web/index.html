@@ -85,7 +85,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1009-1521';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1009-1649';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -183,6 +183,7 @@ gltf.scene.traverse(o => {
     const m = m0.clone();
     if (/Mancha/.test(m.name)) { m.opacity = .32; m.transparent = true; m.depthWrite = false; }      // manchas de umidade: discretas
     if (/Pano_Roleta/.test(m.name)) { m.transparent = false; m.alphaTest = .4; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }      // quadro de apostas recortado sobre o feltro
+    if (/Vidro_Geladeira/.test(m.name)) { m.transparent = true; m.opacity = .16; m.depthWrite = false; m.roughness = .05; }      // porta de vidro da geladeira expositora
     if (/Vidro_Copo/.test(m.name)) { m.transparent = true; m.opacity = .2; m.depthWrite = false; m.roughness = .05; m.side = THREE.DoubleSide; }      // copo de vidro translucido: a cerveja aparece dentro
     if (m.transmission > 0) { m.transmission = 0; m.transparent = true; m.opacity = 0.45; m.roughness = 0.05; }
     m.envMapIntensity = CFG.env_intensidade ?? 0.35;

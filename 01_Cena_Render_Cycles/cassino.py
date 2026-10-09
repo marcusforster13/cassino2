@@ -860,12 +860,55 @@ for k in range(4):
         cyl("Banqueta_Assento", .17, .17, .05, (2.95, 1.9 + k * .75, FZ + .74), M["couro"], C_BAR, seg=16)
         cyl("Banqueta_Pe", .14, .03, .72, (2.95, 1.9 + k * .75, FZ + .36), M["metal"], C_BAR, seg=10)
 for k, z in enumerate((1.0, 1.45, 1.9)):                                                          # prateleiras de garrafas na parede leste
-    box("Prateleira_Bar", (.26, 3.2, .035), (5.76, 3.4, FZ + z), M["mad_cl"], C_BAR)
-    for j in range(12):
-        g = M[("garrafa_v", "garrafa_a", "garrafa_c")[(j + k) % 3]]; y = 1.95 + j * .26
+    box("Prateleira_Bar", (.26, 2.8, .035), (5.76, 3.6, FZ + z), M["mad_cl"], C_BAR)      # comeca depois da geladeira expositora
+    for j in range(11):
+        g = M[("garrafa_v", "garrafa_a", "garrafa_c")[(j + k) % 3]]; y = 2.33 + j * .26
         torno("Garrafa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], g, C_BAR, pos=(5.76, y, FZ + z + .018), seg=10)
 box("Freezer_Horizontal", (.7, 1.5, .9), (5.5, 5.1, FZ + .45), M["freezer"], C_BAR, bevel=.03)
-box("Geladeira_Vertical", (.7, .7, 1.9), (5.5, 1.75, FZ + .95), M["freezer"], C_BAR, bevel=.03)
+def geladeira(x, y, rz):
+    """Geladeira expositora do autor (modelos/geladeira.glb, sem materiais; a porta olha para -Y no arquivo). Como na foto de
+    referencia: gabinete preto por fora, forro branco por dentro, prateleiras de grade brancas, porta de vidro translucido e luz
+    interna. As prateleiras ficam fora do lightmap (grade fina sai manchada). Devolve None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "geladeira.glb")
+    if not os.path.exists(cam): return None
+    preto, branco = mat("Plastico_Geladeira_Preto", "#2b2b2b", .5), mat("Plastico_Geladeira_Branco", "#e6e7e9", .45)
+    vidro = mat("Vidro_Geladeira", "#dfeaf0", .05, alpha=.16)
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; pecas = []
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world); vs = [v.co for v in me.vertices]
+        mn = Vector([min(v[i] for v in vs) for i in range(3)]); mx = Vector([max(v[i] for v in vs) for i in range(3)]); pecas.append((me, mn, mx))
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    corpo = max(pecas, key=lambda p: (p[2] - p[1]).length); cx, cy, z0 = (corpo[1].x + corpo[2].x) / 2, (corpo[1].y + corpo[2].y) / 2, corpo[1].z
+    centro = (corpo[1] + corpo[2]) / 2
+    Mw = Matrix.Translation((x, y, FZ)) @ Matrix.Rotation(rz, 4, "Z") @ Matrix.Translation((-cx, -cy, -z0)); n_prat = 0; centro_l = centro
+    for me, mn, mx in pecas:
+        d = mx - mn; me.materials.clear(); col = C_BAR
+        if me is corpo[0]:                                           # faces voltadas para dentro do gabinete: brancas; por fora: pretas
+            me.materials.append(preto); nome = "Geladeira_Gabinete"      # o gabinete e uma casca so (sem paredes internas): todo preto
+        elif d.z < .03: me.materials.append(branco); col = C_GAR; n_prat += 1; nome = "Geladeira_Prateleira"
+        elif min(d.x, d.y) < .06 and d.z > 1.0: me.materials.append(vidro); nome = "Geladeira_Porta_Vidro"
+        else: me.materials.append(preto); nome = "Geladeira_Detalhe"
+        me.transform(Mw)
+        ob = bpy.data.objects.new(nome, me); col.objects.link(ob)
+    alt = corpo[2].z - z0
+    # forro branco por dentro (o modelo nao tem paredes internas: pelo vidro se via o avesso preto do gabinete): caixa aberta
+    # na frente, com as faces viradas para dentro, do tamanho do vao da porta
+    porta = next((p for p in pecas if min((p[2] - p[1]).x, (p[2] - p[1]).y) < .06 and (p[2] - p[1]).z > 1.0), None)
+    if porta:
+        f0 = Vector((corpo[1].x + .012, porta[2].y + .002, porta[1].z + .004)); f1 = Vector((corpo[2].x - .012, corpo[2].y - .012, porta[2].z - .004))
+        bmf = bmesh.new(); bmesh.ops.create_cube(bmf, size=1.0)
+        bmesh.ops.scale(bmf, vec=f1 - f0, verts=bmf.verts); bmesh.ops.translate(bmf, vec=(f0 + f1) / 2, verts=bmf.verts); bmf.normal_update()
+        bmesh.ops.delete(bmf, geom=[f for f in bmf.faces if f.normal.y < -.9], context="FACES")      # sem a face da frente
+        bmesh.ops.reverse_faces(bmf, faces=bmf.faces)
+        forro = bpy.data.meshes.new("Geladeira_Forro"); bmf.to_mesh(forro); bmf.free(); forro.materials.append(branco); forro.transform(Mw)
+        C_BAR.objects.link(bpy.data.objects.new("Geladeira_Forro", forro))
+    pl_ = Mw @ Vector((cx, cy + .1, z0 + alt - .22)); box("Geladeira_Luz", (.03, .36, .02) if abs(math.sin(rz)) > .5 else (.36, .03, .02), tuple(pl_), M["lamp_f"], C_BAR)
+    luz("Luz_Geladeira", "POINT", 14, "#eaf2ff", tuple(Mw @ Vector((cx, cy + .05, z0 + alt - .35))), C_LUZ, shadow_soft_size=.08)
+    say("geladeira do autor: %d pecas, %d prateleiras, %.2f m de altura" % (len(pecas), n_prat, alt))
+    return True
+if not geladeira(5.5, 1.75, -PI / 2):                                # porta para -X (lado do balcao); as prateleiras da parede comecam depois dela
+    box("Geladeira_Vertical", (.7, .7, 1.9), (5.5, 1.75, FZ + .95), M["freezer"], C_BAR, bevel=.03)
 box("TV_Bar", (1.1, .06, .64), (0.5, 5.86, FZ + 2.2), M["preto_b"], C_BAR, bevel=.01)
 box("TV_Bar_Tela", (1.02, .01, .56), (0.5, 5.82, FZ + 2.2), M["tv"], C_BAR)
 box("Azulejo_Barra", (8.4, .02, 1.3), (0.0, 5.915, FZ + .65), M["azulejo"], C_BAR)

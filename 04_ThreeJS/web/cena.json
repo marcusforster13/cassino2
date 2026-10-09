@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-09 15:20",
+ "gerado_em": "2026-10-09 16:48",
  "qualidade": "alta",
  "lightmaps": {
   "01_Rua_Estatico": {
@@ -8,55 +8,55 @@
   },
   "02_Vizinhos_Estatico": {
    "lm": "lightmaps/LM_02_Vizinhos.png",
-   "max": 0.61317
+   "max": 0.6131
   },
   "03_Bar_Estrutura_Estatico": {
    "lm": "lightmaps/LM_03_Bar_Estrutura.png",
-   "max": 1.89348
+   "max": 1.89284
   },
   "04_Bar_Moveis_Estatico": {
    "lm": "lightmaps/LM_04_Bar_Moveis.png",
-   "max": 1.45023
+   "max": 2.13363
   },
   "05_Salao_Jogos_Estatico": {
    "lm": "lightmaps/LM_05_Salao_Jogos.png",
-   "max": 0.63225
+   "max": 0.63247
   },
   "06_Escritorio_Depositos_Estatico": {
    "lm": "lightmaps/LM_06_Escritorio_Depositos.png",
-   "max": 0.39516
+   "max": 0.39601
   },
   "07_Fundos_Beco_Estatico": {
    "lm": "lightmaps/LM_07_Fundos_Beco.png",
-   "max": 0.14831
+   "max": 0.14861
   },
   "10_Viatura_Estatico": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "Giroflex_Lente_1": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "Giroflex_Lente_2": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "Giroflex_Lente_3": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "Giroflex_Lente_4": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "Giroflex_Lente_5": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "Giroflex_Lente_6": {
    "lm": "lightmaps/LM_10_Viatura.png",
-   "max": 0.51332
+   "max": 0.51305
   },
   "11_Sala_Reservada_Estatico": {
    "lm": "lightmaps/LM_11_Sala_Reservada.png",
