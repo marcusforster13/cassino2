@@ -76,7 +76,7 @@ def media_linear(img):
     m = px.reshape(-1, 4)[::7, :3].mean(0)
     return lin(tuple(m))
 
-def pbr_caixa(mat, pasta, tile, tint=None, recolor=None, relevo=.35):
+def pbr_caixa(mat, pasta, tile, tint=None, recolor=None, relevo=.35, metal=0.0):
     diff, rough, disp = arquivos(pasta)
     if recolor:
         diff = recolor(diff)
@@ -115,7 +115,8 @@ def pbr_caixa(mat, pasta, tile, tint=None, recolor=None, relevo=.35):
         tdp = tex(disp, True); bp = nt.nodes.new("ShaderNodeBump")
         bp.inputs["Strength"].default_value = relevo; bp.inputs["Distance"].default_value = .02
         L(tdp.outputs["Color"], bp.inputs["Height"]); L(bp.outputs["Normal"], b.inputs["Normal"])
-    b.inputs["Metallic"].default_value = 0.0
+    b.inputs["Metallic"].default_value = metal
+    mat["cc0_metal"] = float(metal)
     mat["cc0_pasta"] = pasta
     mat["cc0_tile"] = float(tile)
     mat["cc0_tint"] = list(alvo)
@@ -138,7 +139,8 @@ TABELA = {
     "Piso_Taco_Salao":    ("piso_madeira", 1.6, "#8a6a48", None, .25),
     "Madeira_Balcao":     ("madeira_escura", 1.2, "#5a3a26", None, .15),
     "Madeira_Clara":      ("madeira_tabuas", 1.2, "#9a7650", None, .2),
-    "Madeira_Roleta":     ("madeira_pinho", .7, "#ffffff", None, .15),      # coated_pine, enviada pelo autor: cor natural
+    "Madeira_Roleta":     ("madeira_pinho", .7, "#ffffff", None, .15),
+    "Inox_Balde":         ("metal_inox", .3, "#ffffff", None, .1),          # Metal055A (ambientCG, CC0), enviada pelo autor      # coated_pine, enviada pelo autor: cor natural
     "Porta_Madeira":      ("madeira_escura", 1.4, "#6b4a30", None, .15),
     "Couro_Vinho":        ("couro", .6, "#5a1c1c", None, .3),
     "Feltro_Verde":       ("tecido", .4, "#1f6b3a", neutro, .15),
@@ -149,11 +151,12 @@ TABELA = {
     "Porta_Loja_Metal":   ("metal_pintado", 1.0, "#5b5f66", grafite, .15),
     "Porta_Ferro":        ("metal_pintado", 1.0, "#4a4f55", grafite, .2),
 }
+METAL = {"Inox_Balde": .5}      # brilho de metal moderado: metal puro fica preto no site, a noite
 feitos = []
 for nome, (pasta, tile, tint, rec, relevo) in TABELA.items():
     m = bpy.data.materials.get(nome)
     if m and os.path.isdir(os.path.join(TEX, pasta)):
-        pbr_caixa(m, pasta, tile, tint, rec, relevo); feitos.append(nome)
+        pbr_caixa(m, pasta, tile, tint, rec, relevo, METAL.get(nome, 0.0)); feitos.append(nome)
 print("[CC0] %d materiais com texturas Poly Haven: %s" % (len(feitos), ", ".join(feitos)))
 if bpy.app.background:
     bpy.ops.wm.save_mainfile()

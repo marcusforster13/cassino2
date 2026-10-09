@@ -162,7 +162,7 @@ for m in bpy.data.materials:
     if not os.path.isdir(os.path.join(TEX, pasta)):
         continue
     t = float(m.get("cc0_tile", 1.0))
-    aplicar_pbr(m, pasta, t, t, recolor=RECOLOR.get(m.get("cc0_recolor", "")), alvo_lin=m.get("cc0_tint"))
+    aplicar_pbr(m, pasta, t, t, recolor=RECOLOR.get(m.get("cc0_recolor", "")), metal=float(m.get("cc0_metal", 0.0)), alvo_lin=m.get("cc0_tint"))
     n_pbr += 1
 say("%d materiais trocados por PBR com texturas CC0" % n_pbr)
 

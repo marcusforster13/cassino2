@@ -1107,12 +1107,36 @@ def sofa(nome, x, y, comp, olha, col, m=None):
     box(nome + "_Encosto", (comp, .18, .62), (0, .27, .62), m, col, r, bevel=.05)
     for sx in (-1, 1):
         box(nome + "_Braco", (.16, .7, .5), (sx * (comp / 2 - .08), 0, .36), m, col, r, bevel=.04)
+# balde de gelo do autor (modelos/balde_gelo.glb, sem material): aco inox liso, de brilho moderado (metal puro fica preto no
+# site, a noite). Fora do lightmap, como as garrafas ao lado. Sem o arquivo, o cilindro cromado de antes.
+_balde = {}
+def malha_balde():
+    if "me" not in _balde:
+        _balde["me"] = None; cam = os.path.join(AQUI, "modelos", "balde_gelo.glb")
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]; pecas = [o for o in novos if o.type == "MESH"]
+            bm = bmesh.new()
+            for o in pecas:
+                me = o.data.copy(); me.transform(o.matrix_world); bm.from_mesh(me); bpy.data.meshes.remove(me)
+            vs = [v.co for v in bm.verts]
+            cx = (min(v.x for v in vs) + max(v.x for v in vs)) / 2; cy = (min(v.y for v in vs) + max(v.y for v in vs)) / 2; z0 = min(v.z for v in vs)
+            bmesh.ops.translate(bm, verts=bm.verts, vec=(-cx, -cy, -z0))
+            for f in bm.faces: f.smooth = True; f.material_index = 0
+            me = bpy.data.meshes.new("Balde_Gelo_Autor"); bm.to_mesh(me); bm.free()
+            me.materials.append(mat("Inox_Balde", "#c9ccd0", .28, .5)); _balde["me"] = me
+            say("balde do autor: %d triangulos" % sum(len(pl.vertices) - 2 for pl in me.polygons))
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    return _balde["me"]
 def mesinha(nome, x, y, col, garrafa=True):
     cyl(nome + "_Pe", .04, .16, .44, (x, y, FZ + .22), M["metal"], col, seg=10)
     cyl(nome + "_Tampo", .32, .32, .03, (x, y, FZ + .455), M["preto_b"], col, seg=22)
     if garrafa:
         torno(nome + "_Garrafa", GARRAFA, M["garrafa_v"], col, pos=(x + .08, y + .05, FZ + .47), seg=10)
-        cyl(nome + "_Balde", .08, .1, .16, (x - .1, y - .04, FZ + .55), M["cromo"], col, seg=14)
+        me_ = malha_balde()
+        if me_:
+            ob_ = bpy.data.objects.new(nome + "_Balde", me_); C_GAR_E.objects.link(ob_); ob_.location = (x - .14, y - .04, FZ + .471); ob_.rotation_euler = (0, 0, rnd.uniform(0, 2 * PI))
+        else: cyl(nome + "_Balde", .08, .1, .16, (x - .1, y - .04, FZ + .55), M["cromo"], col, seg=14)
         for k in range(2): cyl(nome + "_Copo", .026, .03, .09, (x + .02 + k * .1, y - .16, FZ + .515), M["garrafa_c"], col, seg=10)
 
 # ---- rua (sem carros estacionados: pesavam 30 mil triangulos e dezenas de materiais): postes do outro lado, lixo, mesa na calcada, vasos
