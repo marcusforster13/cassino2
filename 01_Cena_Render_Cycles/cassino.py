@@ -1244,8 +1244,58 @@ for k in range(12):
         ob_ = bpy.data.objects.new("Estufa_Salgado", me_); C_GAR.objects.link(ob_)
         ob_.location = (x_ + rnd.uniform(-.012, .012), y_ + rnd.uniform(-.012, .012), FZ + 1.161); ob_.rotation_euler = (0, 0, rnd.uniform(0, 2 * PI))
     else: esfera("Estufa_Salgado", .04, (x_, y_, FZ + 1.2), M["salgado"], C_BAR, sub=1, esc=(1, 1.3, .8))
-box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_BAR, bevel=.02)
-box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
+def caixa_registradora(x, y, z, rz):
+    """Caixa registradora do autor (modelos/caixa_registradora.glb). O corpo ganha o plastico preto; o visor e o cilindro da
+    fechadura ficam com a imagem que veio no modelo; os botoes (peca sem material) ganham os plasticos azul e verde,
+    alternados tecla a tecla. Fora do lightmap, como as garrafas: tecla pequena sai manchada. Devolve None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "caixa_registradora.glb")
+    if not os.path.exists(cam): return None
+    preto, azul, verde = mat("Plastico_Caixa", "#2a2a2a", .5), mat("Plastico_Botao_Azul", "#2a8fd6", .45), mat("Plastico_Botao_Verde", "#4fb84a", .45)
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new(); n_img = 0
+    def slot(m):
+        if m not in mats: mats.append(m)
+        return mats.index(m)
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world); indice = {}
+        for i, m in enumerate(me.materials):
+            if m and m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes):
+                if not m.name.startswith("Modelo_"): m.name = "Modelo_Caixa_%d" % n_img; n_img += 1
+                indice[i] = slot(m)                                             # visor e fechadura: imagem do autor
+            elif m: indice[i] = slot(preto)                                     # corpo
+        if not indice:                                                          # botoes: uma cor por tecla (ilha da malha)
+            bt = bmesh.new(); bt.from_mesh(me); bmesh.ops.remove_doubles(bt, verts=bt.verts, dist=1e-5)      # o glb vem com as faces soltas
+            visto = set(); teclas = []
+            for v in bt.verts:
+                if v in visto: continue
+                pilha = [v]; ilha = []; visto.add(v)
+                while pilha:
+                    a_ = pilha.pop(); ilha.append(a_)
+                    for e in a_.link_edges:
+                        b_ = e.other_vert(a_)
+                        if b_ not in visto: visto.add(b_); pilha.append(b_)
+                teclas.append(ilha)
+            cy_ = [sum(v.co.y for v in il) / len(il) for il in teclas]; perto = min(cy_) + .01        # fileira mais perto de quem opera: verde
+            for il, y_ in zip(teclas, cy_):
+                for f in {f for v in il for f in v.link_faces}: f.material_index = slot(verde if y_ < perto else azul); f.smooth = False
+            me.materials.clear()
+            for _ in range(max(slot(azul), slot(verde)) + 1): me.materials.append(None)
+            bt.to_mesh(me); bt.free(); say("caixa registradora: %d teclas" % len(teclas))
+        n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table()
+        if indice:
+            for f in bm.faces[n0:]: f.material_index = indice.get(f.material_index, slot(preto))
+        bpy.data.meshes.remove(me)
+    vs = [v.co for v in bm.verts]
+    cx = (min(v.x for v in vs) + max(v.x for v in vs)) / 2; cy = (min(v.y for v in vs) + max(v.y for v in vs)) / 2; z0 = min(v.z for v in vs)
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(-cx, -cy, -z0))
+    me = bpy.data.meshes.new("Caixa_Registradora_Autor"); bm.to_mesh(me); bm.free()
+    for m in mats: me.materials.append(m)
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    ob = bpy.data.objects.new("Caixa_Registradora", me); C_GAR.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
+    return ob
+if not caixa_registradora(3.55, 4.3, FZ + 1.101, PI / 2):                       # teclas e fechadura viradas para quem atende (+X)
+    box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_BAR, bevel=.02)
+    box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
 for k in range(5):
     torno("Garrafa_Balcao", GARRAFA, M[("garrafa_a", "garrafa_v")[k % 2]], C_BAR, pos=(3.5 + rnd.uniform(-.1, .1), 2.7 + k * .28, FZ + 1.1), seg=10)
     copo("Copo_Balcao", 3.38, 2.82 + k * .28, FZ + 1.10, C_BAR, cheio=k % 2 == 0)      # no balcao, alguns copos vazios

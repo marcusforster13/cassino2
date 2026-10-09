@@ -141,6 +141,9 @@ TABELA = {
     "Madeira_Clara":      ("madeira_tabuas", 1.2, "#9a7650", None, .2),
     "Madeira_Roleta":     ("madeira_pinho", .7, "#ffffff", None, .15),
     "Inox_Balde":         ("metal_inox", .3, "#ffffff", None, .1),
+    "Plastico_Caixa":     ("plastico_preto", .25, "#ffffff", None, .1),      # Plastic012B, 015A e 017A (ambientCG, CC0), enviadas pelo autor
+    "Plastico_Botao_Azul": ("plastico_azul", .1, "#ffffff", None, .05),
+    "Plastico_Botao_Verde": ("plastico_verde", .1, "#ffffff", None, .05),
     "Aco_Cofre":          ("metal_cofre", .6, "#ffffff", None, .1),         # Metal041A (ambientCG, CC0), enviada pelo autor          # Metal055A (ambientCG, CC0), enviada pelo autor      # coated_pine, enviada pelo autor: cor natural
     "Porta_Madeira":      ("madeira_escura", 1.4, "#6b4a30", None, .15),
     "Couro_Vinho":        ("couro", .6, "#5a1c1c", None, .3),
