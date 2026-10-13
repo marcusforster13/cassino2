@@ -1640,9 +1640,76 @@ box("I_Caderno_Apostas_Capa", (.16, .22, .018), (0, 0, .009), M["capa"], C_INT, 
 box("I_Caderno_Apostas_Folhas", (.15, .21, .012), (.003, 0, .012), M["papel"], C_INT, r)
 ze = FZ + .76                                                                                     # tampo da mesa do escritorio
 r = vazio("I_Notebook", (5.42, 11.25, ze), C_INT, -PI / 2)
-box("I_Notebook_Base", (.33, .23, .016), (0, 0, .008), M["metal"], C_INT, r)
-box("I_Notebook_Tela", (.33, .012, .22), (0, .12, .12), M["metal"], C_INT, r, rot=(-.2, 0, 0))
-box("I_Notebook_Tela_Acesa", (.3, .004, .19), (0, .112, .12), M["tela"], C_INT, r, rot=(-.2, 0, 0))
+def notebook_autor(r):
+    """Notebook do autor (modelos/notebook.glb: a base e a tela da cena, mais as teclas modeladas; sem texturas) com as duas
+    imagens de referencia dele: o teclado visto de cima, projetado na base e nas teclas, e a tela com a planilha, acesa.
+    A imagem do teclado e remontada em faixas (borda, teclas, apoio com o touchpad) para as teclas da foto cairem em cima
+    das teclas modeladas. Devolve False sem os arquivos."""
+    pasta = os.path.join(AQUI, "modelos"); cam = os.path.join(pasta, "notebook.glb")
+    f_tec, f_tela = os.path.join(pasta, "notebook_teclado_referencia.webp"), os.path.join(pasta, "notebook_tela_referencia.webp")
+    if not all(os.path.exists(f) for f in (cam, f_tec, f_tela)): return False
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; pecas = {}
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world); pecas[o.name] = me
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    def caixa(nomes):
+        vs = [v.co for n in nomes for v in pecas[n].vertices]
+        return Vector([min(v[i] for v in vs) for i in range(3)]), Vector([max(v[i] for v in vs) for i in range(3)])
+    n_base = next(n for n in pecas if n.startswith("I_Notebook_Base")); n_acesa = next(n for n in pecas if "Tela_Acesa" in n)
+    n_tampa = next(n for n in pecas if n.startswith("I_Notebook_Tela") and n != n_acesa); teclas = [n for n in pecas if not n.startswith("I_Notebook")]
+    b0, b1 = caixa([n_base]); k0, k1 = caixa(teclas) if teclas else (b0, b1)
+    # ---- textura do teclado: 3 x 3 faixas da foto (1536 x 1024) remontadas na proporcao do modelo. Na foto, a tela fica em cima.
+    src = bpy.data.images.load(f_tec); sw, sh = src.size; px = np.empty(sw * sh * 4, np.float32); src.pixels.foreach_get(px); bpy.data.images.remove(src)
+    px = px.reshape(sh, sw, 4)[::-1]; ex, ey = sw / 1536, sh / 1024                    # linha 0 = topo da foto
+    W = 1536; H = int(W * (b1.x - b0.x) / (b1.y - b0.y))
+    cols_o = [int(v * ex) for v in (37, 85, 1455, 1500)]; lins_o = [int(v * ey) for v in (48, 120, 610, 977)]
+    m_ = (b1.y - k1.y) / (b1.y - b0.y); cols_d = [0, int(W * m_), int(W * (1 - (k0.y - b0.y) / (b1.y - b0.y))), W]      # foto: esquerda = +Y do modelo
+    lins_d = [0, int(H * (b1.x - k1.x) / (b1.x - b0.x)), int(H * (b1.x - k0.x) / (b1.x - b0.x)), H]                      # foto: topo = +X (lado da tela)
+    tela_ = np.zeros((H, W, 4), np.float32); tela_[:, :, 3] = 1
+    for i in range(3):
+        for j in range(3):
+            h_, w_ = lins_d[i + 1] - lins_d[i], cols_d[j + 1] - cols_d[j]
+            if h_ <= 0 or w_ <= 0: continue
+            li = (lins_o[i] + np.arange(h_) * (lins_o[i + 1] - lins_o[i]) / h_).astype(int); ci = (cols_o[j] + np.arange(w_) * (cols_o[j + 1] - cols_o[j]) / w_).astype(int)
+            tela_[lins_d[i]:lins_d[i + 1], cols_d[j]:cols_d[j + 1], :3] = px[li][:, ci, :3]
+    dst = os.path.join(pasta, "notebook_teclado_textura.png")
+    im = bpy.data.images.new("notebook_teclado_tmp", W, H, alpha=False); im.pixels.foreach_set(tela_[::-1].ravel()); im.filepath_raw = dst; im.file_format = "PNG"; im.save(); bpy.data.images.remove(im)
+    def mat_img(nome, arq, emit=0.0):
+        m = bpy.data.materials.new(nome); nt = m.node_tree; bs = nt.nodes.get("Principled BSDF"); tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = bpy.data.images.load(arq)
+        nt.links.new(tx.outputs["Color"], bs.inputs["Base Color"]); bs.inputs["Roughness"].default_value = .5
+        if emit: nt.links.new(tx.outputs["Color"], bs.inputs["Emission Color"]); bs.inputs["Emission Strength"].default_value = emit
+        return m
+    m_tec, m_tela = mat_img("Modelo_Notebook_Teclado", dst), mat_img("Modelo_Notebook_Tela", f_tela, 1.4)
+    def montar(nome, nomes, regra):
+        bm = bmesh.new(); uvl = bm.loops.layers.uv.new("UVMap")
+        for n in nomes: bm.from_mesh(pecas[n])
+        mats = []
+        for f in bm.faces:
+            m, uv = regra(f)
+            if m not in mats: mats.append(m)
+            f.material_index = mats.index(m)
+            if uv:
+                for lp in f.loops: lp[uvl].uv = uv(lp.vert.co)
+        # da posicao do arquivo (base centrada, tela para +X) para a raiz da cena (tela para +Y local)
+        bmesh.ops.translate(bm, verts=bm.verts, vec=(-(b0.x + b1.x) / 2, -(b0.y + b1.y) / 2, -b0.z)); bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(PI / 2, 3, "Z"))
+        me = bpy.data.meshes.new(nome); bm.to_mesh(me); bm.free()
+        for m in mats: me.materials.append(m)
+        ob = bpy.data.objects.new(nome, me); C_INT.objects.link(ob); ob.parent = r
+    uv_tec = lambda c: ((b1.y - c.y) / (b1.y - b0.y), (c.x - b0.x) / (b1.x - b0.x))
+    montar("I_Notebook_Base", [n_base], lambda f: (m_tec, uv_tec) if f.normal.z > .5 else (M["metal"], None))
+    if teclas: montar("I_Notebook_Teclas", teclas, lambda f: (m_tec, uv_tec) if f.normal.z > .5 else (M["preto"], None))
+    montar("I_Notebook_Tela", [n_tampa], lambda f: (M["metal"], None))
+    a0, a1 = caixa([n_acesa])
+    U0, U1, V0, V1 = 45 / 1536, 1491 / 1536, 1 - 1003 / 1024, 1 - 60 / 1024              # a tela com a moldura preta, sem a margem branca da foto
+    uv_tela = lambda c: (U0 + (U1 - U0) * (a1.y - c.y) / (a1.y - a0.y), V0 + (V1 - V0) * (c.z - a0.z) / (a1.z - a0.z))
+    montar("I_Notebook_Tela_Acesa", [n_acesa], lambda f: (m_tela, uv_tela) if f.normal.x < -.3 else (M["metal"], None))
+    say("notebook do autor: %d pecas de teclas, %d triangulos" % (len(teclas), sum(len(pl.vertices) - 2 for me in pecas.values() for pl in me.polygons)))
+    return True
+if not notebook_autor(r):
+    box("I_Notebook_Base", (.33, .23, .016), (0, 0, .008), M["metal"], C_INT, r)
+    box("I_Notebook_Tela", (.33, .012, .22), (0, .12, .12), M["metal"], C_INT, r, rot=(-.2, 0, 0))
+    box("I_Notebook_Tela_Acesa", (.3, .004, .19), (0, .112, .12), M["tela"], C_INT, r, rot=(-.2, 0, 0))
 r = vazio("I_Celular", (5.3, 10.95, ze), C_INT, .5)
 box("I_Celular_Corpo", (.072, .15, .009), (0, 0, .0045), M["preto_b"], C_INT, r)
 r = vazio("I_Caderno_Contabilidade", (5.5, 11.62, ze), C_INT, -.2)
