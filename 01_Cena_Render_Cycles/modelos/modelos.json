@@ -103,22 +103,5 @@
   "virar": [
    "Circle"
   ]
- },
- "cofre.glb": {
-  "substitui": [
-   "Cofre",
-   "Cofre_Segredo"
-  ],
-  "colecao": "06_Escritorio_Depositos",
-  "deslocar": {
-   "Cylinder": [
-    0,
-    0,
-    -0.041
-   ]
-  },
-  "vazios": {
-   "Cylinder": "Aco_Cofre"
-  }
  }
 }

@@ -36,7 +36,7 @@ PAPEIS = {
     "atirador": ("Male_Adult_04", _civil("m", {"sentado_parado": "m_idle_neutral_01+sentado_parado", "sentado_apontando": "m_idle_neutral_01+sentado_apontando", "apontando": "m_idle_neutral_01+apontando"})),
     "apostador_a": ("Male_Adult_13", _civil("m", {"sentado_jogando": "m_idle_neutral_01+sentado_jogando"})),
     "apostador_b": ("Male_Adult_16", _civil("m")),
-    "apostador_c": ("Female_Adult_01", _civil("f")),
+    "apostador_c": ("Female_Adult_01", _civil("f", {"sentado_jogando": "f_idle_neutral_01+sentado_jogando"})),
     "apostador_d": ("Male_Adult_01", _civil("m")),
 }
 

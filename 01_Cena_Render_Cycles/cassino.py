@@ -1097,10 +1097,11 @@ box("Mesa_Escritorio_Lateral", (.7, .04, .72), (5.4, 10.47, FZ + .36), M["mad_cl
 box("Cadeira_Escritorio_Assento", (.46, .46, .08), (4.7, 11.1, FZ + .46), M["preto"], C_ESC, bevel=.02)
 box("Cadeira_Escritorio_Encosto", (.06, .44, .5), (4.5, 11.1, FZ + .78), M["preto"], C_ESC, bevel=.02)
 cyl("Cadeira_Escritorio_Pe", .03, .22, .42, (4.7, 11.1, FZ + .21), M["metal"], C_ESC, seg=10)
-box("Cofre", (.6, .55, .8), (5.6, 12.6, FZ + .4), M["cofre"], C_ESC, bevel=.02)
+COFRE_ABRE = os.path.exists(os.path.join(AQUI, "modelos", "cofre_abre.glb"))      # cofre do autor com a porta separada (montado mais abaixo)
+if not COFRE_ABRE: box("Cofre", (.6, .55, .8), (5.6, 12.6, FZ + .4), M["cofre"], C_ESC, bevel=.02)
 # aco do cofre do autor (modelos/cofre.glb): o cofre inteiro, menos o disco do segredo, que fica com a imagem que veio no modelo
 mat("Aco_Cofre", "#8d9094", .4, .5).use_fake_user = True
-cyl("Cofre_Segredo", .06, .06, .03, (5.29, 12.6, FZ + .5), M["dourado"], C_ESC, rot=(0, PI / 2, 0), seg=16)
+if not COFRE_ABRE: cyl("Cofre_Segredo", .06, .06, .03, (5.29, 12.6, FZ + .5), M["dourado"], C_ESC, rot=(0, PI / 2, 0), seg=16)
 box("Estante_Escritorio", (1.6, .35, 1.8), (3.6, 12.75, FZ + .9), M["mad"], C_ESC)
 box("Monitor_Cameras", (.5, .04, .32), (3.3, 12.55, FZ + 1.45), M["preto_b"], C_ESC)
 quadro("Monitor_Cameras_Tela", (3.3, 12.527, FZ + 1.45), "-y", .46, .28, TELA_CAM, C_ESC)
@@ -1393,7 +1394,47 @@ for k in range(9):
     box("Pasta_Arquivo", (.24, .07, .3), (5.76, 9.35 + k * .085, FZ + 1.77), (M["cartaz_az"], M["preto"], M["cartaz_v"], M["papelao"])[k % 4], C_ESC, rot=(0, rnd.uniform(-.06, .06), 0))
 for k in range(6):
     cyl("Pilha_Moedas", .013, .013, .012 + (k % 3) * .012, (5.15 + (k % 3) * .035, 11.35 + (k // 3) * .035, FZ + .766 + (k % 3) * .006), M["dourado"], C_ESC, seg=10)
-box("Maquininha_Cartao", (.075, .16, .05), (5.2, 11.75, FZ + .785), M["plast"], C_ESC, bevel=.01)
+def maquininha(x, y, z, rz):
+    """Maquininha de cartao do autor (modelos/maquininha_cartao.glb, sem materiais) com a foto de referencia que ele usou
+    (vista de cima) projetada por cima: visor, numeros e teclas coloridas. As faces de lado ficam em plastico preto e a
+    bobina de papel, branca. Fora do lightmap (peca pequena). Devolve None sem os arquivos."""
+    cam = os.path.join(AQUI, "modelos", "maquininha_cartao.glb"); foto = os.path.join(AQUI, "modelos", "maquininha_cartao_referencia.webp")
+    if not (os.path.exists(cam) and os.path.exists(foto)): return None
+    # a maquina ocupa, na foto de 1024 x 1536, de x=140 a 905 e de y=95 a 1480 (medido de cima); folga de 2% para nao pegar o fundo branco
+    U0, U1, V0, V1 = 140 / 1024, 905 / 1024, 1 - 1480 / 1536, 1 - 95 / 1536
+    mi = bpy.data.materials.new("Modelo_Maquininha_0"); nt = mi.node_tree; bs = nt.nodes.get("Principled BSDF")
+    # o fundo branco da foto aparecia nas quinas (o modelo e reto, a maquina da foto tem cantos redondos): pinta de preto o
+    # branco que vem das bordas esquerda, direita e de baixo de cada linha/coluna, ate encostar na maquina
+    src = bpy.data.images.load(foto); w_, h_ = src.size; px = np.empty(w_ * h_ * 4, np.float32); src.pixels.foreach_get(px); px = px.reshape(h_, w_, 4); bpy.data.images.remove(src)
+    claro = px[:, :, :3].min(2) > .8
+    fundo = (np.cumprod(claro, axis=1) > 0) | (np.cumprod(claro[:, ::-1], axis=1)[:, ::-1] > 0) | (np.cumprod(claro, axis=0) > 0)      # linha 0 = de baixo
+    px[fundo, :3] = .03; px[:, :, 3] = 1
+    dst = os.path.join(AQUI, "modelos", "maquininha_cartao_textura.png")
+    im = bpy.data.images.new("maquininha_tmp", w_, h_, alpha=False); im.pixels.foreach_set(px.ravel()); im.filepath_raw = dst; im.file_format = "PNG"; im.save(); bpy.data.images.remove(im)
+    tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = bpy.data.images.load(dst); nt.links.new(tx.outputs["Color"], bs.inputs["Base Color"]); bs.inputs["Roughness"].default_value = .45
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; bm = bmesh.new(); uvl = bm.loops.layers.uv.new("UVMap"); corpo = None
+    for o in [o for o in novos if o.type == "MESH" and not o.name.startswith("Maquininha_Cartao")]:      # a caixa antiga veio junto so de referencia
+        me = o.data.copy(); me.transform(o.matrix_world); vs = [v.co for v in me.vertices]
+        dims = [max(v[i] for v in vs) - min(v[i] for v in vs) for i in range(3)]
+        papel = dims[0] > .04 and dims[1] < .05 and min(v.y for v in vs) > .02                    # bobina: larga, curta e na parte de tras
+        if dims[1] > .12: corpo = ([min(v[i] for v in vs) for i in range(3)], [max(v[i] for v in vs) for i in range(3)])
+        n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
+        for f in bm.faces[n0:]: f.material_index = 2 if papel else (0 if f.normal.z > .5 else 1)
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    (x0, y0, z0), (x1, y1, _) = corpo; mx_, my_ = (x0 + x1) / 2, (y0 + y1) / 2
+    for f in bm.faces:
+        for lp in f.loops:
+            u = .5 + (lp.vert.co.x - mx_) / (x1 - x0) * .96; v = .5 + (lp.vert.co.y - my_) / (y1 - y0) * .96
+            lp[uvl].uv = (U0 + (U1 - U0) * min(1, max(0, u)), V0 + (V1 - V0) * min(1, max(0, v)))
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(-mx_, -my_, -z0))
+    me = bpy.data.meshes.new("Maquininha_Cartao_Autor"); bm.to_mesh(me); bm.free()
+    for m in (mi, M["plast"], M["papel"]): me.materials.append(m)
+    ob = bpy.data.objects.new("Maquininha_Cartao", me); C_GAR_E.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
+    say("maquininha do autor: %d triangulos" % sum(len(pl.vertices) - 2 for pl in me.polygons))
+    return ob
+if not maquininha(5.2, 11.75, FZ + .761, .25):
+    box("Maquininha_Cartao", (.075, .16, .05), (5.2, 11.75, FZ + .785), M["plast"], C_ESC, bevel=.01)
 box("Radio_Comunicador", (.06, .035, .15), (5.62, 10.75, FZ + .835), M["preto"], C_ESC, bevel=.008)
 cartaz("Quadro_Chaves", (4.3, 9.09, FZ + 1.55), "+y", (.5, .4), M["mad_cl"], [], C_ESC)
 for k in range(6): box("Chave_Pendurada", (.02, .01, .07), (4.12 + k * .072, 9.105, FZ + 1.55), M["dourado"], C_ESC)
@@ -1403,7 +1444,6 @@ box("Cadeira_Visita_Assento", (.44, .44, .06), (3.6, 10.4, FZ + .45), M["branco"
 box("Cadeira_Visita_Encosto", (.42, .04, .42), (3.6, 10.19, FZ + .72), M["branco"], C_ESC, bevel=.012)
 for sx in (-1, 1):
     for sy in (-1, 1): cyl("Cadeira_Visita_Pe", .017, .017, .44, (3.6 + sx * .19, 10.4 + sy * .19, FZ + .22), M["branco"], C_ESC, seg=6)
-box("Sacola_Dinheiro_Vazia", (.4, .25, .3), (5.0, 12.65, FZ + .15), M["bolsa"], C_ESC, bevel=.04)
 # marcas de arrasto e fresta de luz que denunciam a estante falsa no deposito do bar
 for k in range(3): box("Marca_Arrasto", (.02, 1.05, .003), (5.6 + k * .09, 7.9, FZ + .002), M["preto"], C_ESC)
 box("Fresta_Luz_Sala", (.012, 1.0, .012), (5.905, 7.35, FZ + .006), mat("Fresta_Magenta", "#3a0530", .3, emit="#ff2ad4", forca=2.5), C_ESC)
@@ -1611,6 +1651,43 @@ box("I_Caderno_Contabilidade_Folhas", (.2, .28, .014), (.003, 0, .013), M["papel
 r = vazio("I_Dinheiro_Escondido", (3.95, 12.72, FZ + .5), C_INT)                                  # caixa de sapato na estante do escritorio
 box("I_Dinheiro_Escondido_Caixa", (.33, .2, .11), (0, 0, .055), M["papelao"], C_INT, r)
 for k in range(4): maco("I_Dinheiro_Escondido_Maco", r, -.08 + (k % 2) * .16, 0, .125 + (k // 2) * .023, M["nota2"] if k % 2 else M["nota"])
+def cofre_que_abre():
+    """Cofre do autor (modelos/cofre_abre.glb, na posicao da cena): corpo oco fixo e, numa raiz na linha das dobradicas, a
+    porta com o segredo e a macaneta (o site gira a raiz para abrir). As pecas sem material ganham o aco; o segredo fica com
+    a imagem do autor. Dentro, macos de dinheiro para apreender."""
+    from mathutils.bvhtree import BVHTree
+    aco = bpy.data.materials.get("Aco_Cofre")
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=os.path.join(AQUI, "modelos", "cofre_abre.glb")); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; pecas = []; n_img = 0
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world); vs = [v.co for v in me.vertices]
+        for i, m in enumerate(me.materials):
+            if m is None: me.materials[i] = aco
+            elif m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes) and not m.name.startswith("Modelo_"): m.name = "Modelo_Cofre_%d" % n_img; n_img += 1
+        if not len(me.materials): me.materials.append(aco)
+        pecas.append([me, Vector([min(v[i] for v in vs) for i in range(3)]), Vector([max(v[i] for v in vs) for i in range(3)])])
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    corpo = max(pecas, key=lambda p: (p[2] - p[1]).length)
+    porta = next(p for p in pecas if p is not corpo and min((p[2] - p[1]).x, (p[2] - p[1]).y) < .04 and (p[2] - p[1]).z > .4)
+    dz = FZ - corpo[1].z                                                   # o arquivo vem 4 cm acima do piso
+    # piso do interior: raio de cima para baixo, pelo meio do vao
+    bm = bmesh.new(); bm.from_mesh(corpo[0]); arv = BVHTree.FromBMesh(bm)
+    meio = Vector(((porta[2].x + corpo[2].x) / 2 + .02, (corpo[1].y + corpo[2].y) / 2, (corpo[1].z + corpo[2].z) / 2))
+    bate = arv.ray_cast(meio, Vector((0, 0, -1)), 2.0); bm.free()
+    piso = bate[0].z if bate[0] is not None else corpo[1].z + .04
+    corpo[0].transform(Matrix.Translation((0, 0, dz)))
+    C_GAR_E.objects.link(bpy.data.objects.new("Cofre", corpo[0]))      # fora do lightmap: a luz calculada com a porta fechada deixava o interior preto
+    dob = Vector((porta[1].x, porta[1].y, corpo[1].z))                     # dobradicas do lado de menor Y, na face de fora da porta
+    raiz = vazio("I_Cofre_Porta", (dob.x, dob.y, FZ), C_INT)
+    for p in pecas:
+        if p is corpo: continue
+        p[0].transform(Matrix.Translation((-dob.x, -dob.y, -corpo[1].z)))
+        ob = bpy.data.objects.new("I_Cofre_Porta_Folha" if p is porta else "I_Cofre_Porta_Peca", p[0]); C_INT.objects.link(ob); ob.parent = raiz
+    rd = vazio("I_Dinheiro_Cofre", (meio.x, meio.y, piso + dz), C_INT)
+    for k in range(12):
+        maco("I_Dinheiro_Cofre_Maco", rd, -.085 + (k % 2) * .17, -.085 + ((k // 2) % 3) * .085, .012 + (k // 6) * .023, M["nota2"] if (k + k // 6) % 2 else M["nota"], rnd.uniform(-.06, .06))
+    say("cofre que abre: %d pecas, piso interno a %.2f m, vao %s" % (len(pecas), piso + dz - FZ, "oco" if bate[0] is not None and piso > corpo[1].z + .01 else "NAO ENCONTRADO"))
+if COFRE_ABRE: cofre_que_abre()
 r = vazio("I_DVR_Cameras", (3.3, 12.7, FZ + 1.2), C_INT)
 box("I_DVR_Cameras_Corpo", (.36, .24, .055), (0, 0, .0275), M["preto"], C_INT, r)
 box("I_DVR_Cameras_Luz", (.02, .005, .01), (.13, -.122, .03), M["neon_v"], C_INT, r)

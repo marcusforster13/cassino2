@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-09 16:48",
+ "gerado_em": "2026-10-13 12:20",
  "qualidade": "alta",
  "lightmaps": {
   "01_Rua_Estatico": {
@@ -24,7 +24,7 @@
   },
   "06_Escritorio_Depositos_Estatico": {
    "lm": "lightmaps/LM_06_Escritorio_Depositos.png",
-   "max": 0.39601
+   "max": 0.38488
   },
   "07_Fundos_Beco_Estatico": {
    "lm": "lightmaps/LM_07_Fundos_Beco.png",

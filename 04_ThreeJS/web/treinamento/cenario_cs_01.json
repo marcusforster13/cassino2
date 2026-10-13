@@ -333,6 +333,13 @@
           "base": "CPP art. 158-B"
         },
         {
+          "id": "fichas_recuperadas",
+          "texto": "Perceber que as fichas foram escondidas e mandar devolver, sem revista indevida",
+          "pontos": 2,
+          "condicao": "variacao.entra == 'sim'",
+          "validar": true
+        },
+        {
           "id": "apreender_anotacoes",
           "texto": "Arrecadar fichas e cadernos de anotações",
           "pontos": 3,
@@ -351,6 +358,21 @@
           "pontos": 4,
           "condicao": "variacao.entra == 'sim'",
           "validar": true
+        },
+        {
+          "id": "cofre_correto",
+          "texto": "Cofre trancado: pedir a quem sabe o segredo que abra ou lacrar fechado e informar à autoridade",
+          "pontos": 4,
+          "condicao": "variacao.entra == 'sim'",
+          "base": "CPP arts. 6º, 158-A a 158-F e 240 a 245",
+          "validar": true
+        },
+        {
+          "id": "apreender_dinheiro_cofre",
+          "texto": "Contar e lacrar o dinheiro do cofre, na frente do responsável",
+          "pontos": 3,
+          "condicao": "variacao.entra == 'sim' && variacao.responsavel == 'presente'",
+          "base": "CPP art. 158-B"
         },
         {
           "id": "localizar_sala_secreta",
@@ -384,6 +406,12 @@
         {
           "id": "arrombar_escritorio",
           "texto": "Arrombar o escritório sem necessidade",
+          "pontos": -4,
+          "validar": true
+        },
+        {
+          "id": "forcar_cofre",
+          "texto": "Forçar a abertura do cofre por conta própria",
           "pontos": -4,
           "validar": true
         }
@@ -650,7 +678,8 @@
     ],
     "resposta_apostador": {
       "reunir": "Tá bom, seu policial.",
-      "qualificar": "Tá aqui. Eu só vim jogar um pouquinho…"
+      "qualificar": "Tá aqui. Eu só vim jogar um pouquinho…",
+      "devolver": "Tá… tá aqui. Desculpa."
     },
     "responsavel": {
       "quem": "Quem é o responsável por este lugar?",
@@ -788,7 +817,27 @@
       {
         "fala": "Encerrar sem entregar relação"
       }
-    ]
+    ],
+    "cofre": [
+      {
+        "id": "pedir",
+        "fala": "Pedir ao responsável que abra o cofre, registrando"
+      },
+      {
+        "id": "lacrar",
+        "fala": "Lacrar o cofre fechado, relacionar para apreensão e informar à autoridade policial"
+      },
+      {
+        "id": "forcar",
+        "fala": "Forçar a abertura do cofre"
+      }
+    ],
+    "resposta_cofre": "Tá… eu abro. O que tem aí é do movimento da semana.",
+    "devolver_fichas": {
+      "id": "devolver",
+      "fala": "Eu vi a senhora guardar as fichas. Coloque de volta na mesa, por favor."
+    },
+    "reclamacao_responsavel": "Que é isso? Isso aqui é um bar, vocês não podem ir entrando assim!"
   },
   "radio": {
     "inicio": "Viatura, denúncia anônima de jogo de azar nos fundos do bar da esquina. Verifique.",

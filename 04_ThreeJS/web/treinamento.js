@@ -443,6 +443,30 @@ export async function iniciar(ctx) {
     return suave(seg, e => { p.ang = a0 + (alvo - a0) * e; p.o.rotation.y = p.base + p.ang; });
   }
 
+  // cofre do escritorio: a raiz da porta fica na dobradica; uma caixa invisivel recebe o clique enquanto ele esta fechado
+  const cofre = (() => {
+    const o = ctx.cena.getObjectByName('I_Cofre_Porta'), d = ctx.cena.getObjectByName('I_Dinheiro_Cofre'); if (!o || !d) return null;
+    o.updateWorldMatrix(true, false); d.updateWorldMatrix(true, false);
+    const h = new THREE.Mesh(new THREE.BoxGeometry(.66, .8, .64), invisivel());
+    d.getWorldPosition(h.position); h.position.y = .15 + .4; h.userData.cofre = true; scene.add(h); h.updateMatrixWorld(true);
+    // por dentro o modelo e uma casca sem piso, do mesmo cinza de fora (via-se o chao escuro do comodo e nao dava nocao de
+    // fundo): um forro de aco mais escuro, visto so por dentro, com piso, fundo, laterais e teto
+    let aco = null; o.traverse(m => { if (!aco && m.isMesh) aco = [].concat(m.material).find(x => /Aco_Cofre/.test(x.name)); });
+    if (aco) {
+      const mf = aco.clone(); mf.side = THREE.BackSide; mf.color.multiplyScalar(.5);
+      const forro = new THREE.Mesh(new THREE.BoxGeometry(.48, .66, .5), mf); d.getWorldPosition(forro.position); forro.position.x -= .02; forro.position.y += .335; scene.add(forro); forro.updateMatrixWorld(true);
+    }
+    return { o, base: o.rotation.y, h, aberto: false, ang: 0 };
+  })();
+  function moverCofre(aberto, seg = 1.2) {
+    if (!cofre) return Promise.resolve();
+    const a0 = cofre.ang, alvo = aberto ? 1.9 : 0;
+    if (seg > .3 && cofre.aberto !== aberto) window.__som?.tocar('porta_abrindo', cofre.h.position);
+    cofre.aberto = aberto;
+    return suave(seg, e => { cofre.ang = a0 + (alvo - a0) * e; cofre.o.rotation.y = cofre.base + cofre.ang; });
+  }
+  const hitCofre = () => (cofre && !cofre.aberto ? [cofre.h] : []);      // aberto, o clique vai para o dinheiro la dentro
+
   // estante falsa do deposito do bar: esconde a passagem para a sala reservada
   const estante = (() => {
     const o = ctx.cena.getObjectByName('I_Estante_Secreta'); if (!o) return null;
@@ -484,7 +508,7 @@ export async function iniciar(ctx) {
   }
 
   const ITENS = { dinheiro_mesa: 'I_Dinheiro_Mesa', fichas: 'I_Fichas', caderno_apostas: 'I_Caderno_Apostas', notebook: 'I_Notebook', celular: 'I_Celular',
-    caderno_contab: 'I_Caderno_Contabilidade', dinheiro_escondido: 'I_Dinheiro_Escondido', dvr: 'I_DVR_Cameras', dinheiro_sala: 'I_Dinheiro_Sala' };
+    caderno_contab: 'I_Caderno_Contabilidade', dinheiro_escondido: 'I_Dinheiro_Escondido', dvr: 'I_DVR_Cameras', dinheiro_sala: 'I_Dinheiro_Sala', dinheiro_cofre: 'I_Dinheiro_Cofre' };
   const itens = {}, hitsItem = [];
   for (const [k, nome] of Object.entries(ITENS)) {
     const o = ctx.cena.getObjectByName(nome); if (!o) continue;
@@ -511,6 +535,8 @@ export async function iniciar(ctx) {
     maquinas: 'Máquinas caça-níqueis: são o principal vestígio do jogo de azar (LCP art. 50). Relacionar, fotografar e lacrar; quem abre e examina é a perícia.',
     dinheiro_mesa: 'Dinheiro sobre a mesa de jogo: contar no local, na frente do responsável ou de testemunha, e lacrar em envelope numerado.',
     dinheiro_escondido: 'Caixa com maços de dinheiro guardada no escritório.',
+    dinheiro_cofre: 'Maços de dinheiro guardados no cofre do escritório.',
+    cofre: 'Cofre de aço do escritório, trancado com segredo.',
     dinheiro_sala: 'Bolsa com maços de dinheiro escondida atrás do bar da sala reservada.',
     estante: 'Estante do depósito do bar. Há marcas de arrasto no piso e uma fresta de luz colorida por baixo.',
     fichas: 'Fichas de aposta: indicam os valores em jogo.',
@@ -886,7 +912,7 @@ export async function iniciar(ctx) {
     ['responsavel', 'responsavel', 'Responsável', [1.25, 10.9], [-1, 0], 'm', 1.78],
     ['apostador_1', 'apostador_a', 'Apostador', [-2.1, 11.74], [0, 1], 'm', 1.78],      // sentado, jogando na segunda maquina
     ['apostador_2', 'apostador_b', 'Apostador', [-1.75, 9.45], [-1, .3], 'm', 1.78],
-    ['apostador_3', 'apostador_c', 'Apostadora', [0.4, 6.8], [0, 1], 'f', 1.68],
+    ['apostador_3', 'apostador_c', 'Apostadora', [-.25, 7.25], [1, 1], 'f', 1.68],      // sentada na mesa de carteado
     ['seguranca_2', 'seguranca_2', 'Homem armado', [-4.9, 10.6], [0, -1], 'm', 1.8],
     ['atirador', 'atirador', 'Homem no sofá', [9.6, 6.72], [0, 1], 'm', 1.8],      // sentado no sofa da parede sul da sala reservada
     ['parceiro', 'pm_parceiro', 'Policial parceiro', [4.2, -1.0], [-.5, .3], 'm', 1.8],
@@ -909,7 +935,7 @@ export async function iniciar(ctx) {
     if (npcs.apoio) npcs.apoio.visible = false;
     for (const g of ARMAS_NPC) g.visible = false;
     if (npcs.atirador) { const a = npcs.atirador, u = a.userData; u.arma = armaNPC3; u.sentado = true; u.semVirar = true; u.fig = false; u.base = 'sentado_parado'; animar(a, 'sentado_parado', 1e6, 0); a.position.y = ALTURA_SENTADO(u.altura); }
-    if (npcs.apostador_1) { const j = npcs.apostador_1, u = j.userData; u.sentado = true; u.jogando = true; u.semVirar = true; u.fig = false; u.base = 'sentado_jogando'; animar(j, 'sentado_jogando', 1e6, 0); j.position.y = ALTURA_SENTADO(u.altura) + .05; }
+    for (const k of ['apostador_1', 'apostador_3']) { const j = npcs[k], u = j?.userData; if (!j) continue; u.sentado = true; u.jogando = true; u.semVirar = true; u.fig = false; u.base = 'sentado_jogando'; animar(j, 'sentado_jogando', 1e6, 0); j.position.y = ALTURA_SENTADO(u.altura) + .05; }
     if (npcs.seguranca) npcs.seguranca.userData.arma = armaNPC;
     if (npcs.seguranca_2) npcs.seguranca_2.userData.arma = armaNPC2;
   }
@@ -917,7 +943,14 @@ export async function iniciar(ctx) {
   // So para quando o policial aponta a arma para ele (ver miraNoApostador, no quadro).
   const SAIDA_JOGADOR = [[-.9, 11.0], [-.9, 9.25], [1.6, 9.25], [1.7, 11.6]];      // contorna as cadeiras e a mesa de roleta
   let livreSaiu = false;
-  function levantar(n) { const u = n.userData; if (!u.sentado) return; u.sentado = false; u.jogando = false; u.semVirar = false; u.fig = true; u.base = 'parada'; n.position.copy(B(-2.1, 11.15)); }
+  const EM_PE = { apostador_1: [-2.1, 11.15], apostador_3: [-.7, 6.8] };      // onde cada um fica ao levantar (atras da cadeira)
+  function levantar(n) { const u = n.userData; if (!u.sentado) return; u.sentado = false; u.jogando = false; u.semVirar = false; u.fig = true; u.base = 'parada'; n.position.copy(B(...(EM_PE[u.chave] || [-2.1, 11.15]))); animar(n, 'parada', 1e6, .2); }
+  // a mulher da mesa de cartas puxa as fichas para o colo quando a policia se anuncia; devolve quando o policial manda
+  function esconderFichas() {
+    const n = npcs.apostador_3, u = n?.userData; if (!A || !n || !u.sentado || u.caido || !itens.fichas || A.apreendidos?.has('fichas')) return;
+    itens.fichas.o.visible = false; A.fichasEscondidas = true; u.escondeu = true;
+    setTimeout(() => { if (A && A.fichasEscondidas && S.modo === 'treino') legenda('Instrutor', 'Repare na mesa de cartas: as fichas sumiram. Alguém guardou.', 6); }, 9000);
+  }
   function tentarSair() {
     const n = npcs.apostador_1, u = n?.userData; if (!n || u.saindo || u.parouArma || u.caido || u.fugiu || u.algemado || u.atordoado > performance.now()) return;
     levantar(n); u.saindo = true; u.fugindo = true; u.tMira = 0; moverPorta('fundos', 1, .4);
@@ -988,7 +1021,7 @@ export async function iniciar(ctx) {
     A = { n: HIST.length + 1, fase: 'chegada', titulo: cap?.titulo || `Ocorrência ${HIST.length + 1}` };
     criarNPCs(v); sacar(false); pegarGranada(false);
     for (const it of Object.values(itens)) it.o.visible = true;
-    lacres.visible = false; moverEstante(false, .1);
+    lacres.visible = false; moverEstante(false, .1); moverCofre(false, .1);
     moverPorta('salao', v.indicios === 'visiveis' ? .13 : 0, .1); moverPorta('escritorio', 0, .1); moverPorta('fundos', 0, .1);
     rig.position.set(3.0, .15, 1.2); ctx.setYaw(1.34);
     const abrir = () => { radio(CEN.radio.inicio).then(() => { if (!A?.entrada) dica('Fale com o parceiro (ao lado da viatura) e use o menu (T ou botão Y/B) para falar no rádio.'); }); };
@@ -1059,8 +1092,10 @@ export async function iniciar(ctx) {
   const renderSeguranca = largou => renderNPC(npcs.seguranca, largou);
   function reacoes() {
     const v = S.variacao, s = npcs.seguranca;
-    for (const n of apostadores()) { if (n.userData.jogando) continue; animar(n, 'rendido', 3.5, .3); n.userData.base = n.userData.acoes?.nervoso ? 'nervoso' : 'parada'; }
+    for (const n of apostadores()) { if (n.userData.jogando) continue; animar(n, 'rendido', 6, .3); n.userData.base = n.userData.acoes?.nervoso ? 'nervoso' : 'parada'; }
     setTimeout(() => { if (A) tentarSair(); }, 900);
+    setTimeout(esconderFichas, 1600);
+    setTimeout(() => { const r = npcs.responsavel; if (A && r && r.visible && !r.userData.caido && !ameacando().length) diz(r, CEN.dialogos.reclamacao_responsavel, 'irritado'); }, 3200);
     if (npcs.responsavel) npcs.responsavel.userData.base = 'irritado', animar(npcs.responsavel, 'irritado', 1e6, .4);
     if (v.fuga === 'tentam_sair') setTimeout(() => {
       if (!A) return; moverPorta('fundos', 1, .4);
@@ -1123,9 +1158,10 @@ export async function iniciar(ctx) {
     const D = CEN.dialogos, u = n.userData;
     if (!A.anunciou) return;
     if (u.atordoado > performance.now()) return legenda(u.nome, 'Está desorientado pelo estouro. Aguarde alguns segundos.', 3);
-    const lista = D.apostador.filter(o => !(o.id === 'reunir' && u.reunido) && !(o.id === 'qualificar' && u.qualificado));
+    const lista = [...(u.escondeu && A.fichasEscondidas ? [D.devolver_fichas] : []), ...D.apostador.filter(o => !(o.id === 'reunir' && u.reunido) && !(o.id === 'qualificar' && u.qualificado))];
     painelOpc(u.nome, 'O que fazer', lista, op => {
-      if (op.id === 'reunir') { diz(n, D.resposta_apostador.reunir).then(() => rota(n, DESTINO_CONTENCAO[u.chave], 1.2, 'andando', () => { u.reunido = true; u.giroBase = olharPara(0, 1); conferirPessoas(); })); }
+      if (op.id === 'devolver') { A.fichasEscondidas = false; diz(n, D.resposta_apostador.devolver).then(() => { if (itens.fichas && !A.apreendidos?.has('fichas')) itens.fichas.o.visible = true; registrar('fichas_recuperadas'); status(); }); }
+      else if (op.id === 'reunir') { diz(n, D.resposta_apostador.reunir).then(() => { levantar(n); rota(n, DESTINO_CONTENCAO[u.chave], 1.2, 'andando', () => { u.reunido = true; u.giroBase = olharPara(0, 1); conferirPessoas(); }); }); }
       else if (op.id === 'qualificar') { u.qualificado = true; diz(n, D.resposta_apostador.qualificar); conferirPessoas(); }
       else if (op.id === 'algemar') { registrar('algemas_indevidas', u.nome); if (S.modo === 'treino') legenda('Instrutor', 'Ele colabora: não há resistência, risco de fuga nem perigo (Súmula Vinculante 11).', 6); }
       else if (op.id === 'revistar') { registrar('revista_sem_suspeita', u.nome); if (S.modo === 'treino') legenda('Instrutor', 'Busca pessoal exige fundada suspeita em relação àquela pessoa (CPP art. 244).', 6); }
@@ -1160,6 +1196,7 @@ export async function iniciar(ctx) {
     const D = CEN.dialogos;
     if (!A.entrou) return legenda('Vestígio', INFO_ITEM[k] || '', 5);
     if (A.apreendidos?.has(k)) return;
+    if (k === 'fichas' && A.fichasEscondidas) return legenda('Vestígio', 'As fichas não estão mais na mesa. Alguém guardou.', 4);
     if (k === 'arma') return menuSeguranca();
     if (k === 'maquinas') {
       if (A.maquinas) return legenda('Apreensão', `${CFG.maquinas || 8} máquinas relacionadas e lacradas.`, 3);
@@ -1167,6 +1204,7 @@ export async function iniciar(ctx) {
     }
     if (/^dinheiro/.test(k)) return painelOpc('Vestígio', 'Dinheiro', D.dinheiro, op => {
       if (op.acao && k === 'dinheiro_sala') registrar('apreender_dinheiro_secreto');
+      if (op.acao && k === 'dinheiro_cofre') registrar('apreender_dinheiro_cofre');
       apreender(k, op.acao ? 'Dinheiro contado na frente de testemunha e lacrado. Lacre nº ' + (417000 + Math.floor(Math.random() * 900)) + '.' : 'Dinheiro recolhido sem contagem.');
     }, INFO_ITEM[k]);
     if (/^(notebook|celular)$/.test(k)) return painelOpc('Vestígio', k === 'celular' ? 'Celular' : 'Computador', D.eletronico, op => {
@@ -1174,6 +1212,25 @@ export async function iniciar(ctx) {
       else if (S.modo === 'treino') legenda('Instrutor', 'O conteúdo de celular e computador é protegido: só com ordem judicial ou consentimento.', 7);
     }, INFO_ITEM[k]);
     apreender(k, { fichas: 'Fichas arrecadadas e lacradas.', caderno_apostas: 'Caderno de apostas arrecadado e lacrado.', caderno_contab: 'Caderno de contabilidade arrecadado e lacrado.', dvr: 'Gravador das câmeras apreendido e lacrado.' }[k] || 'Item arrecadado.');
+  }
+  // cofre trancado: pedir a quem sabe o segredo que abra (e contar o dinheiro na frente dele), lacrar fechado se nao ha quem
+  // abra, ou forcar (erro). Mesmo desenho da porta do escritorio.
+  function menuCofre() {
+    const D = CEN.dialogos, v = S.variacao, r = npcs.responsavel;
+    if (!A.entrou) return legenda('Vestígio', INFO_ITEM.cofre, 5);
+    if (A.cofre === 'aberto') return;
+    if (A.cofre) return legenda('Cofre', 'Cofre lacrado fechado e relacionado para apreensão. A autoridade policial foi informada.', 4);
+    const presente = v.responsavel === 'presente' && r && r.visible && !r.userData.caido;
+    painelOpc('Cofre', 'O cofre do escritório está trancado', D.cofre, op => {
+      if (op.id === 'pedir') {
+        if (presente) { registrar('cofre_correto'); A.cofre = 'aberto'; diz(r, D.resposta_cofre).then(() => moverCofre(true)); }
+        else legenda('Cofre', 'Ninguém no local sabe o segredo: só o dono.', 4);
+      } else if (op.id === 'lacrar') {
+        if (!presente) registrar('cofre_correto'); else penalidade(-2, 'Lacrar o cofre fechado com o responsável no local e podendo abrir', 'O responsável estava no local: peça que abra e conte o dinheiro na frente dele.');
+        A.cofre = 'lacrado'; legenda('Apreensão', 'Cofre lacrado fechado e relacionado. A abertura fica para a autoridade policial, com ordem judicial e perícia.', 6);
+      } else { registrar('forcar_cofre'); A.cofre = 'aberto'; moverCofre(true, .5); estouro(.25, 900, .6, .6); }
+      status();
+    }, presente ? 'O responsável está no local.' : 'O dono não está no local.');
   }
   function menuEscritorio() {
     const D = CEN.dialogos, v = S.variacao;
@@ -1349,10 +1406,10 @@ export async function iniciar(ctx) {
   function cenaExploracao() {
     S.variacao = derivar({ ...CEN.historia[0].variacao }); criarNPCs(S.variacao); S.vida = 3; S.municao = CARREGADOR; limparSangue();
     for (const it of Object.values(itens)) it.o.visible = true;
-    lacres.visible = false; moverEstante(false, .1); moverPorta('salao', 1, .1); moverPorta('escritorio', 1, .1); moverPorta('fundos', 0, .1);
+    lacres.visible = false; moverEstante(false, .1); moverCofre(false, .1); moverPorta('salao', 1, .1); moverPorta('escritorio', 1, .1); moverPorta('fundos', 0, .1);
   }
   function explorar(ray) {
-    const hi = ray.intersectObjects([...hitsItem, ...(estante ? [estante.col] : []), ...Object.values(portas).map(p => p.col)], false)[0];
+    const hi = ray.intersectObjects([...hitsItem.filter(h => h.userData.item !== 'dinheiro_cofre' || cofre?.aberto), ...hitCofre(), ...(estante ? [estante.col] : []), ...Object.values(portas).map(p => p.col)], false)[0];
     const hn = ray.intersectObjects(Object.values(npcs).filter(n => n.visible).map(n => n.userData.hit), false)[0];
     if (hn && hn.distance < 6 && (!hi || hn.distance < hi.distance)) {
       const n = Object.values(npcs).find(p => p.userData.hit === hn.object), k = n.userData.chave, E = CEN.exploracao;
@@ -1360,6 +1417,7 @@ export async function iniciar(ctx) {
     }
     if (hi && hi.distance < 4.5) {
       if (hi.object.userData.estante) usarEstante();
+      else if (hi.object.userData.cofre) moverCofre(true);
       else if (hi.object.userData.porta) { const k = hi.object.userData.porta; moverPorta(k, portas[k].frac > .5 ? 0 : 1); }
       else legenda('Vestígio', INFO_ITEM[hi.object.userData.item], 6);
       return true;
@@ -1376,7 +1434,7 @@ export async function iniciar(ctx) {
     if (!S.ativo) return explorar(ray);
     if (!A || A.fase === 'fim') return false;
     const hn = ray.intersectObjects(Object.values(npcs).filter(n => n.visible).map(n => n.userData.hit), false)[0];
-    const hi = ray.intersectObjects([...hitsItem, hitArma, ...(estante ? [estante.col] : []), ...Object.values(portas).filter(p => p.frac <= .5 || p === portas.salao || p === portas.escritorio || p === portas.fundos).map(p => p.col)], false)[0];
+    const hi = ray.intersectObjects([...hitsItem.filter(h => h.userData.item !== 'dinheiro_cofre' || cofre?.aberto), ...hitCofre(), hitArma, ...(estante ? [estante.col] : []), ...Object.values(portas).filter(p => p.frac <= .5 || p === portas.salao || p === portas.escritorio || p === portas.fundos).map(p => p.col)], false)[0];
     if (hn && hn.distance < 5 && (!hi || hn.distance < hi.distance)) {
       const n = Object.values(npcs).find(p => p.userData.hit === hn.object), k = n.userData.chave;
       if (n.userData.caido) painelOpc('Ferido', 'Pessoa baleada', CEN.dialogos.socorro, op => { if (op.acao) { A.socorro = true; radio(CEN.radio.socorro); } });
@@ -1393,6 +1451,7 @@ export async function iniciar(ctx) {
     if (hi && hi.distance < 4) {
       const u = hi.object.userData;
       if (u.estante) usarEstante();
+      else if (u.cofre) menuCofre();
       else if (u.porta === 'salao') menuPortaSalao();
       else if (u.porta === 'escritorio') menuEscritorio();
       else if (u.porta === 'fundos') { if (A.entrou) moverPorta('fundos', portas.fundos.frac > .5 ? 0 : 1); }
