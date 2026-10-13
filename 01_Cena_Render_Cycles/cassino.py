@@ -1103,8 +1103,31 @@ if not COFRE_ABRE: box("Cofre", (.6, .55, .8), (5.6, 12.6, FZ + .4), M["cofre"],
 mat("Aco_Cofre", "#8d9094", .4, .5).use_fake_user = True
 if not COFRE_ABRE: cyl("Cofre_Segredo", .06, .06, .03, (5.29, 12.6, FZ + .5), M["dourado"], C_ESC, rot=(0, PI / 2, 0), seg=16)
 box("Estante_Escritorio", (1.6, .35, 1.8), (3.6, 12.75, FZ + .9), M["mad"], C_ESC)
-box("Monitor_Cameras", (.5, .04, .32), (3.3, 12.55, FZ + 1.45), M["preto_b"], C_ESC)
-quadro("Monitor_Cameras_Tela", (3.3, 12.527, FZ + 1.45), "-y", .46, .28, TELA_CAM, C_ESC)
+def monitor_cameras(x, y, z):
+    """Monitor das cameras do autor (modelos/monitor_cameras.glb: moldura preta e a tela com a imagem dele, quatro quadros
+    de camera de seguranca). A tela fica acesa. Centrado no arquivo, base em z = 0, tela para -Y. Devolve None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "monitor_cameras.glb")
+    if not os.path.exists(cam): return None
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; n_img = 0
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world); me.transform(Matrix.Translation((x, y - (.003 if len(me.polygons) <= 2 else 0), z)))      # a tela 3 mm a frente da moldura, para nao piscar
+        for i, m in enumerate(me.materials):
+            tex = [nd for nd in m.node_tree.nodes if nd.type == "TEX_IMAGE" and nd.image] if m and m.node_tree else []
+            if tex:
+                m.name = "Modelo_Monitor_%d" % n_img; n_img += 1; bs = next(nd for nd in m.node_tree.nodes if nd.type == "BSDF_PRINCIPLED")
+                # com modelos/monitor_cameras_tela.png (gerar_tela_cameras.py: quatro quadros tirados do proprio cenario), a tela
+                # mostra o bar, o salao e os fundos de verdade, no lugar da imagem que veio no modelo
+                proprio = os.path.join(AQUI, "modelos", "monitor_cameras_tela.png")
+                if os.path.exists(proprio): tex[0].image = bpy.data.images.load(proprio)
+                m.node_tree.links.new(tex[0].outputs["Color"], bs.inputs["Emission Color"]); bs.inputs["Emission Strength"].default_value = 1.0
+            else: me.materials[i] = M["preto_b"]
+        C_ESC.objects.link(bpy.data.objects.new("Monitor_Cameras" + ("_Tela" if n_img and len(me.polygons) <= 2 else ""), me))
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    return True
+if not monitor_cameras(3.3, 12.525, FZ + 1.29):      # a frente do vao preto da estante (o monitor do autor e mais fino que o antigo)
+    box("Monitor_Cameras", (.5, .04, .32), (3.3, 12.55, FZ + 1.45), M["preto_b"], C_ESC)
+    quadro("Monitor_Cameras_Tela", (3.3, 12.527, FZ + 1.45), "-y", .46, .28, TELA_CAM, C_ESC)
 box("Contadora_Notas", (.26, .22, .16), (5.45, 10.75, FZ + .84), M["branco"], C_ESC, bevel=.01)
 for k in range(4):                                                                                # deposito: maquinas desligadas e caixas
     if not modelo_ph("Caixa_Deposito", "cardboard_box_01", (-5.6, 9.0 + k * .6, FZ), rnd.uniform(-.3, .3), C_ESC, escala=1.3, max_tris=300):
@@ -1711,7 +1734,49 @@ if not notebook_autor(r):
     box("I_Notebook_Tela", (.33, .012, .22), (0, .12, .12), M["metal"], C_INT, r, rot=(-.2, 0, 0))
     box("I_Notebook_Tela_Acesa", (.3, .004, .19), (0, .112, .12), M["tela"], C_INT, r, rot=(-.2, 0, 0))
 r = vazio("I_Celular", (5.3, 10.95, ze), C_INT, .5)
-box("I_Celular_Corpo", (.072, .15, .009), (0, 0, .0045), M["preto_b"], C_INT, r)
+def celular_autor(r):
+    """Celular do autor (modelos/celular.glb: o corpo de cantos chanfrados, sem material; o arquivo veio sem imagem) com a
+    foto da frente que ele mandou na face de cima, acesa como tela ligada. Na foto (866 x 1820) o aparelho vai de x=40 a
+    825 e de y=45 a 1770. O resto do corpo fica preto. Deitado na mesa, com o comprimento ao longo de Y da raiz."""
+    cam = os.path.join(AQUI, "modelos", "celular.glb"); foto = os.path.join(AQUI, "modelos", "celular_referencia.webp")
+    if not (os.path.exists(cam) and os.path.exists(foto)): return False
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; o = next(o for o in novos if o.type == "MESH")
+    me = o.data.copy(); me.transform(Matrix.Diagonal((abs(o.scale.x), abs(o.scale.y), abs(o.scale.z), 1)))      # so o tamanho: sem o giro nem o espelhamento do arquivo
+    for x in novos: bpy.data.objects.remove(x, do_unlink=True)
+    vs = [v.co for v in me.vertices]; mn = Vector([min(v[i] for v in vs) for i in range(3)]); mx = Vector([max(v[i] for v in vs) for i in range(3)]); d = mx - mn
+    eixo = min(range(3), key=lambda i: d[i])                                 # a espessura vira Z
+    if eixo != 2: me.transform(Matrix.Rotation(PI / 2, 4, "X" if eixo == 1 else "Y"))
+    vs = [v.co for v in me.vertices]; mn = Vector([min(v[i] for v in vs) for i in range(3)]); mx = Vector([max(v[i] for v in vs) for i in range(3)])
+    if mx.x - mn.x > mx.y - mn.y: me.transform(Matrix.Rotation(PI / 2, 4, "Z"))                                   # comprimento em Y
+    vs = [v.co for v in me.vertices]; mn = Vector([min(v[i] for v in vs) for i in range(3)]); mx = Vector([max(v[i] for v in vs) for i in range(3)])
+    me.transform(Matrix.Translation((-(mn.x + mx.x) / 2, -(mn.y + mx.y) / 2, -mn.z))); me.update()
+    lx, ly = mx.x - mn.x, mx.y - mn.y
+    mi = bpy.data.materials.new("Modelo_Celular_0"); nt = mi.node_tree; bs = nt.nodes.get("Principled BSDF")
+    # o fundo branco da foto aparecia nas quinas (cantos da foto mais redondos que os do modelo): pinta de preto o branco que
+    # vem das quatro bordas ate encostar no aparelho
+    src = bpy.data.images.load(foto); w_, h_ = src.size; px = np.empty(w_ * h_ * 4, np.float32); src.pixels.foreach_get(px); px = px.reshape(h_, w_, 4); bpy.data.images.remove(src)
+    claro = px[:, :, :3].min(2) > .8
+    fundo = (np.cumprod(claro, axis=1) > 0) | (np.cumprod(claro[:, ::-1], axis=1)[:, ::-1] > 0) | (np.cumprod(claro, axis=0) > 0) | (np.cumprod(claro[::-1], axis=0)[::-1] > 0)
+    px[fundo, :3] = .02; px[:, :, 3] = 1
+    dst = os.path.join(AQUI, "modelos", "celular_textura.png")
+    im = bpy.data.images.new("celular_tmp", w_, h_, alpha=False); im.pixels.foreach_set(px.ravel()); im.filepath_raw = dst; im.file_format = "PNG"; im.save(); bpy.data.images.remove(im)
+    tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = bpy.data.images.load(dst); nt.links.new(tx.outputs["Color"], bs.inputs["Base Color"])
+    nt.links.new(tx.outputs["Color"], bs.inputs["Emission Color"]); bs.inputs["Emission Strength"].default_value = .9; bs.inputs["Roughness"].default_value = .2
+    me.materials.clear(); me.materials.append(mi); me.materials.append(M["preto_b"])
+    uvl = me.uv_layers.active or me.uv_layers.new(name="UVMap")
+    U0, U1, V0, V1 = 40 / 866, 825 / 866, 1 - 1770 / 1820, 1 - 45 / 1820
+    for pl in me.polygons:
+        cima = pl.normal.z > .9; pl.material_index = 0 if cima else 1
+        if cima:
+            for li in pl.loop_indices:
+                c = me.vertices[me.loops[li].vertex_index].co
+                uvl.data[li].uv = (U0 + (U1 - U0) * (c.x / lx + .5), V0 + (V1 - V0) * (c.y / ly + .5))
+    ob = bpy.data.objects.new("I_Celular_Corpo", me); C_INT.objects.link(ob); ob.parent = r
+    say("celular do autor: %.1f x %.1f x %.1f cm" % (lx * 100, ly * 100, (mx.z - mn.z) * 100))
+    return True
+if not celular_autor(r):
+    box("I_Celular_Corpo", (.072, .15, .009), (0, 0, .0045), M["preto_b"], C_INT, r)
 r = vazio("I_Caderno_Contabilidade", (5.5, 11.62, ze), C_INT, -.2)
 box("I_Caderno_Contabilidade_Capa", (.21, .29, .02), (0, 0, .01), M["preto"], C_INT, r)
 box("I_Caderno_Contabilidade_Folhas", (.2, .28, .014), (.003, 0, .013), M["papel"], C_INT, r)
@@ -1755,9 +1820,49 @@ def cofre_que_abre():
         maco("I_Dinheiro_Cofre_Maco", rd, -.085 + (k % 2) * .17, -.085 + ((k // 2) % 3) * .085, .012 + (k // 6) * .023, M["nota2"] if (k + k // 6) % 2 else M["nota"], rnd.uniform(-.06, .06))
     say("cofre que abre: %d pecas, piso interno a %.2f m, vao %s" % (len(pecas), piso + dz - FZ, "oco" if bate[0] is not None and piso > corpo[1].z + .01 else "NAO ENCONTRADO"))
 if COFRE_ABRE: cofre_que_abre()
-r = vazio("I_DVR_Cameras", (3.3, 12.7, FZ + 1.2), C_INT)
-box("I_DVR_Cameras_Corpo", (.36, .24, .055), (0, 0, .0275), M["preto"], C_INT, r)
-box("I_DVR_Cameras_Luz", (.02, .005, .01), (.13, -.122, .03), M["neon_v"], C_INT, r)
+box("Estante_Escritorio_Apoio", (.5, .28, .03), (3.3, 12.435, FZ + 1.185), M["mad"], C_ESC)      # apoio a frente da estante: o gravador ficava escondido atras do vao preto
+r = vazio("I_DVR_Cameras", (3.3, 12.44, FZ + 1.2), C_INT)
+def gravador_autor(r):
+    """Gravador das cameras do autor (modelos/gravador_cameras.glb: corpo, quatro botoes, dois leds e a luz verde; o arquivo
+    veio sem a imagem) com a foto da frente que ele usou de referencia projetada na face da frente: letreiro DVR, POWER/HDD,
+    MENU, setas, OK e a entrada USB. Na foto (2000 px de largura) o aparelho vai de x=30 a 1970 e de y=297 a 490.
+    As outras faces ficam pretas; os leds e a luz verde ficam acesos. Devolve False sem os arquivos."""
+    cam = os.path.join(AQUI, "modelos", "gravador_cameras.glb"); foto = os.path.join(AQUI, "modelos", "gravador_cameras_referencia.webp")
+    if not (os.path.exists(cam) and os.path.exists(foto)): return False
+    mi = bpy.data.materials.new("Modelo_Gravador_0"); nt = mi.node_tree; bs = nt.nodes.get("Principled BSDF")
+    tx = nt.nodes.new("ShaderNodeTexImage"); tx.image = bpy.data.images.load(foto); nt.links.new(tx.outputs["Color"], bs.inputs["Base Color"]); bs.inputs["Roughness"].default_value = .5
+    antes = set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; pecas = []
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world); me.flip_normals() if o.matrix_world.determinant() < 0 else None
+        vs = [v.co for v in me.vertices]; pecas.append((me, Vector([min(v[i] for v in vs) for i in range(3)]), Vector([max(v[i] for v in vs) for i in range(3)])))
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    c0, c1 = max(pecas, key=lambda p: (p[2] - p[1]).length)[1:]                  # o corpo e a maior peca
+    cx, cy, zc = (c0.x + c1.x) / 2, (c0.y + c1.y) / 2, (c0.z + c1.z) / 2
+    lg = (c1.x - c0.x) / (1970 - 30) * 2000 * 1.012; al = (c1.z - c0.z) / (490 - 297) * 800 * 1.09     # largura e altura que a foto inteira cobriria (com folga: a borda pegava o fundo branco)
+    n_led = 0
+    for me, mn, mx in pecas:
+        tem = [m for m in me.materials if m]
+        if tem:                                                                  # leds e luz: materiais acesos do autor
+            for i, m in enumerate(me.materials):
+                if m and m.name.startswith("Neon_Verde"): me.materials[i] = M["neon_v"]
+                elif m and not m.name.startswith("Led_DVR"): m.name = "Led_DVR_%d" % n_led; n_led += 1
+        else:
+            me.materials.append(mi); me.materials.append(M["preto"])
+            uvl = me.uv_layers.active or me.uv_layers.new(name="UVMap")
+            for pl in me.polygons:
+                frente = pl.normal.y < -.5; pl.material_index = 0 if frente else 1
+                if frente:
+                    for li in pl.loop_indices:
+                        c = me.vertices[me.loops[li].vertex_index].co
+                        uvl.data[li].uv = (.5 + (c.x - cx) / lg, 1 - (393.5 / 800 - (c.z - zc) / al))
+        me.transform(Matrix.Translation((-cx, -cy, -c0.z)))
+        ob = bpy.data.objects.new("I_DVR_Cameras_Peca", me); C_INT.objects.link(ob); ob.parent = r
+    say("gravador do autor: %d pecas" % len(pecas))
+    return True
+if not gravador_autor(r):
+    box("I_DVR_Cameras_Corpo", (.36, .24, .055), (0, 0, .0275), M["preto"], C_INT, r)
+    box("I_DVR_Cameras_Luz", (.02, .005, .01), (.13, -.122, .03), M["neon_v"], C_INT, r)
 # a estante do escritorio tem prateleiras abertas onde ficam a caixa e o gravador
 box("Estante_Escritorio_Vao_A", (.7, .04, .3), (3.95, 12.56, FZ + .65), M["preto"], C_ESC)
 box("Estante_Escritorio_Vao_B", (.7, .04, .3), (3.3, 12.56, FZ + 1.3), M["preto"], C_ESC)
