@@ -10,10 +10,10 @@ import * as THREE from 'three';
 
 // posicoes em coordenadas da cena web (Y para cima)
 const DEF = {
-  amb_transito_noite:  { tipo: 'ambiente', fora: .45, dentro: .12 },
-  amb_bar:             { tipo: 'ambiente', fora: .06, dentro: .3 },
-  maquinas_caca_niquel: { tipo: 'posicional', pos: [-1.3, 1.2, -11.0], vol: .55, ref: 2.2, rolloff: 1.5 },
-  musica_sala_reservada: { tipo: 'posicional', pos: [9, 1.4, -11.5], vol: .5, ref: 2.0, rolloff: 1.5 },
+  amb_transito_noite:  { tipo: 'ambiente', fora: .32, dentro: .08 },
+  amb_bar:             { tipo: 'ambiente', fora: .04, dentro: .2 },
+  maquinas_caca_niquel: { tipo: 'posicional', pos: [-1.3, 1.2, -11.0], vol: .36, ref: 2.2, rolloff: 1.5 },
+  musica_sala_reservada: { tipo: 'posicional', pos: [9, 1.4, -11.5], vol: .36, ref: 2.0, rolloff: 1.5 },
   cachorro_longe:      { tipo: 'esporadico', area: [[-30, -15], [-20, 20]], vol: .4, intervalo: [25, 60] },
   sirene_longe:        { tipo: 'evento', vol: .4 },
   radio_chiado:        { tipo: 'evento', vol: .3 },
@@ -136,13 +136,16 @@ export async function iniciarAudio({ scene, camera, renderer }) {
   }
 
   // volume dos ambientes conforme dentro/fora da casa (transicao suave)
-  let dentro = 0;
+  let dentro = 0, falaAte = 0, abaixa = 1;
   function quadro(dt) {
     if (!ligado) return;
     camera.getWorldPosition(V);
     const alvo = (V.x > -6 && V.x < 6 && V.z > -13 && V.z < 0) ? 1 : 0;      // dentro do predio do bar
     dentro += (alvo - dentro) * Math.min(1, dt * 1.5);
-    for (const { a, d, n } of ambientes) a.setVolume(mudo ? 0 : vol(n, d.fora * (1 - dentro) + d.dentro * dentro));
+    const alvoAbaixa = listener.context.currentTime < falaAte ? .45 : 1;
+    abaixa += (alvoAbaixa - abaixa) * Math.min(1, dt * (alvoAbaixa < abaixa ? 6 : 1.5));
+    for (const { a, d, n } of ambientes) a.setVolume(mudo ? 0 : vol(n, d.fora * (1 - dentro) + d.dentro * dentro) * abaixa);
+    for (const p of posicionais) { p.atual = (p.atual ?? p.k) + (p.k - (p.atual ?? p.k)) * Math.min(1, dt * 2.5); p.a.setVolume(mudo ? 0 : vol(p.n, p.d.vol) * p.atual * abaixa); }
   }
 
   const api = {
@@ -153,11 +156,12 @@ export async function iniciarAudio({ scene, camera, renderer }) {
     tocar(n, pos, analisar = false, trecho = null) {     // trecho = { ini, dur, ritmo }: toca so uma parte do arquivo, ou mais devagar
       if (!buffers[n]) return false;
       ligar();
-      const d = { ...(DEF[n] || { vol: n.startsWith('fala_') ? 1 : .7 }), ...(fala[n] || {}), ...(trecho || {}) };
+      const d = { ...(DEF[n] || { vol: n.startsWith('fala_') ? 1.25 : .7 }), ...(fala[n] || {}), ...(trecho || {}) };
+      if (n.startsWith('fala_')) falaAte = Math.max(falaAte, listener.context.currentTime + (d.dur || buffers[n].duration));      // abaixa o ambiente enquanto alguem fala
       if (mudo) return true;
       let a;
       if (pos) {
-        a = new THREE.PositionalAudio(listener); a.setBuffer(buffers[n]); a.setRefDistance(1.2); a.setVolume(vol(n, d.vol));
+        a = new THREE.PositionalAudio(listener); a.setBuffer(buffers[n]); a.setRefDistance(n.startsWith('fala_') ? 2.2 : 1.2); a.setVolume(vol(n, d.vol));
         const o = new THREE.Object3D(); o.position.copy(pos); o.add(a); scene.add(o); recorte(a, d, vol(n, d.vol)); a.play();
         a.onEnded = () => { a.isPlaying = false; scene.remove(o); };
       } else {
@@ -172,7 +176,7 @@ export async function iniciarAudio({ scene, camera, renderer }) {
     pararChoro() { const p = posicionais.find(p => p.n === 'choro_crianca_baixo'); if (p) { p.a.stop(); scene.remove(p.o); posicionais.splice(posicionais.indexOf(p), 1); } },
     mudo(v) { mudo = v; for (const p of posicionais) p.a.setVolume(v ? 0 : vol(p.n, p.d.vol) * p.k); },
     // abafa ou libera um som posicional (porta fechada, estante no lugar): k de 0 a 1, com transicao curta
-    nivel(n, k) { const p = posicionais.find(p => p.n === n); if (!p || p.k === k) return; p.k = k; if (!mudo) p.a.gain.gain.setTargetAtTime(vol(p.n, p.d.vol) * k, listener.context.currentTime, .4); },
+    nivel(n, k) { const p = posicionais.find(p => p.n === n); if (p) p.k = k; },      // o quadro faz a transicao
     desbloquear,
     quadro, carregados: () => Object.keys(buffers),
     falas: () => Object.fromEntries(Object.entries(fala).map(([k, v]) => [k, [+v.ini.toFixed(2), +v.dur.toFixed(2), +buffers[k].duration.toFixed(2), +(ganho[k] || 1).toFixed(2)]])),
