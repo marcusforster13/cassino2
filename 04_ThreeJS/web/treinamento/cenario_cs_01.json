@@ -864,163 +864,193 @@
       {
         "arquivo": "fala_radio_01",
         "personagem": "Sala de operações (rádio)",
-        "quando": "Início de cada ocorrência",
+        "quando": "Rádio: inicio",
         "texto": "Viatura, denúncia anônima de jogo de azar nos fundos do bar da esquina. Verifique."
       },
       {
         "arquivo": "fala_radio_02",
         "personagem": "Sala de operações (rádio)",
-        "quando": "O policial informa a chegada",
+        "quando": "Rádio: chegada",
         "texto": "Copiado. Viatura no local."
       },
       {
         "arquivo": "fala_radio_03",
         "personagem": "Sala de operações (rádio)",
-        "quando": "O policial pede apoio",
+        "quando": "Rádio: apoio",
         "texto": "Copiado. Outra guarnição vai cobrir os fundos pelo beco lateral."
       },
       {
         "arquivo": "fala_radio_04",
         "personagem": "Sala de operações (rádio)",
-        "quando": "O policial decide não entrar",
+        "quando": "Rádio: sem_entrada",
         "texto": "Copiado. Registre a ocorrência; a denúncia será encaminhada à Polícia Civil."
       },
       {
         "arquivo": "fala_radio_05",
         "personagem": "Sala de operações (rádio)",
-        "quando": "O policial pede socorro médico",
+        "quando": "Rádio: socorro",
         "texto": "Copiado. Ambulância a caminho. Preserve o local e aguarde o oficial de serviço."
       },
       {
         "arquivo": "fala_radio_06",
         "personagem": "Sala de operações (rádio)",
-        "quando": "Fim da ocorrência",
+        "quando": "Rádio: final",
         "texto": "Copiado. Delegacia avisada da condução."
       },
       {
         "arquivo": "fala_parceiro_01",
         "personagem": "Policial parceiro",
-        "quando": "Modo exploração e antes do planejamento",
+        "quando": "Conversa com o parceiro",
         "texto": "Estou com você. É só dizer como vamos entrar."
       },
       {
         "arquivo": "fala_parceiro_02",
         "personagem": "Policial parceiro",
-        "quando": "Depois de combinar a entrada",
+        "quando": "Parceiro acompanha a entrada",
         "texto": "Positivo. Vou junto com você."
       },
       {
         "arquivo": "fala_apoio_01",
         "personagem": "Policial de apoio",
-        "quando": "No beco, cobrindo os fundos",
+        "quando": "Conversa com o apoio",
         "texto": "Fundos cobertos. Daqui ninguém sai sem ser visto."
       },
       {
         "arquivo": "fala_atendente_01",
         "personagem": "Funcionária do bar",
-        "quando": "Modo exploração · simpática",
+        "quando": "Modo livre",
         "texto": "Boa noite. Vai querer alguma coisa?"
       },
       {
         "arquivo": "fala_atendente_02",
         "personagem": "Funcionária do bar",
-        "quando": "O policial se identifica · apreensiva",
+        "quando": "Abordagem no balcão",
         "texto": "Boa noite… pois não?"
       },
       {
         "arquivo": "fala_atendente_03",
         "personagem": "Funcionária do bar",
-        "quando": "Pergunta sobre os fundos · admite, com medo",
+        "quando": "Pergunta sobre os fundos",
         "texto": "Tem umas maquininhas lá atrás… Eu só trabalho aqui no balcão."
       },
       {
         "arquivo": "fala_atendente_04",
         "personagem": "Funcionária do bar",
-        "quando": "Pergunta sobre os fundos · nega, desviando o olhar",
+        "quando": "Pergunta sobre os fundos",
         "texto": "Lá é depósito. Não tem nada, não."
       },
       {
         "arquivo": "fala_atendente_05",
         "personagem": "Funcionária do bar",
-        "quando": "Autoriza a entrada",
+        "quando": "Pedido para entrar",
         "texto": "Pode entrar. Eu não quero problema pra mim."
       },
       {
         "arquivo": "fala_atendente_06",
         "personagem": "Funcionária do bar",
-        "quando": "Não autoriza a entrada",
+        "quando": "Pedido para entrar",
         "texto": "Não posso. O dono não deixa ninguém entrar lá."
       },
       {
         "arquivo": "fala_atendente_07",
         "personagem": "Funcionária do bar",
-        "quando": "Dono ausente · explica",
+        "quando": "Pergunta sobre o dono",
         "texto": "O dono só vem de manhã buscar o dinheiro. Eu tenho o telefone dele."
+      },
+      {
+        "arquivo": "fala_atendente_08",
+        "personagem": "Funcionária do bar",
+        "quando": "Pedido da chave do escritório",
+        "texto": "A chave fica com o dono. Eu não tenho."
       },
       {
         "arquivo": "fala_responsavel_01",
         "personagem": "Responsável pelo local",
-        "quando": "Modo exploração · debochado",
+        "quando": "Modo livre",
         "texto": "Isso aqui é só um joguinho entre amigos."
       },
       {
         "arquivo": "fala_responsavel_02",
         "personagem": "Responsável pelo local",
-        "quando": "Perguntam quem é o responsável · contrariado",
+        "quando": "Identificação",
         "texto": "Sou eu que tomo conta. O que é que tá acontecendo?"
       },
       {
         "arquivo": "fala_responsavel_03",
         "personagem": "Responsável pelo local",
-        "quando": "Depois de ouvir os direitos",
+        "quando": "Direitos",
         "texto": "Eu quero ligar pro meu advogado."
       },
       {
         "arquivo": "fala_responsavel_04",
         "personagem": "Responsável pelo local",
-        "quando": "Oferta de dinheiro · em voz baixa",
+        "quando": "Oferta de suborno",
         "texto": "Chefe, vamos resolver isso aqui mesmo. Tem cinco mil na gaveta. Ninguém precisa ficar sabendo."
       },
       {
         "arquivo": "fala_responsavel_05",
         "personagem": "Responsável pelo local",
-        "quando": "Pedem para abrir o escritório · resignado",
+        "quando": "Abre o escritório",
         "texto": "Tá bom… eu abro."
+      },
+      {
+        "arquivo": "fala_responsavel_06",
+        "personagem": "Responsável pelo local",
+        "quando": "Abre o cofre",
+        "texto": "Tá… eu abro. O que tem aí é do movimento da semana."
+      },
+      {
+        "arquivo": "fala_responsavel_07",
+        "personagem": "Responsável pelo local",
+        "quando": "Reclama ao anúncio",
+        "texto": "Que é isso? Isso aqui é um bar, vocês não podem ir entrando assim!"
       },
       {
         "arquivo": "fala_seguranca_01",
         "personagem": "Segurança",
-        "quando": "Modo exploração · seco",
+        "quando": "Modo livre",
         "texto": "Aqui é área reservada."
       },
       {
         "arquivo": "fala_seguranca_02",
         "personagem": "Segurança",
-        "quando": "Rende-se ao comando · assustado",
+        "quando": "Rendido",
         "texto": "Calma, calma! Eu não vou fazer nada."
       },
       {
         "arquivo": "fala_apostador_01",
-        "personagem": "Apostador (voz masculina)",
-        "quando": "Modo exploração",
+        "personagem": "Apostador",
+        "quando": "Modo livre",
         "texto": "Hoje a máquina tá pagando…"
       },
       {
         "arquivo": "fala_apostador_02",
-        "personagem": "Apostador (voz masculina)",
-        "quando": "Mandam ficar junto à parede",
+        "personagem": "Apostador",
+        "quando": "Mandado para a parede",
         "texto": "Tá bom, seu policial."
       },
       {
         "arquivo": "fala_apostador_03",
-        "personagem": "Apostador (voz masculina)",
-        "quando": "Entrega o documento · sem graça",
+        "personagem": "Apostador",
+        "quando": "Qualificação",
         "texto": "Tá aqui. Eu só vim jogar um pouquinho…"
+      },
+      {
+        "arquivo": "fala_apostador_04",
+        "personagem": "Apostador",
+        "quando": "Para com a ordem verbal",
+        "texto": "Tá bom, tá bom… eu só ia embora."
+      },
+      {
+        "arquivo": "fala_apostador_05",
+        "personagem": "Apostadora",
+        "quando": "Devolve as fichas",
+        "texto": "Tá… tá aqui. Desculpa."
       },
       {
         "arquivo": "fala_atirador_01",
         "personagem": "Homem do sofá (sala reservada)",
-        "quando": "Modo exploração · ameaçador, sem se levantar",
+        "quando": "Modo livre",
         "texto": "Aqui é reservado. Dá o fora."
       }
     ]
