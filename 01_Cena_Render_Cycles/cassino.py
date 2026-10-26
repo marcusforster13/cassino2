@@ -856,7 +856,7 @@ box("Balcao_Corpo", (.6, 3.6, 1.05), (3.6, 3.0, FZ + .525), M["mad"], C_BAR, bev
 box("Balcao_Tampo", (.75, 3.75, .05), (3.55, 3.0, FZ + 1.075), M["rodape"], C_BAR, bevel=.012)
 box("Balcao_Retorno", (2.4, .5, 1.05), (4.8, 1.1, FZ + .525), M["mad"], C_BAR, bevel=.01)
 for k in range(4):
-    if not modelo_ph("Banqueta_Bar", "bar_chair_round_01", (2.92, 1.9 + k * .75, FZ), rnd.uniform(0, 6), C_BAR, max_tris=1500):
+    if not modelo_ph("Banqueta_Bar", "bar_chair_round_01", (2.92, 1.9 + k * .75, FZ), rnd.uniform(0, 6), C_BAR, max_tris=5000):
         cyl("Banqueta_Assento", .17, .17, .05, (2.95, 1.9 + k * .75, FZ + .74), M["couro"], C_BAR, seg=16)
         cyl("Banqueta_Pe", .14, .03, .72, (2.95, 1.9 + k * .75, FZ + .36), M["metal"], C_BAR, seg=10)
 for k, z in enumerate((1.0, 1.45, 1.9)):                                                          # prateleiras de garrafas na parede leste
@@ -864,7 +864,35 @@ for k, z in enumerate((1.0, 1.45, 1.9)):                                        
     for j in range(11):
         g = M[("garrafa_v", "garrafa_a", "garrafa_c")[(j + k) % 3]]; y = 2.33 + j * .26
         torno("Garrafa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], g, C_BAR, pos=(5.76, y, FZ + z + .018), seg=10)
-box("Freezer_Horizontal", (.7, 1.5, .9), (5.5, 5.1, FZ + .45), M["freezer"], C_BAR, bevel=.03)
+def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo):
+    """Peca refeita pelo autor ja com materiais (modelos/<arq>): entra como veio, todas as pecas numa malha so, centrada e
+    com a base no chao. Materiais com imagem ganham o prefixo Modelo_ (o pipeline mantem a UV). Devolve None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", arq)
+    if not os.path.exists(cam): return None
+    antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new(); n_img = 0
+    for m in [m for m in bpy.data.materials if m not in antes_m]:
+        if m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes): m.name = "Modelo_%s_%d" % (prefixo, n_img); n_img += 1
+        else: m.name = prefixo + "_" + m.name
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world)
+        if o.matrix_world.determinant() < 0: me.flip_normals()
+        indice = {}
+        for i, m in enumerate(me.materials):
+            if m not in mats: mats.append(m)
+            indice[i] = mats.index(m)
+        n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
+        for f in bm.faces[n0:]: f.material_index = indice.get(f.material_index, 0)
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    vs = [v.co for v in bm.verts]
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(-(min(v.x for v in vs) + max(v.x for v in vs)) / 2, -(min(v.y for v in vs) + max(v.y for v in vs)) / 2, -min(v.z for v in vs)))
+    me = bpy.data.meshes.new(nome + "_Autor"); bm.to_mesh(me); bm.free()
+    for m in mats: me.materials.append(m)
+    ob = bpy.data.objects.new(nome, me); col.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
+    say("%s do autor: %d triangulos" % (nome, sum(len(pl.vertices) - 2 for pl in me.polygons)))
+    return ob
+if not modelo_autor_inteiro("freezer_horizontal_realista.glb", "Freezer_Horizontal", 5.5, 5.1, FZ, 0, C_BAR, "Freezer"):      # puxadores para o balcao (-X)
+    box("Freezer_Horizontal", (.7, 1.5, .9), (5.5, 5.1, FZ + .45), M["freezer"], C_BAR, bevel=.03)
 def geladeira(x, y, rz):
     """Geladeira expositora do autor (modelos/geladeira.glb, sem materiais; a porta olha para -Y no arquivo). Como na foto de
     referencia: gabinete preto por fora, forro branco por dentro, prateleiras de grade brancas, porta de vidro translucido e luz
@@ -916,13 +944,13 @@ box("Azulejo_Barra_Canto", (.6, .02, 1.3), (-5.6, 5.915, FZ + .65), M["azulejo"]
 box("Azulejo_Barra_Oeste", (.02, 5.7, 1.3), (-5.89, 3.0, FZ + .65), M["azulejo"], C_BAR)
 for i, (x, y, rz) in enumerate(((-.7, 1.75, .2), (-3.9, 2.2, -.15), (0.15, 4.8, .05))):
     r = mesa("Mesa_Bar_%d" % i, x, y, rz, tam=(.75, .75), col=C_BAR); r.location.z = FZ
-    for k, (dx, dy, a) in enumerate(((0, -.62, PI), (0, .62, 0), (-.62, 0, -PI / 2), (.62, 0, PI / 2))[:3 + (i % 2)]):
+    for k, (dx, dy, a) in enumerate(((0, -.62, PI), (0, .62, 0), (-.62, 0, PI / 2), (.62, 0, -PI / 2))[:3 + (i % 2)]):      # todas viradas para a mesa
         c = cadeira("Cadeira_Bar_%d_%d" % (i, k), x + dx, y + dy, rz + a + rnd.uniform(-.2, .2), C_BAR); c.location.z = FZ
     torno("Garrafa_Mesa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], M["garrafa_a"], C_BAR, pos=(x + .1, y + .05, FZ + .745), seg=10)
     copo("Copo_Mesa", x - .12, y - .1, FZ + .745, C_BAR)
 for k in range(3):                                                                                # deposito do bar
     for j in range(2 + k % 2):
-        if not modelo_ph("Engradado", "plastic_crate_01", (3.7 + k * .45, 8.7, FZ + j * .262), PI / 2 + rnd.uniform(-.06, .06), C_ESC, max_tris=700):
+        if not modelo_ph("Engradado", "plastic_crate_01", (3.7 + k * .45, 8.7, FZ + j * .262), PI / 2 + rnd.uniform(-.06, .06), C_ESC, max_tris=4000):
             box("Engradado", (.4, .3, .28), (3.7 + k * .45, 8.7, FZ + .14 + j * .285), M["eng_v"] if (k + j) % 2 else M["eng_a"], C_ESC, bevel=.01)
 if modelo_ph("Estante_Deposito", "steel_frame_shelves_01", (2.86, 7.05, FZ), PI / 2, C_ESC, alt=1.9, max_tris=2500):
     modelo_ph("Estante_Deposito", "steel_frame_shelves_01", (2.86, 8.1, FZ), PI / 2, C_ESC, alt=1.9, max_tris=2500)
@@ -1148,7 +1176,7 @@ box("Portao_Quintal_Folha", (.9, .05, 2.0), (-5.5, 15.55, FZ + 1.0), M["porta_fe
 box("Tanque_Quintal", (.7, .55, .85), (5.5, 13.5, FZ + .425), M["concreto"], C_FUN)
 for k in range(3):
     for j in range(1 + k % 2):
-        if not modelo_ph("Engradado_Quintal", "plastic_crate_01", (3.6 + k * .45, 16.7, FZ + j * .262), PI / 2 + rnd.uniform(-.1, .1), C_FUN, max_tris=700):
+        if not modelo_ph("Engradado_Quintal", "plastic_crate_01", (3.6 + k * .45, 16.7, FZ + j * .262), PI / 2 + rnd.uniform(-.1, .1), C_FUN, max_tris=4000):
             box("Engradado_Quintal", (.4, .3, .28), (3.6 + k * .45, 16.7, FZ + .14 + j * .285), M["eng_a"], C_FUN, bevel=.01)
 cyl("Lixeira_Beco", .26, .22, .7, (-7.6, 3.0, FZ + .35), M["plast"], C_FUN, seg=14)
 box("Maquina_Velha_Beco", (.62, .58, 1.2), (-7.55, 10.5, FZ + .6), M["gab"], C_FUN, rot=(0, .12, .3))
@@ -1240,7 +1268,7 @@ for x, y in ((-16.6, -1.5), (-17.1, -1.2), (9.6, -1.55)):
     saco_lixo("Saco_Lixo_Rua", x, y, C_RUA)
 vaso("Vaso_Entrada_A", -3.35, -.3, C_RUA); vaso("Vaso_Entrada_B", -.65, -.3, C_RUA)
 r = mesa("Mesa_Calcada", 1.2, -1.0, .1, tam=(.75, .75), col=C_RUA); r.location.z = FZ
-for k, (dx, a) in enumerate(((-.62, -PI / 2), (.62, PI / 2))):
+for k, (dx, a) in enumerate(((-.62, PI / 2), (.62, -PI / 2))):      # viradas para a mesa
     c = cadeira("Cadeira_Calcada_%d" % k, 1.2 + dx, -1.0, a + rnd.uniform(-.2, .2), C_RUA); c.location.z = FZ
 torno("Garrafa_Calcada", GARRAFA, M["garrafa_a"], C_RUA, pos=(1.25, -.95, FZ + .745), seg=10)
 cartaz("Cavalete_Bar", (-.35, -1.35, FZ + .55), "-y", (.6, 1.0), M["lousa"], ["PRATO FEITO", "R$ 22", "CERVEJA", "GELADA"], C_RUA, .075)
@@ -1271,9 +1299,46 @@ box("Sinuca_Luminaria", (1.2, .3, .1), (SX, SY, FZ + 2.0), M["feltro"], C_BAR, b
 box("Sinuca_Luminaria_Luz", (1.1, .2, .02), (SX, SY, FZ + 1.945), M["lamp_q"], C_BAR)
 for sx in (-.5, .5): cyl("Sinuca_Luminaria_Fio", .006, .006, FZ + PD - 2.05 - FZ, (SX + sx, SY, FZ + 2.05 + (PD - 2.05) / 2), M["preto"], C_BAR, seg=6)
 luz("Luz_Sinuca", "POINT", 22, "#ffe2b0", (SX, SY, FZ + 1.8), C_LUZ, shadow_soft_size=.2)
-box("Estufa_Base", (.46, .8, .06), (3.55, 1.9, FZ + 1.13), M["metal"], C_BAR)
-box("Estufa_Vidro", (.44, .78, .3), (3.55, 1.9, FZ + 1.31), M["vidro_estufa"], C_BAR)
-box("Estufa_Luz", (.4, .74, .02), (3.55, 1.9, FZ + 1.45), M["lamp_q"], C_BAR)
+def estufa_realista(x, y, z):
+    """Estufa de salgados refeita pelo autor (modelos/estufa_salgados_realista.glb): base de aquecimento em inox, duas
+    prateleiras com bandejas, vidros, portas de correr do lado de quem atende (+X), luz quente e painel com termostato.
+    Os vidros usam o vidro da cena e a luz, a lampada quente da cena. Fica fora do lightmap (perfis finos). Devolve as
+    alturas das duas bandejas, ou None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "estufa_salgados_realista.glb")
+    if not os.path.exists(cam): return None
+    antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new(); n_img = 0; bandejas = set()
+    troca = {}
+    for m in [m for m in bpy.data.materials if m not in antes_m]:
+        base = m.name.split(".")[0]
+        if base == "Vidro_Estufa": troca[m] = M["vidro_estufa"]
+        elif base == "Lampada_Quente": troca[m] = M["lamp_q"]
+        elif m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes): m.name = "Modelo_Estufa_%d" % n_img; n_img += 1
+        else: m.name = "Estufa_" + m.name
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world)
+        if o.matrix_world.determinant() < 0: me.flip_normals()
+        if o.name.startswith("Fundo da bandeja"): bandejas.add(round(max(v.co.z for v in me.vertices), 3))
+        indice = {}
+        for i, m in enumerate(me.materials):
+            m = troca.get(m, m)
+            if m not in mats: mats.append(m)
+            indice[i] = mats.index(m)
+        n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
+        for f in bm.faces[n0:]: f.material_index = indice.get(f.material_index, 0)
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    vs = [v.co for v in bm.verts]; z0 = min(v.z for v in vs)
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(-(min(v.x for v in vs) + max(v.x for v in vs)) / 2, -(min(v.y for v in vs) + max(v.y for v in vs)) / 2, -z0))
+    me = bpy.data.meshes.new("Estufa_Realista"); bm.to_mesh(me); bm.free()
+    for m in mats: me.materials.append(m)
+    ob = bpy.data.objects.new("Estufa", me); C_GAR.objects.link(ob); ob.location = (x, y, z)
+    say("estufa realista: %d triangulos, bandejas a %s cm" % (sum(len(pl.vertices) - 2 for pl in me.polygons), sorted(round((b - z0) * 100, 1) for b in bandejas)))
+    return sorted(b - z0 for b in bandejas)
+ESTUFA_BANDEJAS = estufa_realista(3.55, 1.9, FZ + 1.10)
+if not ESTUFA_BANDEJAS:
+    box("Estufa_Base", (.46, .8, .06), (3.55, 1.9, FZ + 1.13), M["metal"], C_BAR)
+    box("Estufa_Vidro", (.44, .78, .3), (3.55, 1.9, FZ + 1.31), M["vidro_estufa"], C_BAR)
+    box("Estufa_Luz", (.4, .74, .02), (3.55, 1.9, FZ + 1.45), M["lamp_q"], C_BAR)
 # salgados do autor (modelos/salgado_coxinha.glb e salgado_kibe.glb, que vem em tamanho gigante: aqui ficam com 7,5 e 6 cm de
 # altura). Sem lightmap, como as garrafas: peca pequena sai manchada. Sem os arquivos, as bolinhas de antes.
 def malha_salgado(arq, alt):
@@ -1306,10 +1371,12 @@ def malha_salgado(arq, alt):
 _salg = [malha_salgado("salgado_coxinha.glb", .075), malha_salgado("salgado_kibe.glb", .06)]
 for k in range(12):
     x_, y_ = 3.41 + (k % 3) * .14, 1.63 + (k // 3) * .18
+    if ESTUFA_BANDEJAS:                                                   # kibes na prateleira de baixo, coxinhas na de cima
+        dx_, dy_ = ((-.09, -.26), (.09, -.12), (-.09, .12), (.09, .26), (.09, -.26), (-.09, .26))[k % 6]; x_, y_ = 3.55 + dx_, 1.9 + dy_
     me_ = _salg[k // 6]
     if me_:
         ob_ = bpy.data.objects.new("Estufa_Salgado", me_); C_GAR.objects.link(ob_)
-        ob_.location = (x_ + rnd.uniform(-.012, .012), y_ + rnd.uniform(-.012, .012), FZ + 1.161); ob_.rotation_euler = (0, 0, rnd.uniform(0, 2 * PI))
+        ob_.location = (x_ + rnd.uniform(-.012, .012), y_ + rnd.uniform(-.012, .012), (FZ + 1.10 + ESTUFA_BANDEJAS[1 - k // 6] + .001) if ESTUFA_BANDEJAS else FZ + 1.161); ob_.rotation_euler = (0, 0, rnd.uniform(0, 2 * PI))
     else: esfera("Estufa_Salgado", .04, (x_, y_, FZ + 1.2), M["salgado"], C_BAR, sub=1, esc=(1, 1.3, .8))
 def caixa_registradora(x, y, z, rz):
     """Caixa registradora do autor (modelos/caixa_registradora.glb). O corpo ganha o plastico preto; o visor e o cilindro da
@@ -1360,7 +1427,40 @@ def caixa_registradora(x, y, z, rz):
     for o in novos: bpy.data.objects.remove(o, do_unlink=True)
     ob = bpy.data.objects.new("Caixa_Registradora", me); C_GAR.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
     return ob
-if not caixa_registradora(3.55, 4.3, FZ + 1.101, PI / 2):                       # teclas e fechadura viradas para quem atende (+X)
+def caixa_registradora_realista(x, y, z, rz):
+    """Caixa registradora refeita pelo autor (modelos/caixa_registradora_realista.glb), ja com materiais e texturas: plastico
+    grafite com rugosidade e relevo, 32 teclas com legenda, visor verde, gaveta, fechadura e pes. Entra como veio (todas as
+    pecas numa malha so); o visor acende. Teclas e gaveta para -Y no arquivo. Devolve None sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "caixa_registradora_realista.glb")
+    if not os.path.exists(cam): return None
+    antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new(); n_img = 0
+    for m in [m for m in bpy.data.materials if m not in antes_m]:
+        if m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes):
+            if "visor" in m.name.lower() or "display" in m.name.lower():         # visor: a imagem tambem acende
+                bs = next(nd for nd in m.node_tree.nodes if nd.type == "BSDF_PRINCIPLED"); tx = next(nd for nd in m.node_tree.nodes if nd.type == "TEX_IMAGE")
+                if not bs.inputs["Emission Color"].is_linked: m.node_tree.links.new(tx.outputs["Color"], bs.inputs["Emission Color"])
+                bs.inputs["Emission Strength"].default_value = max(bs.inputs["Emission Strength"].default_value, 1.2)
+            m.name = "Modelo_CaixaR_%d" % n_img; n_img += 1
+        else: m.name = "CaixaR_" + m.name
+    for o in [o for o in novos if o.type == "MESH"]:
+        me = o.data.copy(); me.transform(o.matrix_world)
+        if o.matrix_world.determinant() < 0: me.flip_normals()
+        indice = {}
+        for i, m in enumerate(me.materials):
+            if m not in mats: mats.append(m)
+            indice[i] = mats.index(m)
+        n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
+        for f in bm.faces[n0:]: f.material_index = indice.get(f.material_index, 0)
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    vs = [v.co for v in bm.verts]
+    bmesh.ops.translate(bm, verts=bm.verts, vec=(-(min(v.x for v in vs) + max(v.x for v in vs)) / 2, -(min(v.y for v in vs) + max(v.y for v in vs)) / 2, -min(v.z for v in vs)))
+    me = bpy.data.meshes.new("Caixa_Registradora_Realista"); bm.to_mesh(me); bm.free()
+    for m in mats: me.materials.append(m)
+    ob = bpy.data.objects.new("Caixa_Registradora", me); C_GAR.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
+    say("caixa registradora realista: %d triangulos, %d materiais" % (sum(len(pl.vertices) - 2 for pl in me.polygons), len(mats)))
+    return ob
+if not caixa_registradora_realista(3.55, 4.3, FZ + 1.101, PI / 2) and not caixa_registradora(3.55, 4.3, FZ + 1.101, PI / 2):                       # teclas e fechadura viradas para quem atende (+X)
     box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_BAR, bevel=.02)
     box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
 for k in range(5):
@@ -1528,7 +1628,7 @@ for k, z in enumerate((1.2, 1.65)):
     for j in range(9):
         torno("Garrafa_Sala", GARRAFA, M[("garrafa_c", "garrafa_a", "garrafa_v")[(j + k) % 3]], C_SEC, pos=(6.24, 9.55 + j * .24, FZ + z + .016), seg=10)
 for k in range(3):
-    if not modelo_ph("Banqueta_Sala", "bar_chair_round_01", (7.75, 9.8 + k * .7, FZ), rnd.uniform(0, 6), C_SEC, max_tris=1500):
+    if not modelo_ph("Banqueta_Sala", "bar_chair_round_01", (7.75, 9.8 + k * .7, FZ), rnd.uniform(0, 6), C_SEC, max_tris=5000):
         cyl("Banqueta_Sala_Assento", .17, .17, .05, (7.75, 9.8 + k * .7, FZ + .74), M["couro"], C_SEC, seg=16)
         cyl("Banqueta_Sala_Pe", .14, .03, .72, (7.75, 9.8 + k * .7, FZ + .36), M["cromo_sala"], C_SEC, seg=10)
 luz("Luz_Sala_Palco", "POINT", 320, "#ff3ad0", (9, 11.3, FZ + 2.7), C_LUZ, shadow_soft_size=.3)
