@@ -1126,9 +1126,10 @@ for k in range(5):
 box("Mesa_Escritorio_Tampo", (.75, 1.5, .04), (5.4, 11.2, FZ + .74), M["mad_cl"], C_ESC, bevel=.008)
 box("Mesa_Escritorio_Gaveteiro", (.7, .45, .7), (5.4, 11.7, FZ + .35), M["mad_cl"], C_ESC)
 box("Mesa_Escritorio_Lateral", (.7, .04, .72), (5.4, 10.47, FZ + .36), M["mad_cl"], C_ESC)
-box("Cadeira_Escritorio_Assento", (.46, .46, .08), (4.7, 11.1, FZ + .46), M["preto"], C_ESC, bevel=.02)
-box("Cadeira_Escritorio_Encosto", (.06, .44, .5), (4.5, 11.1, FZ + .78), M["preto"], C_ESC, bevel=.02)
-cyl("Cadeira_Escritorio_Pe", .03, .22, .42, (4.7, 11.1, FZ + .21), M["metal"], C_ESC, seg=10)
+if not modelo_autor_inteiro("cadeira_escritorio_realista.glb", "Cadeira_Escritorio", 4.7, 11.1, FZ, 0, C_GAR_E, "CadEsc"):      # encosto para -X, de frente para a mesa
+    box("Cadeira_Escritorio_Assento", (.46, .46, .08), (4.7, 11.1, FZ + .46), M["preto"], C_ESC, bevel=.02)
+    box("Cadeira_Escritorio_Encosto", (.06, .44, .5), (4.5, 11.1, FZ + .78), M["preto"], C_ESC, bevel=.02)
+    cyl("Cadeira_Escritorio_Pe", .03, .22, .42, (4.7, 11.1, FZ + .21), M["metal"], C_ESC, seg=10)
 COFRE_ABRE = os.path.exists(os.path.join(AQUI, "modelos", "cofre_abre.glb"))      # cofre do autor com a porta separada (montado mais abaixo)
 if not COFRE_ABRE: box("Cofre", (.6, .55, .8), (5.6, 12.6, FZ + .4), M["cofre"], C_ESC, bevel=.02)
 # aco do cofre do autor (modelos/cofre.glb): o cofre inteiro, menos o disco do segredo, que fica com a imagem que veio no modelo
@@ -1498,10 +1499,14 @@ if os.path.exists(_cam):
         _mw = _o.matrix_world.copy(); _o.parent = None; _o.data.transform(_mw); _o.matrix_world = Matrix.Identity(4)
         for _c in list(_o.users_collection): _c.objects.unlink(_o)
         C_SAL.objects.link(_o); _o.name = "Placa_Premio_Autor"; _o.location = (-1.3, 12.80, FZ + 2.45)
-        for _i, _sl in enumerate(_o.material_slots):                 # placa luminosa: a imagem tambem acende
-            _m = _sl.material; _m.name = "Modelo_Placar_%d" % _i
-            _t = [n for n in _m.node_tree.nodes if n.type == "TEX_IMAGE" and n.image]; _b = next(n for n in _m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
-            if _t: _m.node_tree.links.new(_t[0].outputs["Color"], _b.inputs["Emission Color"]); _b.inputs["Emission Strength"].default_value = .8
+        for _sl in _o.material_slots:                                # placa luminosa: a imagem tambem acende
+            _m = _sl.material
+            if _m.get("placar"): continue
+            _m["placar"] = 1; _t = [n for n in _m.node_tree.nodes if n.type == "TEX_IMAGE" and n.image]; _b = next(n for n in _m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+            if not _t: _m.name = "Placar_" + _m.name; continue
+            _m.name = "Modelo_Placar_%d" % len([m for m in bpy.data.materials if m.name.startswith("Modelo_Placar_")])
+            if _b.inputs["Emission Color"].is_linked: _b.inputs["Emission Strength"].default_value = min(_b.inputs["Emission Strength"].default_value, 1.5)      # mapa de emissao do autor (LEDs e lampadas)
+            else: _m.node_tree.links.new(_t[0].outputs["Color"], _b.inputs["Emission Color"]); _b.inputs["Emission Strength"].default_value = .8
     for _o in [o for o in _novos if o.type != "MESH"]: bpy.data.objects.remove(_o, do_unlink=True)
 else:
     box("Placar_Acumulado", (2.6, .05, .42), (-1.3, 12.78, FZ + 2.45), M["preto_b"], C_SAL)
@@ -1529,8 +1534,33 @@ box("Rodape_Salao", (5.8, .02, .1), (-.5, 6.09, FZ + .05), M["rodape"], C_SAL)
 box("Prateleira_Escritorio", (.28, 1.6, .03), (5.76, 10.0, FZ + 1.6), M["mad_cl"], C_ESC)
 for k in range(9):
     box("Pasta_Arquivo", (.24, .07, .3), (5.76, 9.35 + k * .085, FZ + 1.77), (M["cartaz_az"], M["preto"], M["cartaz_v"], M["papelao"])[k % 4], C_ESC, rot=(0, rnd.uniform(-.06, .06), 0))
-for k in range(6):
-    cyl("Pilha_Moedas", .013, .013, .012 + (k % 3) * .012, (5.15 + (k % 3) * .035, 11.35 + (k // 3) * .035, FZ + .766 + (k % 3) * .006), M["dourado"], C_ESC, seg=10)
+def fichas_escritorio(x, y, z):
+    """Pilhas de fichas na mesa do escritorio feitas com as fichas de poker do autor (modelos/poker.glb, as mesmas da mesa
+    de carteado): uma ficha de cada cor, empilhada de 2 a 6, numa malha so. Devolve False sem o arquivo."""
+    cam = os.path.join(AQUI, "modelos", "poker.glb")
+    if not os.path.exists(cam): return False
+    antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+    novos = [o for o in bpy.data.objects if o not in antes]; cores = {}
+    for o in sorted(novos, key=lambda o: o.name):                         # uma ficha solta (6 mm) de cada material
+        if o.type == "MESH" and o.name.startswith("Cylinder") and o.dimensions.z < .01 and o.data.materials[0] not in cores: cores[o.data.materials[0]] = o
+    for i, m in enumerate(cores): m.name = "Modelo_FichaEsc_%d" % i
+    bm = bmesh.new(); mats = list(cores)
+    for k in range(6):
+        o = cores[mats[k % len(mats)]]; me = o.data.copy(); me.transform(o.matrix_world); vs = [v.co for v in me.vertices]
+        c = Vector(((min(v.x for v in vs) + max(v.x for v in vs)) / 2, (min(v.y for v in vs) + max(v.y for v in vs)) / 2, min(v.z for v in vs)))
+        for n in range(2 + (k % 3) * 2):
+            me2 = me.copy(); me2.transform(Matrix.Translation(Vector(((k % 3) * .045, (k // 3) * .045, n * .006))) @ Matrix.Rotation(k * 2.1 + n * 1.3, 4, "Z") @ Matrix.Translation(-c))      # giro fixo: nao mexe no sorteio (rnd) do resto da cena
+            n0 = len(bm.faces); bm.from_mesh(me2); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me2)
+            for f in bm.faces[n0:]: f.material_index = mats.index(o.data.materials[0])
+        bpy.data.meshes.remove(me)
+    for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+    me = bpy.data.meshes.new("Fichas_Escritorio_Autor"); bm.to_mesh(me); bm.free()
+    for m in mats: me.materials.append(m)
+    ob = bpy.data.objects.new("Fichas_Escritorio", me); C_GAR_E.objects.link(ob); ob.location = (x, y, z)
+    return True
+if not fichas_escritorio(5.1, 11.35, FZ + .76):
+    for k in range(6):
+        cyl("Pilha_Moedas", .013, .013, .012 + (k % 3) * .012, (5.15 + (k % 3) * .035, 11.35 + (k // 3) * .035, FZ + .766 + (k % 3) * .006), M["dourado"], C_ESC, seg=10)
 def maquininha(x, y, z, rz):
     """Maquininha de cartao do autor (modelos/maquininha_cartao.glb, sem materiais) com a foto de referencia que ele usou
     (vista de cima) projetada por cima: visor, numeros e teclas coloridas. As faces de lado ficam em plastico preto e a
@@ -1727,12 +1757,41 @@ for nome_, tam, pos, col_ in (("Rodape_Salao_L", (.02, 6.8, .1), (2.41, 9.5, FZ 
     box(nome_, tam, pos, M["rodape"], col_)
 
 # ------------------------------------------------------------------ 7. interativos (portas e material a apreender)
+_maca = {}
+def macaneta_autor():
+    """Macaneta redonda do autor (modelos/macaneta_realista.glb: roseta, pomo de aco e cilindro da chave) numa malha so,
+    como veio: base encostada na porta em y = 0 e o pomo para +Y. Todas as portas usam a mesma malha. None sem o arquivo."""
+    if "me" not in _maca:
+        _maca["me"] = None; cam = os.path.join(AQUI, "modelos", "macaneta_realista.glb")
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new()
+            for m in [m for m in bpy.data.materials if m not in antes_m]: m.name = "Macaneta_" + m.name
+            for o in [o for o in novos if o.type == "MESH"]:
+                me = o.data.copy(); me.transform(o.matrix_world)
+                if o.matrix_world.determinant() < 0: me.flip_normals()
+                indice = {}
+                for i, m in enumerate(me.materials):
+                    if m not in mats: mats.append(m)
+                    indice[i] = mats.index(m)
+                n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
+                for f in bm.faces[n0:]: f.material_index = indice.get(f.material_index, 0)
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+            y0 = min(v.co.y for v in bm.verts); bmesh.ops.translate(bm, verts=bm.verts, vec=(0, -y0, 0))
+            me = bpy.data.meshes.new("Macaneta_Autor"); bm.to_mesh(me); bm.free()
+            for m in mats: me.materials.append(m)
+            _maca["me"] = me
+    return _maca["me"]
 def porta(nome, dobradica, rz, m, larg=.88, rotulo=None, lado_rotulo=-1):
     """Folha de porta com a origem na dobradica (o site gira a raiz para abrir). rz = 0: a folha corre para +X."""
     r = vazio(nome, (dobradica[0], dobradica[1], FZ), C_INT, rz)
     box(nome + "_Folha", (larg, .045, 2.08), (larg / 2, 0, 1.04), m, C_INT, r)
     for s in (-1, 1):
-        cyl(nome + "_Macaneta", .025, .025, .05, (larg - .09, s * .05, 1.02), M["metal"], C_INT, r, rot=(PI / 2, 0, 0), seg=10)
+        if macaneta_autor():                                              # uma de cada lado, encostada na folha
+            ob = bpy.data.objects.new(nome + "_Macaneta", _maca["me"]); C_INT.objects.link(ob); ob.parent = r
+            ob.location = (larg - .09, s * .0225, 1.02); ob.rotation_euler = (0, 0, 0 if s > 0 else PI)
+        else:
+            cyl(nome + "_Macaneta", .025, .025, .05, (larg - .09, s * .05, 1.02), M["metal"], C_INT, r, rot=(PI / 2, 0, 0), seg=10)
     if rotulo:
         texto(nome + "_Rotulo", rotulo, .07, (larg / 2, lado_rotulo * .026, 1.62), "-y" if lado_rotulo < 0 else "+y", M["texto_br"], C_INT, r)
     return r
