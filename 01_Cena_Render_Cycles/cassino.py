@@ -1508,7 +1508,7 @@ else:
     texto("Placar_Acumulado_Texto", "ACUMULADO  R$ 12.480", .17, (-1.3, 12.75, FZ + 2.45), "-y", M["neon_a"], C_SAL)
 box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL, bevel=.03)
 for nome_, (x, y) in (("Carteado", (CX, CY)), ("Roleta", (RX, RY))):
-    ob_ = modelo_autor_inteiro("pendente_verde_realista.glb", "Pendente_" + nome_, x, y, 0, 0, C_GAR_E, "Pendente", {"Lampada": M["lamp_q"]})
+    ob_ = modelo_autor_inteiro("pendente_verde_realista.glb", "Pendente_" + nome_, x, y, 0, 0, C_GAR_E, "Pendente")      # lampada com o material do autor (opalina creme)
     if ob_: ob_.location.z = FZ + PD - max(v.co.z for v in ob_.data.vertices)          # canopla no teto
     else:
         torno("Pendente_" + nome_, [(.04, .22), (.28, 0), (.3, 0), (.06, .24)], M["feltro"], C_SAL, pos=(x, y, FZ + 2.1), seg=20)
@@ -2033,8 +2033,8 @@ if r:
         cyl("Brasao_Imagem", .09, .09, .004, (1.03, sy_(1.03, .89, lado) + lado * .006, .89), M["brasao"], C_VEIC, VTR, rot=(PI / 2, 0, 0), seg=28)
 
 # ------------------------------------------------------------------ 9. luzes
-def lampada(nome, x, y, watts, cor="#ffd9a0", m="lamp_q", z=FZ + PD - .25, col=C_EST, raio=.12):
-    cyl(nome + "_Bulbo", .05, .03, .1, (x, y, z + .06), M[m], col, seg=10)
+def lampada(nome, x, y, watts, cor="#ffd9a0", m="lamp_q", z=FZ + PD - .25, col=C_EST, raio=.12, bulbo=True):
+    if bulbo: cyl(nome + "_Bulbo", .05, .03, .1, (x, y, z + .06), M[m], col, seg=10)
     luz(nome + "_Luz", "POINT", watts, cor, (x, y, z - .08), C_LUZ, shadow_soft_size=raio)
 def tubo(nome, x, y, watts, comp=1.2, ao_longo_x=True, col=C_EST):
     box(nome + "_Tubo", (comp, .05, .04) if ao_longo_x else (.05, comp, .04), (x, y, FZ + PD - .04), M["lamp_f"], col)
@@ -2043,8 +2043,9 @@ tubo("Luz_Bar_A", -2.5, 2.2, 55); tubo("Luz_Bar_B", 1.5, 3.6, 55); tubo("Luz_Bar
 lampada("Luz_Corredor", -4.75, 7.2, 14)
 lampada("Luz_Dep_Maquinas", -4.75, 10.8, 12)
 lampada("Luz_Dep_Bar", 4.3, 7.5, 16)
-lampada("Luz_Salao_Carteado", CX, CY, 26, "#ffcf8a", z=FZ + 2.1, col=C_SAL)
-lampada("Luz_Salao_Roleta", RX, RY, 26, "#ffcf8a", z=FZ + 2.1, col=C_SAL)
+PEND_AUTOR = os.path.exists(os.path.join(AQUI, "modelos", "pendente_verde_realista.glb"))      # o pendente do autor ja tem a lampada (gota)
+lampada("Luz_Salao_Carteado", CX, CY, 26, "#ffcf8a", z=FZ + 2.1, col=C_SAL, bulbo=not PEND_AUTOR)
+lampada("Luz_Salao_Roleta", RX, RY, 26, "#ffcf8a", z=FZ + 2.1, col=C_SAL, bulbo=not PEND_AUTOR)
 luz("Luz_Salao_Neon_R", "POINT", 16, "#ff3a3a", (-.5, 6.5, FZ + 2.4), C_LUZ, shadow_soft_size=.4)
 luz("Luz_Salao_Neon_V", "POINT", 10, "#3aff8a", (2.0, 7.3, FZ + 2.4), C_LUZ, shadow_soft_size=.4)
 tubo("Luz_Escritorio", 4.3, 11.2, 38, ao_longo_x=False, col=C_ESC)

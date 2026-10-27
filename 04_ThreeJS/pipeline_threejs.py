@@ -300,7 +300,7 @@ for o in [o for o in scene.objects if o.type in {"LIGHT", "CAMERA"}]:
 bpy.ops.export_scene.gltf(filepath=os.path.join(WEB, "cena.glb"), export_format="GLB",
                           export_lights=False, export_cameras=False, export_texcoords=True, export_normals=True,
                           export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=6,
-                          export_draco_texcoord_quantization=14, export_image_format="AUTO", export_image_quality=88,
+                          export_draco_texcoord_quantization=14, export_draco_position_quantization=16, export_image_format="AUTO", export_image_quality=88,
                           use_renderable=True)
 import shutil
 col_src = os.path.normpath(os.path.join(BASE, "..", "02_Cena_VR_Otimizada", "colisao.glb"))
