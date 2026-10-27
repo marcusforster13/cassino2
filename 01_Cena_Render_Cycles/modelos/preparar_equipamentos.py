@@ -69,7 +69,15 @@ k = .20 / (mx.y - mn.y)                                   # 20 cm de comprimento
 arma.data.transform(Matrix.Scale(k, 4)); boca = boca * k
 # origem SOBRE o eixo do cano, 15 cm atras da boca: no site o cano coincide com o raio de mira (frente = -Z)
 arma.data.transform(Matrix.Translation((-boca.x, -boca.y + .15, -boca.z)))
+T = Matrix.Translation((-boca.x, -boca.y + .15, -boca.z)) @ Matrix.Scale(k, 4) @ R
 for p in arma.data.polygons: p.use_smooth = False
+# arma_refinada.glb: a mesma pistola refeita pelo autor (uma malha so, mapas normal e metal/rugosidade), na mesma posicao
+# do arquivo original - recebe o mesmo alinhamento calculado acima pelas pecas nomeadas (boca, alca e massa de mira)
+if os.path.exists(os.path.join(AQUI, "arma_refinada.glb")):
+    ref = importar("arma_refinada.glb")
+    for img in bpy.data.images:
+        if img.size[0] > 1024: img.scale(1024, 1024)
+    arma = juntar(ref, "Arma"); arma.data.transform(T)
 exportar(arma, "arma.glb")
 say("cano alinhado: boca em (0, 0.15, 0) no Blender = (0, 0, -0.15) no site; inclinacao corrigida de %.1f graus" % __import__("math").degrees(__import__("math").asin(abs(frente.z))))
 
