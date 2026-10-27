@@ -78,6 +78,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { computeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
@@ -85,7 +86,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1027-1555';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1027-1559';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -173,6 +174,7 @@ const lmMats = [], lentes = [], colisores = [];
 // objetos que se movem (carro abordado, equipamentos, personagens) nao tem lightmap: recebem uma luz ambiente
 // uniforme, na intensidade da area iluminada pelas torres (um "lightmap" branco de 1 pixel)
 const lmBranco = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); lmBranco.needsUpdate = true; lmBranco.channel = 0;
+let _envSala = null; const envSala = () => _envSala || (_envSala = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture);
 const iluminar = m => { if (m.metalness > .25) m.metalness = .25;      // metal espelha o ceu escuro e fica preto a noite
   if (!m.lightMap) { m.lightMap = lmBranco; m.lightMapIntensity = CFG.luz_dinamica ?? 1.1; } return m; };
 gltf.scene.traverse(o => {
@@ -184,6 +186,7 @@ gltf.scene.traverse(o => {
     if (/Mancha/.test(m.name)) { m.opacity = .32; m.transparent = true; m.depthWrite = false; }      // manchas de umidade: discretas
     if (/Pano_Roleta/.test(m.name)) { m.transparent = false; m.alphaTest = .4; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }      // quadro de apostas recortado sobre o feltro
     if (/Modelo_Notebook_Tela|Modelo_Celular|Modelo_Monitor/.test(m.name)) { m.color.setScalar(.12); m.emissiveIntensity = .8; }      // tela do notebook: so o brilho proprio, sem estourar
+    if (/Macaneta_(Arestas|Aco inox)/.test(m.name)) { m.userData.metal = 1; m.color.setRGB(.80, .58, .24); }      // macanetas de latao dourado, como os filetes da placa do jackpot (reflexo de sala abaixo)
     if (/Pendente_Metal esmaltado verde/.test(m.name)) { m.color.setRGB(.06, .34, .15); }      // cupula dos pendentes: verde mais vivo no salao escuro (o metalico continua)
     if (/Vidro_Geladeira/.test(m.name)) { m.transparent = true; m.opacity = .16; m.depthWrite = false; m.roughness = .05; }      // porta de vidro da geladeira expositora
     if (/Vidro_Copo/.test(m.name)) { m.transparent = true; m.opacity = .2; m.depthWrite = false; m.roughness = .05; m.side = THREE.DoubleSide; }      // copo de vidro translucido: a cerveja aparece dentro
@@ -193,6 +196,7 @@ gltf.scene.traverse(o => {
       m.lightMap = lmTex[lm.lm]; m.userData.lmBase = lm.max * CFG.lightmap_ganho;
       m.lightMapIntensity = m.userData.lmBase; lmMats.push(m);
     } else if (!lm) { iluminar(m); if (escuro) m.lightMapIntensity *= .4; else if (cofre) m.lightMapIntensity *= .4; else if (/cardboard/.test(m.name)) m.lightMapIntensity *= .5; }      // pecas sem lightmap em comodo escuro: menos luz ambiente
+    if (m.userData.metal) { m.metalness = .9; m.envMap = envSala(); m.envMapIntensity = .6; }      // reflexo de uma sala clara: o ceu noturno deixava o aco preto e chapado
     return m;
   };
   o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
