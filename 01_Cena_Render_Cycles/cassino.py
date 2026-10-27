@@ -1471,9 +1471,11 @@ def caixa_registradora_realista(x, y, z, rz):
 if not caixa_registradora_realista(3.55, 4.3, FZ + 1.101, PI / 2) and not caixa_registradora(3.55, 4.3, FZ + 1.101, PI / 2):                       # teclas e fechadura viradas para quem atende (+X)
     box("Caixa_Registradora", (.34, .38, .2), (3.55, 4.3, FZ + 1.2), M["plast"], C_BAR, bevel=.02)
     box("Caixa_Registradora_Visor", (.2, .02, .08), (3.4, 4.3, FZ + 1.36), M["tela_verde"], C_BAR, rot=(0, 0, PI / 2))
-for k in range(5):
-    torno("Garrafa_Balcao", GARRAFA, M[("garrafa_a", "garrafa_v")[k % 2]], C_BAR, pos=(3.5 + rnd.uniform(-.1, .1), 2.7 + k * .28, FZ + 1.1), seg=10)
-    copo("Copo_Balcao", 3.38, 2.82 + k * .28, FZ + 1.10, C_BAR, cheio=k % 2 == 0)      # no balcao, alguns copos vazios
+for k in range(5):                                                       # no balcao, so uma garrafa com o copo cheio (a pedido do autor)
+    x_ = 3.5 + rnd.uniform(-.1, .1)                                      # o sorteio continua igual para nao mexer no resto da cena
+    if k != 2: continue
+    torno("Garrafa_Balcao", GARRAFA, M["garrafa_a"], C_BAR, pos=(x_, 2.7 + k * .28, FZ + 1.1), seg=10)
+    copo("Copo_Balcao", 3.38, 2.82 + k * .28, FZ + 1.10, C_BAR, cheio=True)
 cartaz("Lousa_Precos", (2.6, 5.9, FZ + 1.95), "-y", (1.5, .9), M["lousa"], ["PRATO FEITO  R$ 22", "CERVEJA 600 ML  R$ 12", "CAIPIRINHA  R$ 14", "PORÇÃO DE FRITAS  R$ 25"], C_BAR, .075)
 cartaz("Cartaz_Bar_A", (-5.89, 1.4, FZ + 1.9), "+x", (.7, .95), M["cartaz_v"], ["PROMOÇÃO", "DE QUARTA", "BALDE", "R$ 45"], C_BAR, .085)
 cartaz("Cartaz_Bar_B", (-5.89, 2.6, FZ + 1.9), "+x", (.7, .95), M["cartaz_az"], ["SOM", "AO VIVO", "SÁBADO"], C_BAR, .1)
@@ -1506,15 +1508,18 @@ else:
     texto("Placar_Acumulado_Texto", "ACUMULADO  R$ 12.480", .17, (-1.3, 12.75, FZ + 2.45), "-y", M["neon_a"], C_SAL)
 box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL, bevel=.03)
 for nome_, (x, y) in (("Carteado", (CX, CY)), ("Roleta", (RX, RY))):
-    torno("Pendente_" + nome_, [(.04, .22), (.28, 0), (.3, 0), (.06, .24)], M["feltro"], C_SAL, pos=(x, y, FZ + 2.1), seg=20)
-    cyl("Pendente_%s_Fio" % nome_, .006, .006, PD - 2.32, (x, y, FZ + 2.32 + (PD - 2.32) / 2), M["preto"], C_SAL, seg=6)
+    ob_ = modelo_autor_inteiro("pendente_verde_realista.glb", "Pendente_" + nome_, x, y, 0, 0, C_GAR_E, "Pendente", {"Lampada": M["lamp_q"]})
+    if ob_: ob_.location.z = FZ + PD - max(v.co.z for v in ob_.data.vertices)          # canopla no teto
+    else:
+        torno("Pendente_" + nome_, [(.04, .22), (.28, 0), (.3, 0), (.06, .24)], M["feltro"], C_SAL, pos=(x, y, FZ + 2.1), seg=20)
+        cyl("Pendente_%s_Fio" % nome_, .006, .006, PD - 2.32, (x, y, FZ + 2.32 + (PD - 2.32) / 2), M["preto"], C_SAL, seg=6)
 if not modelo_ph("Extintor_Salao", "korean_fire_extinguisher_01", (2.3, 8.75, FZ), -PI / 2, C_SAL, alt=.6, max_tris=1200):
     torno("Extintor_Salao", [(0, 0), (.07, 0), (.07, .4), (.03, .46), (.03, .52), (0, .52)], M["extintor"], C_SAL, pos=(2.36, 8.75, FZ + .9), seg=12)
 cartaz("Extintor_Placa", (2.415, 8.75, FZ + 1.7), "-x", (.2, .2), M["cartaz_v"], ["E"], C_SAL, .1)
 cyl("Lixeira_Salao", .16, .13, .42, (-3.2, 8.15, FZ + .21), M["plast"], C_SAL, seg=14)
 if not modelo_autor_inteiro("quadro_de_luz_realista.glb", "Quadro_de_Luz", -1.9, 6.14, FZ + 1.325, PI, C_GAR_E, "Quadro", {"Janela fume": M["vidro_estufa"]}):
     box("Quadro_de_Luz", (.4, .1, .55), (-1.9, 6.14, FZ + 1.6), M["metal"], C_SAL, bevel=.01)
-mesinha("Mesinha_Salao_A", 1.75, 12.2, C_SAL); mesinha("Mesinha_Salao_B", -2.0, 8.0, C_SAL, garrafa=False)
+mesinha("Mesinha_Salao_A", 1.75, 12.2, C_SAL)      # a mesinha B (perto do carteado) saiu da cena a pedido do autor
 cyl("Cinzeiro_Carteado", .05, .04, .02, (CX - .3, CY - .35, FZ + .8), M["garrafa_c"], C_SAL, seg=12)
 for k in range(3): copo("Copo_Carteado", CX + .45 * math.cos(k * 2.1), CY + .45 * math.sin(k * 2.1), FZ + .79, C_SAL, .09)
 torno("Garrafa_Carteado", GARRAFA, M["garrafa_a"], C_SAL, pos=(CX + .1, CY + .5, FZ + .79), seg=10)
