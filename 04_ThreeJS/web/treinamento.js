@@ -251,7 +251,8 @@ export async function iniciar(ctx) {
   const modelos = {};
   const modelosProntos = fetch(HQ('personagens/manifest.json')).then(r => r.ok ? r.json() : {}).then(man => {
     const gl = new GLTFLoader();
-    return Promise.all(Object.entries(man).map(([papel, info]) => gl.loadAsync(HQ(info.arquivo)).then(g => { modelos[papel] = g; }).catch(() => { })));
+    const FORA = ['apostador_b', 'apostador_d'];                              // tirados da cena: nao baixa os modelos
+    return Promise.all(Object.entries(man).filter(([papel]) => !FORA.includes(papel)).map(([papel, info]) => gl.loadAsync(HQ(info.arquivo)).then(g => { modelos[papel] = g; }).catch(() => { })));
   }).catch(() => { });
   function personagem(papel, nome, cor, altura, calca) {
     const base = modelos[papel];
@@ -911,7 +912,6 @@ export async function iniciar(ctx) {
     ['seguranca', 'seguranca', 'Segurança', [-2.7, 7.25], [-1, 0], 'm', 1.8],
     ['responsavel', 'responsavel', 'Responsável', [1.25, 10.9], [-1, 0], 'm', 1.78],
     ['apostador_1', 'apostador_a', 'Apostador', [-2.1, 11.74], [0, 1], 'm', 1.78],      // sentado, jogando na segunda maquina
-    ['apostador_2', 'apostador_b', 'Apostador', [-1.75, 9.45], [-1, .3], 'm', 1.78],
     ['apostador_3', 'apostador_c', 'Apostadora', [-.25, 7.25], [1, 1], 'f', 1.68],      // sentada na mesa de carteado
     ['seguranca_2', 'seguranca_2', 'Homem armado', [-4.9, 10.6], [0, -1], 'm', 1.8],
     ['atirador', 'atirador', 'Homem no sofá', [9.6, 6.72], [0, 1], 'm', 1.8],      // sentado no sofa da parede sul da sala reservada
@@ -919,7 +919,7 @@ export async function iniciar(ctx) {
     ['apoio', 'pm_apoio', 'Policial de apoio', [-7.0, 12.4], [0, 1], 'm', 1.8],
   ];
   const ALTURA_SENTADO = alt => .15 + .56 - .925 * (alt / 1.78);      // abaixa o modelo ate o quadril ficar na altura do assento do sofa
-  const DESTINO_CONTENCAO = { apostador_1: [[-1.5, 11.0], [-1.45, 6.7]], apostador_2: [[-1.9, 8.2], [-2.3, 6.75]], apostador_3: [[1.3, 6.7]], seguranca: [[-.5, 6.7]], responsavel: [[1.9, 9.2], [1.95, 7.6]] };
+  const DESTINO_CONTENCAO = { apostador_1: [[-1.5, 11.0], [-1.45, 6.7]], apostador_3: [[1.3, 6.7]], seguranca: [[-.5, 6.7]], responsavel: [[1.9, 9.2], [1.95, 7.6]] };
   const FUGA = [[1.85, 12.3], [1.85, 13.7], [-3.6, 15.1], [-7.0, 15.1], [-7.0, 1.0], [-7.0, -1.2], [-17.0, -1.2]];
   function limparNPCs() { Object.values(npcs).forEach(n => scene.remove(n)); for (const k in npcs) delete npcs[k]; }
   function criarNPCs(v) {
@@ -989,7 +989,7 @@ export async function iniciar(ctx) {
     animar(n, u.acoes?.[anim] ? anim : 'andando', 1e6, .25);
   };
   const diz = (n, texto, gesto = 'falando') => n ? dizer(n, n.userData.nome, { texto, gesto }, n.userData.voz) : Promise.resolve();
-  const pessoas = () => ['seguranca', 'apostador_1', 'apostador_2', 'apostador_3'].map(k => npcs[k]).filter(n => n && n.visible && !n.userData.fugiu);
+  const pessoas = () => ['seguranca', 'apostador_1', 'apostador_3'].map(k => npcs[k]).filter(n => n && n.visible && !n.userData.fugiu);
   const apostadores = () => pessoas().filter(n => /^apostador/.test(n.userData.chave));
   function conferirPessoas() {
     if (!A) return;
@@ -1097,19 +1097,7 @@ export async function iniciar(ctx) {
     setTimeout(esconderFichas, 1600);
     setTimeout(() => { const r = npcs.responsavel; if (A && r && r.visible && !r.userData.caido && !ameacando().length) diz(r, CEN.dialogos.reclamacao_responsavel, 'irritado'); }, 3200);
     if (npcs.responsavel) npcs.responsavel.userData.base = 'irritado', animar(npcs.responsavel, 'irritado', 1e6, .4);
-    if (v.fuga === 'tentam_sair') setTimeout(() => {
-      if (!A) return; moverPorta('fundos', 1, .4);
-      for (const k of ['apostador_2']) {
-        const n = npcs[k]; if (!n || n.userData.atordoado > performance.now()) continue;
-        n.userData.fugindo = true;
-        if (A.apoio) rota(n, FUGA.slice(0, 3), 3.4, 'correndo', () => {                 // a equipe de apoio contem no quintal e traz de volta
-          n.userData.fugindo = false; registrar('fuga_contida');
-          setTimeout(() => rota(n, [[1.85, 13.7], [1.85, 12.3], ...DESTINO_CONTENCAO[k].slice(-1)], 1.3, 'andando', () => { n.userData.reunido = true; conferirPessoas(); }), 1500);
-        });
-        else rota(n, FUGA, 3.4, 'correndo', () => { n.visible = false; n.userData.fugiu = true; n.userData.fugindo = false; if (!A.fugiram) { A.fugiram = true; registrar('apostadores_fugiram'); } conferirPessoas(); });
-      }
-      legenda('Alerta', A.apoio ? 'Outro apostador corre para os fundos. A equipe de apoio está lá.' : 'Outro apostador corre para a porta dos fundos!', 4);
-    }, 1400);
+    // fuga para os fundos: e o apostador da maquina que levanta (tentarSair); o apostador em pe perto da roleta saiu da cena
     if (v.seguranca === 'armado_rende') setTimeout(() => { A && legenda('Alerta', 'O homem perto da entrada leva a mão à cintura: há um volume sob a camisa. Fale com ele.', 6); }, 1200);
     if (v.seguranca === 'armado_reage') setTimeout(() => {
       if (!A || !s || s.userData.caido || s.userData.atordoado > performance.now()) return;
