@@ -1759,8 +1759,15 @@ for k in range(7):
     m = M[("ficha_r", "ficha_a", "ficha_p", "ficha_b")[k % 4]]; n = rnd.randint(3, 9)
     cyl("I_Fichas_Pilha", .02, .02, .0035 * n, ((k % 4) * .047, (k // 4) * .047, .00175 * n), m, C_INT, r, seg=12)
 r = vazio("I_Caderno_Apostas", (RX + .35, RY - .2, FZ + .795), C_INT, .3)
-box("I_Caderno_Apostas_Capa", (.16, .22, .018), (0, 0, .009), M["capa"], C_INT, r)
-box("I_Caderno_Apostas_Folhas", (.15, .21, .012), (.003, 0, .012), M["papel"], C_INT, r)
+ob_ = modelo_autor_inteiro("caderno_apostas_realista.glb", "I_Caderno_Apostas_Livro", 0, 0, 0, 0, C_INT, "Caderno")      # capa dura impressa do autor
+if ob_:
+    ob_.parent = r
+    for pl in ob_.data.polygons:                                         # a capa impressa 0,5 mm acima da capa, para nao piscar
+        if pl.normal.z > .9 and ob_.data.materials[pl.material_index].name.startswith("Modelo_"):
+            for i in pl.vertices: ob_.data.vertices[i].co.z += .0005
+else:
+    box("I_Caderno_Apostas_Capa", (.16, .22, .018), (0, 0, .009), M["capa"], C_INT, r)
+    box("I_Caderno_Apostas_Folhas", (.15, .21, .012), (.003, 0, .012), M["papel"], C_INT, r)
 ze = FZ + .76                                                                                     # tampo da mesa do escritorio
 r = vazio("I_Notebook", (5.42, 11.25, ze), C_INT, -PI / 2)
 def notebook_autor(r):
