@@ -864,21 +864,25 @@ for k, z in enumerate((1.0, 1.45, 1.9)):                                        
     for j in range(11):
         g = M[("garrafa_v", "garrafa_a", "garrafa_c")[(j + k) % 3]]; y = 2.33 + j * .26
         torno("Garrafa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], g, C_BAR, pos=(5.76, y, FZ + z + .018), seg=10)
-def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo):
+def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo, troca=None):
     """Peca refeita pelo autor ja com materiais (modelos/<arq>): entra como veio, todas as pecas numa malha so, centrada e
-    com a base no chao. Materiais com imagem ganham o prefixo Modelo_ (o pipeline mantem a UV). Devolve None sem o arquivo."""
+    com a base no chao. Materiais com imagem ganham o prefixo Modelo_ (o pipeline mantem a UV). troca: {inicio do nome do
+    material do autor: material da cena} (vidros, lampadas acesas). Devolve None sem o arquivo."""
     cam = os.path.join(AQUI, "modelos", arq)
     if not os.path.exists(cam): return None
     antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
-    novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new(); n_img = 0
+    novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new(); n_img = 0; de_para = {}
     for m in [m for m in bpy.data.materials if m not in antes_m]:
-        if m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes): m.name = "Modelo_%s_%d" % (prefixo, n_img); n_img += 1
+        cena = next((v for k, v in (troca or {}).items() if m.name.startswith(k)), None)
+        if cena: de_para[m] = cena
+        elif m.node_tree and any(nd.type == "TEX_IMAGE" and nd.image for nd in m.node_tree.nodes): m.name = "Modelo_%s_%d" % (prefixo, n_img); n_img += 1
         else: m.name = prefixo + "_" + m.name
     for o in [o for o in novos if o.type == "MESH"]:
         me = o.data.copy(); me.transform(o.matrix_world)
         if o.matrix_world.determinant() < 0: me.flip_normals()
         indice = {}
         for i, m in enumerate(me.materials):
+            m = de_para.get(m, m)
             if m not in mats: mats.append(m)
             indice[i] = mats.index(m)
         n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
@@ -1156,7 +1160,8 @@ def monitor_cameras(x, y, z):
 if not monitor_cameras(3.3, 12.525, FZ + 1.29):      # a frente do vao preto da estante (o monitor do autor e mais fino que o antigo)
     box("Monitor_Cameras", (.5, .04, .32), (3.3, 12.55, FZ + 1.45), M["preto_b"], C_ESC)
     quadro("Monitor_Cameras_Tela", (3.3, 12.527, FZ + 1.45), "-y", .46, .28, TELA_CAM, C_ESC)
-box("Contadora_Notas", (.26, .22, .16), (5.45, 10.75, FZ + .84), M["branco"], C_ESC, bevel=.01)
+if not modelo_autor_inteiro("contadora_notas_realista.glb", "Contadora_Notas", 5.45, 10.75, FZ + .76, -PI / 2, C_GAR_E, "Contadora"):      # visor para a cadeira
+    box("Contadora_Notas", (.26, .22, .16), (5.45, 10.75, FZ + .84), M["branco"], C_ESC, bevel=.01)
 for k in range(4):                                                                                # deposito: maquinas desligadas e caixas
     if not modelo_ph("Caixa_Deposito", "cardboard_box_01", (-5.6, 9.0 + k * .6, FZ), rnd.uniform(-.3, .3), C_ESC, escala=1.3, max_tris=300):
         box("Caixa_Deposito", (.5, .5, .45), (-5.6, 9.0 + k * .55, FZ + .225), M["papelao"], C_ESC)
@@ -1295,9 +1300,12 @@ POS_BOLAS = ((-.62, -.2), (.05, .12), (.42, -.3), (-.28, .3), (.7, .22), (-.85, 
 for (nome_, cor_), (dx, dy) in zip(CORES_BOLAS, POS_BOLAS):
     esfera("Sinuca_Bola_" + nome_, .027, (SX + dx, SY + dy, FZ + .867), mat("Bola_Sinuca_" + nome_, cor_, .18), C_BAR, sub=3)
 barra("Sinuca_Taco", (SX - .7, SY - .5, FZ + .9), (SX + .6, SY - .62, FZ + .9), .012, M["mad_cl"], C_BAR, seg=6)
-box("Sinuca_Luminaria", (1.2, .3, .1), (SX, SY, FZ + 2.0), M["feltro"], C_BAR, bevel=.02)
-box("Sinuca_Luminaria_Luz", (1.1, .2, .02), (SX, SY, FZ + 1.945), M["lamp_q"], C_BAR)
-for sx in (-.5, .5): cyl("Sinuca_Luminaria_Fio", .006, .006, FZ + PD - 2.05 - FZ, (SX + sx, SY, FZ + 2.05 + (PD - 2.05) / 2), M["preto"], C_BAR, seg=6)
+ob_ = modelo_autor_inteiro("luminaria_sinuca_realista.glb", "Sinuca_Luminaria", SX, SY, 0, 0, C_GAR, "Luminaria", {"Difusor": M["lamp_q"]})
+if ob_: ob_.location.z = FZ + PD - max(v.co.z for v in ob_.data.vertices)          # canoplas no teto (cabos de 1,1 m)
+else:
+    box("Sinuca_Luminaria", (1.2, .3, .1), (SX, SY, FZ + 2.0), M["feltro"], C_BAR, bevel=.02)
+    box("Sinuca_Luminaria_Luz", (1.1, .2, .02), (SX, SY, FZ + 1.945), M["lamp_q"], C_BAR)
+    for sx in (-.5, .5): cyl("Sinuca_Luminaria_Fio", .006, .006, FZ + PD - 2.05 - FZ, (SX + sx, SY, FZ + 2.05 + (PD - 2.05) / 2), M["preto"], C_BAR, seg=6)
 luz("Luz_Sinuca", "POINT", 22, "#ffe2b0", (SX, SY, FZ + 1.8), C_LUZ, shadow_soft_size=.2)
 def estufa_realista(x, y, z):
     """Estufa de salgados refeita pelo autor (modelos/estufa_salgados_realista.glb): base de aquecimento em inox, duas
@@ -1504,7 +1512,8 @@ if not modelo_ph("Extintor_Salao", "korean_fire_extinguisher_01", (2.3, 8.75, FZ
     torno("Extintor_Salao", [(0, 0), (.07, 0), (.07, .4), (.03, .46), (.03, .52), (0, .52)], M["extintor"], C_SAL, pos=(2.36, 8.75, FZ + .9), seg=12)
 cartaz("Extintor_Placa", (2.415, 8.75, FZ + 1.7), "-x", (.2, .2), M["cartaz_v"], ["E"], C_SAL, .1)
 cyl("Lixeira_Salao", .16, .13, .42, (-3.2, 8.15, FZ + .21), M["plast"], C_SAL, seg=14)
-box("Quadro_de_Luz", (.4, .1, .55), (-1.9, 6.14, FZ + 1.6), M["metal"], C_SAL, bevel=.01)
+if not modelo_autor_inteiro("quadro_de_luz_realista.glb", "Quadro_de_Luz", -1.9, 6.14, FZ + 1.325, PI, C_GAR_E, "Quadro", {"Janela fume": M["vidro_estufa"]}):
+    box("Quadro_de_Luz", (.4, .1, .55), (-1.9, 6.14, FZ + 1.6), M["metal"], C_SAL, bevel=.01)
 mesinha("Mesinha_Salao_A", 1.75, 12.2, C_SAL); mesinha("Mesinha_Salao_B", -2.0, 8.0, C_SAL, garrafa=False)
 cyl("Cinzeiro_Carteado", .05, .04, .02, (CX - .3, CY - .35, FZ + .8), M["garrafa_c"], C_SAL, seg=12)
 for k in range(3): copo("Copo_Carteado", CX + .45 * math.cos(k * 2.1), CY + .45 * math.sin(k * 2.1), FZ + .79, C_SAL, .09)
@@ -1885,8 +1894,15 @@ def celular_autor(r):
 if not celular_autor(r):
     box("I_Celular_Corpo", (.072, .15, .009), (0, 0, .0045), M["preto_b"], C_INT, r)
 r = vazio("I_Caderno_Contabilidade", (5.5, 11.62, ze), C_INT, -.2)
-box("I_Caderno_Contabilidade_Capa", (.21, .29, .02), (0, 0, .01), M["preto"], C_INT, r)
-box("I_Caderno_Contabilidade_Folhas", (.2, .28, .014), (.003, 0, .013), M["papel"], C_INT, r)
+ob_ = modelo_autor_inteiro("caderno_contabilidade_realista.glb", "I_Caderno_Contabilidade_Livro", 0, 0, 0, 0, C_INT, "Contab")      # capa dura impressa do autor
+if ob_:
+    ob_.parent = r
+    for pl in ob_.data.polygons:                                         # a capa impressa 0,5 mm acima da capa, para nao piscar
+        if pl.normal.z > .9 and ob_.data.materials[pl.material_index].name.startswith("Modelo_"):
+            for i in pl.vertices: ob_.data.vertices[i].co.z += .0005
+else:
+    box("I_Caderno_Contabilidade_Capa", (.21, .29, .02), (0, 0, .01), M["preto"], C_INT, r)
+    box("I_Caderno_Contabilidade_Folhas", (.2, .28, .016), (.003, 0, .012), M["papel"], C_INT, r)
 r = vazio("I_Dinheiro_Escondido", (3.95, 12.72, FZ + .5), C_INT)                                  # caixa de sapato na estante do escritorio
 box("I_Dinheiro_Escondido_Caixa", (.33, .2, .11), (0, 0, .055), M["papelao"], C_INT, r)
 for k in range(4): maco("I_Dinheiro_Escondido_Maco", r, -.08 + (k % 2) * .16, 0, .125 + (k // 2) * .023, M["nota2"] if k % 2 else M["nota"])
