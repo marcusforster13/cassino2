@@ -1579,8 +1579,16 @@ torno("Garrafa_Carteado", GARRAFA, M["garrafa_a"], C_SAL, pos=(CX + .1, CY + .5,
 box("Rodape_Salao", (5.8, .02, .1), (-.5, 6.09, FZ + .05), M["rodape"], C_SAL)
 
 # ---- escritorio: pastas, moedas, maquininha, quadro de chaves, calendario
-box("Prateleira_Escritorio", (.28, 1.6, .03), (5.76, 10.0, FZ + 1.6), M["mad_cl"], C_ESC)
+PASTAS_AUTOR = modelo_autor_inteiro("pastas_prateleira_realista.glb", "Prateleira_Pastas_Autor", 5.76, 10.0, 1.58, 0, C_ESC, "Pastas")      # prateleira com suportes e pastas do autor, ja na posicao (arquivo nas coordenadas da cena)
+if PASTAS_AUTOR:                                                                       # as lombadas vieram para a parede: gira so as pastas meia volta (espelhar invertia os numeros)
+    me_ = PASTAS_AUTOR.data; fixos = {i for i, m in enumerate(me_.materials) if m and (m.name.startswith("Pastas_Ferragens") or (m.node_tree and any(n.type == "TEX_IMAGE" and n.image and n.image.name.startswith("wood") for n in m.node_tree.nodes)))}
+    bm_ = bmesh.new(); bm_.from_mesh(me_); fs = [f for f in bm_.faces if f.material_index not in fixos]; vs = {v for f in fs for v in f.verts}
+    cx = (min(v.co.x for v in vs) + max(v.co.x for v in vs)) / 2; cy = (min(v.co.y for v in vs) + max(v.co.y for v in vs)) / 2
+    for v in vs: v.co.x, v.co.y = 2 * cx - v.co.x, 2 * cy - v.co.y
+    bm_.to_mesh(me_); bm_.free()
+if not PASTAS_AUTOR: box("Prateleira_Escritorio", (.28, 1.6, .03), (5.76, 10.0, FZ + 1.6), M["mad_cl"], C_ESC)
 for k in range(9):
+    if PASTAS_AUTOR: rnd.uniform(-.06, .06); continue                                   # o sorteio continua igual para o resto da cena
     box("Pasta_Arquivo", (.24, .07, .3), (5.76, 9.35 + k * .085, FZ + 1.77), (M["cartaz_az"], M["preto"], M["cartaz_v"], M["papelao"])[k % 4], C_ESC, rot=(0, rnd.uniform(-.06, .06), 0))
 def fichas_escritorio(x, y, z):
     """Pilhas de fichas na mesa do escritorio feitas com as fichas de poker do autor (modelos/poker.glb, as mesmas da mesa
@@ -1695,19 +1703,24 @@ box("Sala_Revest_Oeste_Sul", (.025, .72, PD), (6.115, 6.47, FZ + PD / 2), M["vel
 box("Sala_Revest_Oeste_Verga", (.025, 1.1, PD - 2.05), (6.115, 7.35, FZ + 2.05 + (PD - 2.05) / 2), M["veludo"], C_SEC)
 cortina("Sala_Cortina_Entrada", (6.5, 6.85), (6.5, 7.0), M["veludo"], C_SEC)
 # palco com dois postes de pole dance, espelho ao fundo e fita de LED
-box("Palco", (3.8, 1.9, .35), (9, 11.9, FZ + .175), M["palco"], C_SEC, bevel=.015)
-box("Palco_LED_Frente", (3.8, .02, .04), (9, 10.94, FZ + .3), M["neon_m"], C_SEC)
+PALCO_AUTOR = modelo_autor_inteiro("palco_realista.glb", "Palco_Autor", 9.0, 11.748, FZ, 0, C_SEC, "Palco")      # tablado, degraus, LEDs, poles e espelho do autor, ja na posicao (arquivo nas coordenadas da cena)
+if not PALCO_AUTOR:
+    box("Palco", (3.8, 1.9, .35), (9, 11.9, FZ + .175), M["palco"], C_SEC, bevel=.015)
+    box("Palco_LED_Frente", (3.8, .02, .04), (9, 10.94, FZ + .3), M["neon_m"], C_SEC)
 for sx in (-1, 1):
-    box("Palco_LED_Lado", (.02, 1.9, .04), (9 + sx * 1.91, 11.9, FZ + .3), M["neon_m"], C_SEC)
-    box("Palco_Degrau", (.7, .32, .17), (9 + sx * 1.3, 10.78, FZ + .085), M["preto_piso"], C_SEC)
-    cyl("Pole_Dance", .023, .023, PD - .35, (9 + sx * 1.0, 11.75, FZ + .35 + (PD - .35) / 2), M["cromo_sala"], C_SEC, seg=14)
-    cyl("Pole_Dance_Base", .13, .13, .02, (9 + sx * 1.0, 11.75, FZ + .36), M["cromo_sala"], C_SEC, seg=18)
-    cyl("Pole_Dance_Topo", .09, .09, .02, (9 + sx * 1.0, 11.75, FZ + PD - .03), M["cromo_sala"], C_SEC, seg=18)
+    if not PALCO_AUTOR:
+        box("Palco_LED_Lado", (.02, 1.9, .04), (9 + sx * 1.91, 11.9, FZ + .3), M["neon_m"], C_SEC)
+        box("Palco_Degrau", (.7, .32, .17), (9 + sx * 1.3, 10.78, FZ + .085), M["preto_piso"], C_SEC)
+        cyl("Pole_Dance", .023, .023, PD - .35, (9 + sx * 1.0, 11.75, FZ + .35 + (PD - .35) / 2), M["cromo_sala"], C_SEC, seg=14)
+        cyl("Pole_Dance_Base", .13, .13, .02, (9 + sx * 1.0, 11.75, FZ + .36), M["cromo_sala"], C_SEC, seg=18)
+        cyl("Pole_Dance_Topo", .09, .09, .02, (9 + sx * 1.0, 11.75, FZ + PD - .03), M["cromo_sala"], C_SEC, seg=18)
     box("Caixa_Som", (.38, .34, .7), (9 + sx * 2.35, 12.55, FZ + .35), M["plast"], C_SEC, bevel=.02)
     for k, rr in enumerate((.13, .07)): cyl("Caixa_Som_Falante", rr, rr, .02, (9 + sx * 2.35, 12.375, FZ + .26 + k * .28), M["preto_b"], C_SEC, rot=(PI / 2, 0, 0), seg=16)
-box("Palco_Espelho", (3.8, .02, 2.3), (9, 12.86, FZ + 1.6), M["espelho"], C_SEC)
-box("Palco_LED_Espelho", (3.9, .03, .04), (9, 12.85, FZ + 2.78), M["neon_az"], C_SEC)
-texto("Sala_Neon_Lounge", "LOUNGE", .34, (9.6, 6.14, FZ + 2.2), "+y", M["neon_m"], C_SEC)
+if not PALCO_AUTOR:
+    box("Palco_Espelho", (3.8, .02, 2.3), (9, 12.86, FZ + 1.6), M["espelho"], C_SEC)
+    box("Palco_LED_Espelho", (3.9, .03, .04), (9, 12.85, FZ + 2.78), M["neon_az"], C_SEC)
+if not modelo_autor_inteiro("neon_lounge_realista.glb", "Sala_Neon_Lounge_Autor", 9.592, 6.1435, 2.255, 0, C_SEC, "Lounge"):      # tubo de neon e fixacoes do autor, ja na posicao
+    texto("Sala_Neon_Lounge", "LOUNGE", .34, (9.6, 6.14, FZ + 2.2), "+y", M["neon_m"], C_SEC)
 ob_ = modelo_autor_inteiro("globo_espelhado_realista.glb", "Globo_Espelhado_Autor", 9, 9.7, 0, 0, C_GAR_E, "Globo")      # mosaico de espelhos, haste e canopla
 if ob_: ob_.location.z = FZ + PD - .022 - max(v.co.z for v in ob_.data.vertices)      # canopla encostada no forro
 else:

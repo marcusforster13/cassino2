@@ -86,7 +86,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1029-1518';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1029-1631';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -186,7 +186,9 @@ gltf.scene.traverse(o => {
     if (/Mancha/.test(m.name)) { m.opacity = .32; m.transparent = true; m.depthWrite = false; }      // manchas de umidade: discretas
     if (/Pano_Roleta/.test(m.name)) { m.transparent = false; m.alphaTest = .4; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }      // quadro de apostas recortado sobre o feltro
     if (/Modelo_Notebook_Tela|Modelo_Celular|Modelo_Monitor/.test(m.name)) { m.color.setScalar(.12); m.emissiveIntensity = .8; }      // tela do notebook: so o brilho proprio, sem estourar
-    if (/^Mesinha_Metal_Pe/.test(m.name)) { m.userData.metal = 1; }      // pe das mesinhas cromado (reflexo de sala abaixo)
+    if (/^Palco_Cromado_Sala/.test(m.name)) { m.userData.metal = 1; }      // barras de pole dance do palco do autor: cromado com reflexo
+    if (/^Mesinha_Metal_Pe/.test(m.name)) { m.userData.metal = 1; }
+    if (/^Estufa_Inox das bandejas/.test(m.name)) { m.userData.metal = 1; m.color.setRGB(.55, .56, .58); m.roughness = .3; }      // bandejas da estufa: sem o brilho de metal pareciam placas brancas      // pe das mesinhas cromado (reflexo de sala abaixo)
     if (/Globo_(Espelho prata|Suspensao)/.test(m.name)) { m.userData.metal = 1; }      // globo da sala reservada: espelhos refletindo (reflexo de sala abaixo)
     if (/Macaneta_(Arestas|Aco inox)/.test(m.name)) { m.userData.metal = 1; m.color.setRGB(.80, .58, .24); }      // macanetas de latao dourado, como os filetes da placa do jackpot (reflexo de sala abaixo)
     if (/Luminaria_Metal esmaltado verde/.test(m.name)) { m.color.setRGB(.017, .19, .072); m.emissive.setRGB(.0015, .018, .007); }      // luminaria da sinuca: o verde aparece sem a lanterna
@@ -205,6 +207,7 @@ gltf.scene.traverse(o => {
     if (/^Janela_Aluminio branco/.test(m.name)) { m.color.setRGB(.13, .065, .03); m.roughness = .65; m.metalness = 0; }      // caixilho das janelas do sobrado em madeira escura (o branco destoava do predio antigo)
     if (/PortaEnrolar/.test(m.name)) m.lightMapIntensity *= .5;
     if (m.name === 'Neon_Neon_Salao_Vermelho_Mat') { m.color.set('#40080a'); m.emissive.set('#ff2a2a'); m.emissiveIntensity = 1; }      // neons do salao: tubo fino, com forca alta a exposicao do site (ACES) estourava para branco
+    if (/^Lounge_Neon_Magenta/.test(m.name)) { m.color.set('#3a0530'); m.emissive.set('#ff2ad4'); m.emissiveIntensity = .6; }      // letreiro LOUNGE: tubo fino, mesma regra dos neons do salao
     if (m.name === 'Neon_Neon_Salao_Verde_Mat') { m.color.set('#06301a'); m.emissive.set('#2aff7a'); m.emissiveIntensity = .85; }
     if (m.name === 'Modelo_Chaves_0') { m.blending = THREE.AdditiveBlending; m.transparent = true; m.depthWrite = false; }      // rotulos do quadro de chaves: a imagem perdeu a transparencia (fundo preto) e cobria a madeira
     if (/MesaCarteado/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.2; m.lightMapIntensity = m.userData.lmBase; }      // mesa de carteado: feltro e borda escuros sem a lanterna
