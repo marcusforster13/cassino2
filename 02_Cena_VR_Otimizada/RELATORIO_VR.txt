@@ -1,17 +1,17 @@
 CASSINO CLANDESTINO - VERSAO VR OTIMIZADA
 
-DEPOIS: 475678 tris | 43 malhas | 482 slots de material (~draw calls) | 30 luzes
+DEPOIS: 483898 tris | 43 malhas | 498 slots de material (~draw calls) | 30 luzes
 
 Triangulos por colecao:
-  13_Garrafas                          110619
-  14_Garrafas_Escuro                   108288
-  05_Salao_Jogos                        65598
-  06_Escritorio_Depositos               51653
+  13_Garrafas                          114815
+  14_Garrafas_Escuro                   113392
+  05_Salao_Jogos                        65358
+  06_Escritorio_Depositos               51413
   12_Cadeiras_Plastico                  33560
   08_Interativos                        22212
   07_Fundos_Beco                        20184
-  04_Bar_Moveis                         17784
-  11_Sala_Reservada                     16712
+  04_Bar_Moveis                         17304
+  11_Sala_Reservada                     16592
   01_Rua                                10788
   02_Vizinhos                            9178
   10_Viatura                             8394
@@ -19,13 +19,13 @@ Triangulos por colecao:
 
 Etapas:
   - Grama instanciada removida de 0 gramados; subdivisao=1, remesh 0.16 m, decimate 35% na folhagem.
-  - Modificadores aplicados em 1758 objetos; textos e fios convertidos em malha.
+  - Modificadores aplicados em 1749 objetos; textos e fios convertidos em malha.
   - Bake de 0 materiais procedurais em texturas de imagem.
   - 29 materiais com texturas CC0 convertidos para UV + PNG (cor, rugosidade, normal).
   - UVs em caixa (escala real em metros) aplicadas em todas as malhas.
   - Colisao: 671 caixas orientadas preparadas.
   - 11 conjuntos interativos unidos (1 malha por conjunto).
-  - 1640 objetos estaticos unidos em 1 malha por colecao (menos draw calls).
+  - 1631 objetos estaticos unidos em 1 malha por colecao (menos draw calls).
   - Exportado: cassino_VR.glb
   - Exportado: cassino_VR.fbx
   - Colisao: 671 caixas, 8052 tris -> colisao.glb / colisao.fbx

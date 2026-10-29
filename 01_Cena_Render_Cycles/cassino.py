@@ -1781,8 +1781,35 @@ def sujeira(nome, pos, virado, larg, alt, col, k=0):
     if virado in ("cima", "baixo"):
         return adesivo(nome, lambda u, v: c + Vector(((u - .5) * larg, (v - .5) * alt, 0)), 1, 1, col, mat=MANCHAS[k % 3])
     return quadro(nome, pos, virado, larg, alt, MANCHAS[k % 3], col)
+_placas = {}
+def malha_placa(arq, prefixo):
+    """Tomada ou interruptor do autor (modelos/<arq>) numa malha so, como veio: parede em y = 0, frente para +Y. Todas as
+    copias usam a mesma malha. None sem o arquivo."""
+    if arq not in _placas:
+        _placas[arq] = None; cam = os.path.join(AQUI, "modelos", arq)
+        if os.path.exists(cam):
+            antes = set(bpy.data.objects); antes_m = set(bpy.data.materials); bpy.ops.import_scene.gltf(filepath=cam); bpy.context.view_layer.update()
+            novos = [o for o in bpy.data.objects if o not in antes]; mats = []; bm = bmesh.new()
+            for m in [m for m in bpy.data.materials if m not in antes_m]: m.name = prefixo + "_" + m.name
+            for o in [o for o in novos if o.type == "MESH"]:
+                me = o.data.copy(); me.transform(o.matrix_world); indice = {}
+                for i, m in enumerate(me.materials):
+                    if m not in mats: mats.append(m)
+                    indice[i] = mats.index(m)
+                n0 = len(bm.faces); bm.from_mesh(me); bm.faces.ensure_lookup_table(); bpy.data.meshes.remove(me)
+                for f in bm.faces[n0:]: f.material_index = indice.get(f.material_index, 0)
+            for o in novos: bpy.data.objects.remove(o, do_unlink=True)
+            me = bpy.data.meshes.new(prefixo + "_Autor"); bm.to_mesh(me); bm.free()
+            for m in mats: me.materials.append(m)
+            _placas[arq] = me
+    return _placas[arq]
 def tomada(nome, pos, virado, col, interruptor=False):
     e = {"-y": (0, -1), "+y": (0, 1), "-x": (-1, 0), "+x": (1, 0)}[virado]; x, y, z = pos
+    me_ = malha_placa("interruptor_realista.glb", "Interruptor") if interruptor else malha_placa("tomada_realista.glb", "Tomada")
+    if me_:                                                        # placa do autor, fora do lightmap; costas na parede (a caixa antiga era centrada em pos)
+        ob = bpy.data.objects.new(nome + "_Autor", me_); (C_GAR if col is C_BAR else C_GAR_E).objects.link(ob)
+        ob.location = (x - e[0] * .006, y - e[1] * .006, z); ob.rotation_euler = (0, 0, {"+y": 0, "-y": PI, "+x": -PI / 2, "-x": PI / 2}[virado])
+        return
     box(nome, (.075, .012, .115) if e[0] == 0 else (.012, .075, .115), pos, M["branco"], col, bevel=.004)
     box(nome + "_Miolo", (.03, .006, .03 if not interruptor else .05) if e[0] == 0 else (.006, .03, .03 if not interruptor else .05), (x + e[0] * .008, y + e[1] * .008, z), M["cortina_br"] if interruptor else M["preto_b"], col)
 def conduite(nome, pts, col, r=.011):
