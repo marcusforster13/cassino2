@@ -1145,8 +1145,9 @@ if not pano_roleta():
             box("Roleta_Quadro", (.26, .2, .002), (RX - .28 + i * .28, RY - .95 + j * .22, FZ + .794), M["ficha_r"] if (i + j) % 2 else M["ficha_p"], C_SAL)
 cortina("Cortina_Salao_Fundo", (-3.4, 12.86), (1.2, 12.86), M["cortina_br"], C_SAL)
 cortina("Cortina_Salao_Oeste", (-3.39, 8.4), (-3.39, 12.8), M["cortina_br"], C_SAL)
-box("Neon_Salao", (2.4, .04, .08), (-.5, 6.1, FZ + 2.5), M["neon_r"], C_SAL)
-box("Neon_Salao_2", (.04, 2.0, .08), (2.4, 7.3, FZ + 2.5), M["neon_v"], C_SAL)
+if not modelo_autor_inteiro("neons_salao_realistas.glb", "Neon_Salao_Autor", .3595, 7.1915, 2.617, 0, C_SAL, "Neon"):      # os dois neons do autor ja na posicao (o arquivo vem nas coordenadas da cena)
+    box("Neon_Salao", (2.4, .04, .08), (-.5, 6.1, FZ + 2.5), M["neon_r"], C_SAL)
+    box("Neon_Salao_2", (.04, 2.0, .08), (2.4, 7.3, FZ + 2.5), M["neon_v"], C_SAL)
 box("Bebedouro", (.34, .34, 1.0), (2.2, 6.35, FZ + .5), M["freezer"], C_SAL, bevel=.02)
 
 # ------------------------------------------------------------------ 5. escritorio / caixa e deposito de maquinas
@@ -1557,7 +1558,8 @@ if os.path.exists(_cam):
 else:
     box("Placar_Acumulado", (2.6, .05, .42), (-1.3, 12.78, FZ + 2.45), M["preto_b"], C_SAL)
     texto("Placar_Acumulado_Texto", "ACUMULADO  R$ 12.480", .17, (-1.3, 12.75, FZ + 2.45), "-y", M["neon_a"], C_SAL)
-box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL, bevel=.03)
+if not modelo_autor_inteiro("ar_split_realista.glb", "Ar_Split_Salao_Autor", 1.3, 6.19, FZ + 2.41, 0, C_SAL, "ArSplit"):      # costas na parede (y 6,075), frente para o salao
+    box("Ar_Split_Salao", (.9, .22, .28), (1.3, 6.2, FZ + 2.55), M["branco"], C_SAL, bevel=.03)
 for nome_, (x, y) in (("Carteado", (CX, CY)), ("Roleta", (RX, RY))):
     ob_ = modelo_autor_inteiro("pendente_verde_realista.glb", "Pendente_" + nome_, x, y, 0, 0, C_GAR_E, "Pendente")      # lampada com o material do autor (opalina creme)
     if ob_: ob_.location.z = FZ + PD - max(v.co.z for v in ob_.data.vertices)          # canopla no teto
@@ -1650,7 +1652,8 @@ if not maquininha(5.2, 11.75, FZ + .761, .25):
     box("Maquininha_Cartao", (.075, .16, .05), (5.2, 11.75, FZ + .785), M["plast"], C_ESC, bevel=.01)
 box("Radio_Comunicador", (.06, .035, .15), (5.62, 10.75, FZ + .835), M["preto"], C_ESC, bevel=.008)
 cartaz("Quadro_Chaves", (4.3, 9.09, FZ + 1.55), "+y", (.5, .4), M["mad_cl"], [], C_ESC)
-for k in range(6): box("Chave_Pendurada", (.02, .01, .07), (4.12 + k * .072, 9.105, FZ + 1.55), M["dourado"], C_ESC)
+if not modelo_autor_inteiro("quadro_chaves_realista.glb", "Parede_Quadro_Chaves_Autor", 4.3, 9.101, FZ + 1.35, 0, C_GAR_E, "Chaves"):      # tabua, ganchos, chaves de latao e rotulos; frente para +Y
+    for k in range(6): box("Chave_Pendurada", (.02, .01, .07), (4.12 + k * .072, 9.105, FZ + 1.55), M["dourado"], C_ESC)
 cartaz("Calendario", (5.3, 9.09, FZ + 1.6), "+y", (.34, .5), M["branco"], [], C_ESC)
 box("Calendario_Faixa", (.34, .014, .14), (5.3, 9.092, FZ + 1.78), M["cartaz_v"], C_ESC)
 modelo_autor_inteiro("calendario_realista.glb", "Parede_Calendario_Autor", 5.3, 9.083, FZ + 1.35, 0, C_GAR_E, "Calend")      # outubro, espiral e suporte; frente para +Y
