@@ -848,7 +848,8 @@ box("Bar_Letreiro_Fundo", (5.0, .06, .7), (-2, -.14, 3.75), LETREIROS[0], C_PRED
 texto("Bar_Letreiro_Texto", "BAR E PETISCOS", .34, (-2, -.18, 3.75), "-y", M["texto_letreiro"], C_PRED)
 box("Bar_Porta_Enrolada", (2.1, .3, .3), (-2, .05, FZ + 2.75), M["porta_enrolar"], C_EST)        # porta de enrolar aberta (recolhida)
 box("Bar_Rodape_Fachada", (2.9, .05, .5), (-4.55, -.125, FZ + .25), M["rodape"], C_PRED)      # o rodape para nos dois lados da entrada
-box("Bar_Rodape_Fachada", (7.0, .05, .5), (2.5, -.125, FZ + .25), M["rodape"], C_PRED)
+for x0, x1 in ((-1.0, 1.1), (4.1, 6.0)):                                                      # o rodape para nos dois lados da porta de enrolar (x 1,1 .. 4,1)
+    box("Bar_Rodape_Fachada", (x1 - x0, .05, .5), ((x0 + x1) / 2, -.125, FZ + .25), M["rodape"], C_PRED)
 for x, y in ((-5.8, 5.7), (0, 12.7), (5.7, 5.7)):                                                 # cameras de seguranca (cupulas)
     cyl("Camera_Seguranca", .07, .05, .07, (x * .97, y, FZ + PD - .04), M["preto_b"], C_EST, seg=12)
 
@@ -1086,9 +1087,10 @@ for i, (x, y, o) in enumerate(MAQUINAS):
     maquina(i + 1, x, y, o)
 # mesa de carteado (redonda, feltro verde)
 CX, CY = 0.4, 7.9
-cyl("Mesa_Carteado_Pe", .09, .3, .72, (CX, CY, FZ + .36), M["mad"], C_SAL, seg=12)
-cyl("Mesa_Carteado_Borda", .7, .7, .06, (CX, CY, FZ + .75), M["mad"], C_SAL, seg=28)
-cyl("Mesa_Carteado_Feltro", .62, .62, .012, (CX, CY, FZ + .785), M["feltro"], C_SAL, seg=28)
+if not modelo_autor_inteiro("mesa_carteado_realista.glb", "Carteado_Mesa_Autor", CX, CY, FZ, 0, C_SAL, "MesaCarteado"):      # tampo de feltro a 79 cm, como a antiga
+    cyl("Mesa_Carteado_Pe", .09, .3, .72, (CX, CY, FZ + .36), M["mad"], C_SAL, seg=12)
+    cyl("Mesa_Carteado_Borda", .7, .7, .06, (CX, CY, FZ + .75), M["mad"], C_SAL, seg=28)
+    cyl("Mesa_Carteado_Feltro", .62, .62, .012, (CX, CY, FZ + .785), M["feltro"], C_SAL, seg=28)
 for k in range(4):
     a = PI / 4 + k * PI / 2; x, y = CX + 1.02 * math.cos(a), CY + 1.02 * math.sin(a)
     box("Cadeira_Jogo_Assento", (.44, .44, .08), (x, y, FZ + .46), M["couro"], C_SAL, rot=(0, 0, a), bevel=.02)
@@ -1299,10 +1301,14 @@ cartaz("Cavalete_Bar", (-.35, -1.35, FZ + .55), "-y", (.6, 1.0), M["lousa"], ["P
 ob_ = modelo_autor_inteiro("cardapio_lousa.glb", "Calcada_Lousa_Cardapio", .1, -.32, FZ, 0, C_GAR, "Lousa")      # lousa do autor encostada na fachada, ao lado do vaso
 if ob_: ob_.rotation_euler.x = -math.radians(12)                       # pe na calcada e o topo apoiado na parede (y = -0,1)
 texto("Bar_Neon_Cerveja", "CERVEJA GELADA", .2, (2.6, -.2, FZ + 2.95), "-y", M["neon_a"], C_PRED)
+modelo_autor_inteiro("neon_cerveja_gelada_bar.glb", "Fachada_Neon_Cerveja_Autor", 2.6, -.115, 2.994, 0, C_GAR, "NeonCerveja")      # caixa grafite com o neon aceso, encostada na fachada
 # loja fechada ao lado (bloco macico na frente da sala reservada)
 box("Loja_Fechada_Bloco", (6, 5.9, PD + .2), (9, 2.95, FZ + (PD + .2) / 2), M["fach"], C_PRED)
-box("Loja_Fechada_Porta_Loja", (3.4, .06, 2.7), (9, -.03, FZ + 1.35), M["porta_enrolar"], C_PRED)
-box("Loja_Fechada_Rodape", (6, .05, .5), (9, -.025, FZ + .25), M["rodape"], C_PRED)
+ob_ = modelo_autor_inteiro("porta_enrolar_realista.glb", "Loja_Fechada_Porta_Autor", 9, 0, FZ, 0, C_GAR, "PortaEnrolar")      # a mesma porta de aco do bar, esticada para o vao de 3,4 m
+if ob_: ob_.scale.x = 3.4 / 3.0
+else: box("Loja_Fechada_Porta_Loja", (3.4, .06, 2.7), (9, -.03, FZ + 1.35), M["porta_enrolar"], C_PRED)
+for x0, x1 in ((6.0, 7.3), (10.7, 12.0)):                                                      # rodape so dos lados da porta (x 7,3 .. 10,7)
+    box("Loja_Fechada_Rodape", (x1 - x0, .05, .5), ((x0 + x1) / 2, -.025, FZ + .25), M["rodape"], C_PRED)
 cartaz("Loja_Fechada_Aluga", (9, -.07, FZ + 1.9), "-y", (1.2, .5), M["cartaz_a"], ["ALUGA-SE"], C_PRED, .16)
 
 # ---- bar: sinuca, estufa, caixa, lousa, cartazes, ventiladores, relogio
