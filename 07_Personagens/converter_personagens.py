@@ -25,7 +25,8 @@ def _civil(s, extra=None):
     d = {"parada": s + "_idle_neutral_01", "falando": fala, "nervoso": s + "_idle_nervous_01", "andando": "m_walk_fast_01",
          "correndo": "m_run_fast_01", "rendido": s + "_idle_neutral_01+maos_na_cabeca",
          "algemado": s + "_idle_neutral_01+maos_nas_costas", "algemado_andando": "m_walk_fast_01+maos_nas_costas",
-         "morrendo_a": "mixamo:morte_a", "morrendo_b": "mixamo:morte_b"}      # quedas ao levar um tiro (Mixamo, ver MIXAMO)
+         "morrendo_a": "mixamo:morte_a", "morrendo_b": "mixamo:morte_b",      # quedas ao levar um tiro (Mixamo, ver MIXAMO)
+         "morrendo_sentado": "mixamo:morte_sentado@53"}      # "Dying Backwards" a partir do quadro 53: ja quase sentado, caindo para tras
     d.update(extra or {}); return d
 PAPEIS = {
     "pm_parceiro": ("Police_Male_04", {"parada": "m_idle_neutral_01", "falando": "m_gestic_talk_neutral_01", "andando": "m_walk_fast_01", "correndo": "m_run_fast_01"}),
@@ -292,7 +293,7 @@ def pose_bracos(arm, desejado, f, tgt_inv, tipo):
             # dedos apontando para a outra mao, por cima/atras da cabeca (maos entrelacadas)
             mira(hd, lado_, M_fa, -lado * .85 + cima * .15 - frente * .25)
 
-def redirecionar(src, arm, rest_ref, ini, fim, fator, passo=2, pose=None, no_lugar=False, mapa=None):
+def redirecionar(src, arm, rest_ref, ini, fim, fator, passo=2, pose=None, no_lugar=False, mapa=None, do_inicio=False):
     """Passa a animacao do esqueleto src para arm. Os FBX de animacao do Rocketbox vem com a pose do 1o quadro
     gravada como repouso, entao a rotacao de cada osso e comparada com a T-pose de um personagem adulto
     (rest_ref) no espaco do mundo e aplicada sobre a T-pose deste personagem (funciona tambem nas criancas,
@@ -326,6 +327,8 @@ def redirecionar(src, arm, rest_ref, ini, fim, fator, passo=2, pose=None, no_lug
                 w = (src.matrix_world @ src.pose.bones[ns].matrix).translation
                 if no_lugar:
                     xy0 = xy0 or (w.x, w.y); w = Vector((xy0[0], xy0[1], w.z))
+                elif do_inicio:            # animacao cortada no meio: o quadril comeca em cima da origem do personagem
+                    xy0 = xy0 or (w.x, w.y); w = Vector((w.x - xy0[0], w.y - xy0[1], w.z))
                 pos = tgt_inv @ (w * fator)
             else:
                 pos = b.matrix_local.translation
@@ -404,7 +407,7 @@ manifesto = {}
 for papel, (pasta, anims) in PAPEIS.items():
     fbx = os.path.join(RB, pasta, pasta + ".fbx")
     saida = os.path.join(WEB, papel + ".glb")
-    fontes = [fbx] + [os.path.join(MIX, a[7:] + ".fbx") if a.startswith("mixamo:") else os.path.join(RB, "Animacoes", a.split("+")[0] + ".fbx") for a in anims.values()] + [os.path.abspath(__file__)]
+    fontes = [fbx] + [os.path.join(MIX, a[7:].split("@")[0] + ".fbx") if a.startswith("mixamo:") else os.path.join(RB, "Animacoes", a.split("+")[0] + ".fbx") for a in anims.values()] + [os.path.abspath(__file__)]
     if not os.path.exists(fbx):
         say("AVISO: %s nao encontrado (baixe pelo LEIA-ME)" % fbx); continue
     if os.path.exists(saida) and (os.environ.get("SO", papel) != papel or not FORCAR and os.path.getmtime(saida) > max(os.path.getmtime(f) for f in fontes if os.path.exists(f))):   # SO=crianca: so esse papel
@@ -434,6 +437,7 @@ for papel, (pasta, anims) in PAPEIS.items():
     for nome, a in anims.items():
         a, _, pose = a.partition("+")                       # "arquivo+pose" = animacao com pose ajustada
         mixamo = a.startswith("mixamo:")
+        a, _, corte = a.partition("@")                      # "mixamo:arquivo@quadro" = comeca nesse quadro
         caminho = os.path.join(MIX, a[7:] + '.fbx') if mixamo else os.path.join(RB, 'Animacoes', a + '.fbx')
         if not os.path.exists(caminho):
             say('AVISO: animacao %s nao encontrada' % a); continue
@@ -445,11 +449,12 @@ for papel, (pasta, anims) in PAPEIS.items():
         acao = src.animation_data.action if src and src.animation_data and src.animation_data.action else None
         if acao:
             ini, fim = acao.frame_range[0], min(acao.frame_range[1], acao.frame_range[0] + 450)   # ate 15 s (loop)
+            if corte: ini = float(corte)
             arm.location, arm.rotation_euler = base_loc, base_rot
             if mixamo:      # T-pose do proprio Mixamo como referencia; quadril dele a 1,04 m
                 ref_mx = {k: rot(src.matrix_world @ src.data.bones[v].matrix_local) for k, v in MAPA_MIXAMO.items() if v in src.data.bones}
                 h_mx = (src.matrix_world @ src.data.bones[MAPA_MIXAMO["Pelvis"]].head_local).z
-                assada = redirecionar(src, arm, ref_mx, ini, fim, raiz_z / h_mx, mapa=MAPA_MIXAMO)
+                assada = redirecionar(src, arm, ref_mx, ini, fim, raiz_z / h_mx, mapa=MAPA_MIXAMO, do_inicio=bool(corte))
             else:
                 assada = redirecionar(src, arm, rest_ref, ini, fim, fator, pose=pose or None, no_lugar=a.startswith(('m_run', 'm_walk', 'f_run', 'f_walk')))
             assada.name = nome; assada.use_fake_user = True

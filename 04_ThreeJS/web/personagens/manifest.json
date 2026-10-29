@@ -29,6 +29,7 @@
    "algemado_andando",
    "morrendo_a",
    "morrendo_b",
+   "morrendo_sentado",
    "irritado"
   ]
  },
@@ -44,7 +45,8 @@
    "algemado",
    "algemado_andando",
    "morrendo_a",
-   "morrendo_b"
+   "morrendo_b",
+   "morrendo_sentado"
   ]
  },
  "seguranca": {
@@ -60,6 +62,7 @@
    "algemado_andando",
    "morrendo_a",
    "morrendo_b",
+   "morrendo_sentado",
    "irritado",
    "apontando"
   ]
@@ -77,6 +80,7 @@
    "algemado_andando",
    "morrendo_a",
    "morrendo_b",
+   "morrendo_sentado",
    "apontando"
   ]
  },
@@ -93,6 +97,7 @@
    "algemado_andando",
    "morrendo_a",
    "morrendo_b",
+   "morrendo_sentado",
    "sentado_parado",
    "sentado_apontando",
    "apontando"
@@ -111,6 +116,7 @@
    "algemado_andando",
    "morrendo_a",
    "morrendo_b",
+   "morrendo_sentado",
    "sentado_jogando"
   ]
  },
@@ -126,7 +132,8 @@
    "algemado",
    "algemado_andando",
    "morrendo_a",
-   "morrendo_b"
+   "morrendo_b",
+   "morrendo_sentado"
   ]
  },
  "apostador_c": {
@@ -142,6 +149,7 @@
    "algemado_andando",
    "morrendo_a",
    "morrendo_b",
+   "morrendo_sentado",
    "sentado_jogando"
   ]
  },
@@ -157,7 +165,8 @@
    "algemado",
    "algemado_andando",
    "morrendo_a",
-   "morrendo_b"
+   "morrendo_b",
+   "morrendo_sentado"
   ]
  }
 }

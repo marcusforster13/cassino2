@@ -837,7 +837,9 @@ parede("Parede_Salao_Leste", (2.5, 6), (2.5, 13), M["parede"], C_EST, t=.15,
 parede("Parede_Escritorio_Sul", (2.5, 9), (6, 9), M["parede"], C_EST, t=.15)
 # segundo andar (sobrado) e fachada
 box("Sobrado_Andar", (18.2, 13.2, 3.1), (3, 6.5, FZ + PD + .2 + 1.55), M["fach"], C_PRED)
+JAN_AUTOR = os.path.exists(os.path.join(AQUI, "modelos", "janela_sobrado_fachada.glb"))      # com o arquivo, as janelas entram depois (modelo_autor_inteiro)
 for i, x in enumerate((-4, 0, 4, 8.6)):
+    if JAN_AUTOR: break
     box("Sobrado_Moldura", (1.54, .1, 1.44), (x, -.12, 5.1), M["esquadria"], C_PRED)
     box("Sobrado_Janela", (1.4, .03, 1.3), (x, -.17, 5.1), M["cortina"] if i == 1 else M["janela_off"], C_PRED)
 box("Sobrado_Cornija", (18.4, .4, .2), (3, -.1, 6.55), M["concreto"], C_PRED)
@@ -845,7 +847,6 @@ box("Bar_Marquise", (18, 1.1, .12), (3, -.55, 3.3), M["concreto"], C_PRED)
 box("Bar_Letreiro_Fundo", (5.0, .06, .7), (-2, -.14, 3.75), LETREIROS[0], C_PRED)
 texto("Bar_Letreiro_Texto", "BAR E PETISCOS", .34, (-2, -.18, 3.75), "-y", M["texto_letreiro"], C_PRED)
 box("Bar_Porta_Enrolada", (2.1, .3, .3), (-2, .05, FZ + 2.75), M["porta_enrolar"], C_EST)        # porta de enrolar aberta (recolhida)
-box("Bar_Porta_Loja_Fechada", (3.0, .06, 2.7), (2.6, -.13, FZ + 1.35), M["porta_enrolar"], C_PRED)   # segunda porta, sempre fechada
 box("Bar_Rodape_Fachada", (2.9, .05, .5), (-4.55, -.125, FZ + .25), M["rodape"], C_PRED)      # o rodape para nos dois lados da entrada
 box("Bar_Rodape_Fachada", (7.0, .05, .5), (2.5, -.125, FZ + .25), M["rodape"], C_PRED)
 for x, y in ((-5.8, 5.7), (0, 12.7), (5.7, 5.7)):                                                 # cameras de seguranca (cupulas)
@@ -897,6 +898,11 @@ def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo, troca=None):
     say("%s do autor: %d triangulos" % (nome, sum(len(pl.vertices) - 2 for pl in me.polygons)))
     return ob
 modelo_autor_inteiro("letreiro_bar_do_ze_realista.glb", "Fachada_Letreiro_Autor", -2, -.14, 3.4, 0, C_GAR, "Letreiro")      # caixa vinho com moldura de latao e o BAR DO ZE aceso; frente para a rua (-Y)
+if not modelo_autor_inteiro("porta_enrolar_realista.glb", "Bar_Porta_Enrolar_Autor", 2.6, -.13, FZ, 0, C_GAR, "PortaEnrolar"):      # ripas, guias e fechadura; frente para a rua. Fora do lightmap: o aco assava preto
+    box("Bar_Porta_Loja_Fechada", (3.0, .06, 2.7), (2.6, -.13, FZ + 1.35), M["porta_enrolar"], C_PRED)   # segunda porta, sempre fechada
+for i, x in enumerate((-4, 0, 4, 8.6) if JAN_AUTOR else ()):      # janelas do sobrado do autor: a 2a com a cortina acesa, as outras de quarto escuro
+    modelo_autor_inteiro("janela_sobrado_fachada.glb", "Sobrado_Janela_Autor", x, -.128, 5.1 - .72, 0, C_GAR, "Janela",
+                         {"Cortina": M["cortina"] if i == 1 else M["janela_off"]})
 for k in range(4):
     rz_ = rnd.uniform(0, 6)
     if not banqueta_autor("Banqueta_Bar", (2.92, 1.9 + k * .75, FZ), PI / 2 + (rz_ - 3) * .05, C_GAR) and not modelo_ph("Banqueta_Bar", "bar_chair_round_01", (2.92, 1.9 + k * .75, FZ), rz_, C_BAR, max_tris=5000):
@@ -2116,7 +2122,10 @@ def lampada(nome, x, y, watts, cor="#ffd9a0", m="lamp_q", z=FZ + PD - .25, col=C
     if bulbo: cyl(nome + "_Bulbo", .05, .03, .1, (x, y, z + .06), M[m], col, seg=10)
     luz(nome + "_Luz", "POINT", watts, cor, (x, y, z - .08), C_LUZ, shadow_soft_size=raio)
 def tubo(nome, x, y, watts, comp=1.2, ao_longo_x=True, col=C_EST):
-    box(nome + "_Tubo", (comp, .05, .04) if ao_longo_x else (.05, comp, .04), (x, y, FZ + PD - .04), M["lamp_f"], col)
+    """Lampada tubular do teto: a luminaria do autor (modelos/lampada_tubular_realista.glb: calha, soquetes e tubo aceso),
+    fora do lightmap; sem o arquivo, a barra acesa. A luz de verdade e o ponto de luz logo abaixo."""
+    if not modelo_autor_inteiro("lampada_tubular_realista.glb", nome + "_Luminaria", x, y, FZ + PD - .04, 0 if ao_longo_x else PI / 2, C_GAR_E if col is C_ESC else C_GAR, "Tubular"):
+        box(nome + "_Tubo", (comp, .05, .04) if ao_longo_x else (.05, comp, .04), (x, y, FZ + PD - .04), M["lamp_f"], col)
     luz(nome + "_Luz", "POINT", watts, "#eaf2ff", (x, y, FZ + PD - .3), C_LUZ, shadow_soft_size=.3)
 tubo("Luz_Bar_A", -2.5, 2.2, 55); tubo("Luz_Bar_B", 1.5, 3.6, 55); tubo("Luz_Bar_C", 4.8, 3.0, 40, ao_longo_x=False)
 lampada("Luz_Corredor", -4.75, 7.2, 14)

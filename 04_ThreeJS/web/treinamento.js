@@ -262,7 +262,11 @@ export async function iniciar(ctx) {
     m.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
     g.add(m);
     const mixer = new THREE.AnimationMixer(m), acoes = {};
-    for (const clip of base.animations) acoes[clip.name.replace(/\.\d+$/, '')] = mixer.clipAction(clip);
+    for (const clip of base.animations) {
+      const t0 = Math.min(...clip.tracks.map(t => t.times[0]));      // animacao cortada no meio (morrendo_sentado): comeca em 0
+      if (t0 > .1) { new Set(clip.tracks.map(t => t.times)).forEach(ts => { for (let i = 0; i < ts.length; i++) ts[i] -= t0; }); clip.resetDuration(); }      // os ossos dividem a mesma lista de tempos
+      acoes[clip.name.replace(/\.\d+$/, '')] = mixer.clipAction(clip);
+    }
     const parada = acoes.parada || Object.values(acoes)[0];
     if (parada) { parada.play(); parada.time = Math.random() * parada.getClip().duration; }
     // area de clique: cilindro do chao ao topo da cabeca (a altura acompanha a pose a cada quadro: em pe, agachado, escalando)
@@ -644,9 +648,9 @@ export async function iniciar(ctx) {
     const h = rayG.intersectObjects(ctx.colisao(), false)[0];
     if (h?.face) mancha(h.point, GN.copy(h.face.normal).transformDirection(h.object.matrixWorld).clone(), .16 + Math.random() * .2);
   }
-  function pocaSangue(n) {
+  function pocaSangue(n, s = 1) {          // s = -1: corpo caido de costas (a poca fica atras dos pes)
     setTimeout(() => {
-      const m = mancha(new THREE.Vector3(n.position.x + Math.sin(n.rotation.y) * 1.0, .152, n.position.z + Math.cos(n.rotation.y) * 1.0), new THREE.Vector3(0, 1, 0), .06);
+      const m = mancha(new THREE.Vector3(n.position.x + Math.sin(n.rotation.y) * s, .152, n.position.z + Math.cos(n.rotation.y) * s), new THREE.Vector3(0, 1, 0), .06);
       suave(6, e => { m.scale.setScalar(.12 + .95 * e); });
     }, 900);
   }
@@ -751,24 +755,26 @@ export async function iniciar(ctx) {
     if (u.arma?.visible) { u.arma.visible = false; armaChao(n.position, u.chave); }
     // em pe: uma das duas quedas do Mixamo (o corpo vai ~1,2 m para a frente). Vira o corpo para um lado livre de
     // parede ou movel; sem lado livre, sentado ou sem a animacao, tomba inteiro como antes
-    const queda = lado < 0 ? ['morrendo_a', 'morrendo_b'].filter(k => u.acoes?.[k]) : [];
-    const dir = queda.length ? direcaoLivre(n, 2.0) : null;
+    // sentado: o "Dying Backwards" cortado ja na pose sentada, caindo para tras (~1,4 m); procura um lado livre atras
+    const queda = lado < 0 ? ['morrendo_a', 'morrendo_b'].filter(k => u.acoes?.[k]) : (u.acoes?.morrendo_sentado ? ['morrendo_sentado'] : []);
+    const dir = queda.length ? direcaoLivre(n, lado < 0 ? 2.0 : 1.4, lado > 0) : null;
     if (dir !== null) {
-      n.rotation.y = dir; pocaSangue(n);
+      n.rotation.y = dir; pocaSangue(n, lado > 0 ? -1 : 1);
       const acao = u.acoes[queda[Math.floor(Math.random() * queda.length)]];
       clearTimeout(u.volta); acao.reset(); acao.setLoop(THREE.LoopOnce, 1); acao.clampWhenFinished = true; acao.play();
       u.atual?.crossFadeTo(acao, .15, false); u.atual = acao; u.pose = 'morrendo';
       return;
     }
+    const giro = direcaoLivre(n, 1.8); if (giro !== null) n.rotation.y = giro;      // tombo antigo: tambem para um lado sem parede
     pocaSangue(n);
     const y0 = n.position.y, r0 = n.rotation.x;
     suave(.7, e => { n.rotation.x = r0 + (lado * Math.PI / 2 - r0) * e; n.position.y = y0 + .12 * e; });
   }
   const rayQ = new THREE.Raycaster(); rayQ.firstHitOnly = true;
-  function direcaoLivre(n, dist) {          // giro (rotation.y) em que o corpo caido (2 m de comprimento, ombros de 0,6 m) nao entra em nada
+  function direcaoLivre(n, dist, tras = false) {          // giro (rotation.y) em que o corpo caido (ombros de 0,6 m) nao entra em nada; tras: queda de costas
     const o = new THREE.Vector3(), d = new THREE.Vector3(), lado = new THREE.Vector3();
     for (const k of [0, 1, -1, 2, -2, 3, -3, 4, .5, -.5, 1.5, -1.5, 2.5, -2.5, 3.5, -3.5]) {      // de frente primeiro, depois abrindo para os lados
-      const ry = n.rotation.y + k * Math.PI / 4; d.set(Math.sin(ry), 0, Math.cos(ry)); lado.set(d.z, 0, -d.x);
+      const ry = n.rotation.y + k * Math.PI / 4; d.set(Math.sin(ry), 0, Math.cos(ry)).multiplyScalar(tras ? -1 : 1); lado.set(d.z, 0, -d.x);
       const livre = [.25, .7].every(h => [-.3, 0, .3].every(l => {
         o.copy(n.position).addScaledVector(lado, l).setY(n.position.y + h); rayQ.set(o, d); rayQ.far = dist;
         return !rayQ.intersectObjects(ctx.colisao(), false).length;
