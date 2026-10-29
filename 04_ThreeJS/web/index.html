@@ -86,7 +86,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1029-1413';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1029-1427';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -204,6 +204,7 @@ gltf.scene.traverse(o => {
     if (/^(Banqueta_|Modelo_Banqueta_)/.test(m.name)) m.lightMapIntensity *= 2.3;
     if (/^Janela_Aluminio branco/.test(m.name)) { m.color.setRGB(.13, .065, .03); m.roughness = .65; m.metalness = 0; }      // caixilho das janelas do sobrado em madeira escura (o branco destoava do predio antigo)
     if (/PortaEnrolar/.test(m.name)) m.lightMapIntensity *= .5;
+    if (/MesaCarteado/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.2; m.lightMapIntensity = m.userData.lmBase; }      // mesa de carteado: feltro e borda escuros sem a lanterna
     if (/^Piso_Taco_Salao/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.0; m.lightMapIntensity = m.userData.lmBase; }      // taco do salao: escuro demais sem a lanterna
     if (/^Mesinha_Preto_Brilhante/.test(m.name)) { m.color.setRGB(.05, .05, .055); m.roughness = .25; }      // tampo das mesinhas: preto puro sumia no escuro
     if (/^Mesinha_/.test(m.name)) m.lightMapIntensity *= .55;      // a luz uniforme deixava a mesinha cinza e chapada nos comodos escuros      // porta de enrolar na calcada: a luz uniforme do bar deixava o aco claro demais a noite      // banquetas do balcao: madeira escura sumia sem a lanterna
