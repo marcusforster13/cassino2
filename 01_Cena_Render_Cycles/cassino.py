@@ -1667,8 +1667,9 @@ for x, y in ((-7.5, 4.2), (-7.4, 4.8), (4.6, 16.5), (5.0, 16.1), (-7.5, 14.2)):
     saco_lixo("Saco_Lixo_Fundos", x, y, C_FUN)
 for k in range(2):
     torno("Botijao_Gas", [(0, 0), (.15, .02), (.18, .12), (.18, .42), (.12, .52), (.06, .54), (.06, .6), (0, .6)], M["botijao"], C_FUN, pos=(5.3 + k * .42, 14.4, FZ), seg=14)
-box("Condensadora_Ar", (.8, .32, .58), (-2.5, 13.3, FZ + 2.0), M["branco"], C_FUN, bevel=.02)
-cyl("Condensadora_Grade", .22, .22, .02, (-2.6, 13.47, FZ + 2.0), M["esquadria"], C_FUN, rot=(PI / 2, 0, 0), seg=16)
+if not modelo_autor_inteiro("condensadora_ar.glb", "Condensadora_Ar_Autor", -2.5, 13.30, FZ + 1.71, PI, C_GAR_E, "Condensadora"):      # grade para o quintal, suportes na parede; fora do lightmap (chapas de metal)
+    box("Condensadora_Ar", (.8, .32, .58), (-2.5, 13.3, FZ + 2.0), M["branco"], C_FUN, bevel=.02)
+    cyl("Condensadora_Grade", .22, .22, .02, (-2.6, 13.47, FZ + 2.0), M["esquadria"], C_FUN, rot=(PI / 2, 0, 0), seg=16)
 barra("Varal", (-5.8, 16.6, FZ + 1.9), (5.8, 16.6, FZ + 1.9), .004, M["branco"], C_FUN, seg=4)
 for k in range(4): box("Pano_Varal", (.5, .01, .45), (-3.5 + k * .9, 16.6, FZ + 1.66), (M["branco"], M["cartaz_az"], M["cortina_br"], M["cartaz_v"])[k], C_FUN)
 box("Caixote_Beco", (.6, .5, .5), (-7.55, 8.3, FZ + .25), M["mad_cl"], C_FUN)
