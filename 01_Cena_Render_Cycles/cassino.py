@@ -898,7 +898,15 @@ def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo, troca=None):
     ob = bpy.data.objects.new(nome, me); col.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
     say("%s do autor: %d triangulos" % (nome, sum(len(pl.vertices) - 2 for pl in me.polygons)))
     return ob
-modelo_autor_inteiro("letreiro_bar_do_ze_realista.glb", "Fachada_Letreiro_Autor", -2, -.14, 3.4, 0, C_GAR, "Letreiro")      # caixa vinho com moldura de latao e o BAR DO ZE aceso; frente para a rua (-Y)
+def afastar_imagem(ob, inicio, d, z_min=None):
+    """Desloca d (x, y, z) as faces cujo material usa uma imagem com nome comecando por inicio. Para superficies do autor
+    a 1 mm de outra (feltro sobre a borda, face acesa sobre o painel): no site, de longe, as duas brigavam e piscavam."""
+    if not ob: return
+    alvo = {i for i, m in enumerate(ob.data.materials) if m and m.node_tree and any(n.type == "TEX_IMAGE" and n.image and n.image.name.startswith(inicio) for n in m.node_tree.nodes)}
+    vs = {v for pl in ob.data.polygons if pl.material_index in alvo for v in pl.vertices}
+    for i in vs:
+        if z_min is None or ob.data.vertices[i].co.z > z_min: ob.data.vertices[i].co += Vector(d)      # z_min: so os vertices acima dessa altura
+afastar_imagem(modelo_autor_inteiro("letreiro_bar_do_ze_realista.glb", "Fachada_Letreiro_Autor", -2, -.14, 3.4, 0, C_GAR, "Letreiro"), "letreiro_bar", (0, -.006, 0))      # caixa vinho com moldura de latao e o BAR DO ZE aceso; frente para a rua (-Y)
 if not modelo_autor_inteiro("porta_enrolar_realista.glb", "Bar_Porta_Enrolar_Autor", 2.6, -.13, FZ, 0, C_GAR, "PortaEnrolar"):      # ripas, guias e fechadura; frente para a rua. Fora do lightmap: o aco assava preto
     box("Bar_Porta_Loja_Fechada", (3.0, .06, 2.7), (2.6, -.13, FZ + 1.35), M["porta_enrolar"], C_PRED)   # segunda porta, sempre fechada
 for i, x in enumerate((-4, 0, 4, 8.6) if JAN_AUTOR else ()):      # janelas do sobrado do autor: a 2a com a cortina acesa, as outras de quarto escuro
@@ -1087,7 +1095,9 @@ for i, (x, y, o) in enumerate(MAQUINAS):
     maquina(i + 1, x, y, o)
 # mesa de carteado (redonda, feltro verde)
 CX, CY = 0.4, 7.9
-if not modelo_autor_inteiro("mesa_carteado_realista.glb", "Carteado_Mesa_Autor", CX, CY, FZ, 0, C_SAL, "MesaCarteado"):      # tampo de feltro a 79 cm, como a antiga
+ob_ = modelo_autor_inteiro("mesa_carteado_realista.glb", "Carteado_Mesa_Autor", CX, CY, FZ, 0, C_SAL, "MesaCarteado")      # tampo de feltro a 79 cm, como a antiga
+afastar_imagem(ob_, "lacquered", (0, 0, -.004), z_min=.785)                                   # topo da borda a 1 mm do feltro: desce 4 mm (cartas e fichas ficam no feltro)
+if not ob_:
     cyl("Mesa_Carteado_Pe", .09, .3, .72, (CX, CY, FZ + .36), M["mad"], C_SAL, seg=12)
     cyl("Mesa_Carteado_Borda", .7, .7, .06, (CX, CY, FZ + .75), M["mad"], C_SAL, seg=28)
     cyl("Mesa_Carteado_Feltro", .62, .62, .012, (CX, CY, FZ + .785), M["feltro"], C_SAL, seg=28)

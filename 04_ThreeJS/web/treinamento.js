@@ -741,25 +741,30 @@ export async function iniciar(ctx) {
         else registrar('disparo_injustificado', n.userData.nome);
         A.ferido = n; S.variacao.ferido = 'sim';
       }
-      sangue(hn.point, ray.ray.direction); cair(n); sincAmeaca();
+      sangue(hn.point, ray.ray.direction); cair(n, ray.ray.direction); sincAmeaca();
     } else {
       if (hp?.face) marcar(hp);
       if (S.ativo && A) registrar('disparo_sem_alvo');
     }
     return true;
   }
-  function cair(n) {
+  function cair(n, dirTiro = null) {          // dirTiro: direcao do tiro (de frente, a pessoa em pe cai de costas)
     const u = n.userData; u.caido = true; u.rota = []; u.destino = null; u.semVirar = true; u.aoChegar = null;
     const lado = u.sentado ? 1 : -1; if (u.sentado) { u.sentado = false; n.position.y = .15; }      // sentado: tomba para a frente, no chao
     u.ameaca = false; u.atira = false;
     if (u.arma?.visible) { u.arma.visible = false; armaChao(n.position, u.chave); }
-    // em pe: uma das duas quedas do Mixamo (o corpo vai ~1,2 m para a frente). Vira o corpo para um lado livre de
-    // parede ou movel; sem lado livre, sentado ou sem a animacao, tomba inteiro como antes
-    // sentado: o "Dying Backwards" cortado ja na pose sentada, caindo para tras (~1,4 m); procura um lado livre atras
-    const queda = lado < 0 ? ['morrendo_a', 'morrendo_b'].filter(k => u.acoes?.[k]) : (u.acoes?.morrendo_sentado ? ['morrendo_sentado'] : []);
-    const dir = queda.length ? direcaoLivre(n, lado < 0 ? 2.0 : 1.4, lado > 0) : null;
+    // em pe, tiro de frente: "Dying Backwards" inteiro, de costas (~1,8 m); senao uma das duas quedas para a frente (~2 m)
+    // sentado: o "Dying Backwards" cortado ja na pose sentada, caindo para tras (~1,4 m)
+    // o corpo gira (aos poucos) para um lado livre de parede ou movel; sem lado livre ou sem a animacao, tomba inteiro como antes
+    const deFrente = dirTiro && (Math.sin(n.rotation.y) * dirTiro.x + Math.cos(n.rotation.y) * dirTiro.z) < 0;
+    let queda = lado < 0 ? ['morrendo_a', 'morrendo_b'].filter(k => u.acoes?.[k]) : (u.acoes?.morrendo_sentado ? ['morrendo_sentado'] : []);
+    let tras = lado > 0, dir = null;
+    if (lado < 0 && deFrente && u.acoes?.morrendo_tras) { dir = direcaoLivre(n, 1.8, true); if (dir !== null) { queda = ['morrendo_tras']; tras = true; } }
+    if (dir === null && queda.length) dir = direcaoLivre(n, lado < 0 ? 2.0 : 1.4, lado > 0);
     if (dir !== null) {
-      n.rotation.y = dir; pocaSangue(n, lado > 0 ? -1 : 1);
+      // gira para o lado livre junto com a queda (de uma vez, parecia virar de lado antes de cair)
+      const r0 = n.rotation.y, dr = Math.atan2(Math.sin(dir - r0), Math.cos(dir - r0));
+      suave(tras ? 1.1 : .45, e => { n.rotation.y = r0 + dr * e; }); setTimeout(() => pocaSangue(n, tras ? -1 : 1), 300);
       const acao = u.acoes[queda[Math.floor(Math.random() * queda.length)]];
       clearTimeout(u.volta); acao.reset(); acao.setLoop(THREE.LoopOnce, 1); acao.clampWhenFinished = true; acao.play();
       u.atual?.crossFadeTo(acao, .15, false); u.atual = acao; u.pose = 'morrendo';
