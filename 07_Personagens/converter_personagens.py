@@ -25,15 +25,15 @@ def _civil(s, extra=None):
     d = {"parada": s + "_idle_neutral_01", "falando": fala, "nervoso": s + "_idle_nervous_01", "andando": "m_walk_fast_01",
          "correndo": "m_run_fast_01", "rendido": s + "_idle_neutral_01+maos_na_cabeca",
          "algemado": s + "_idle_neutral_01+maos_nas_costas", "algemado_andando": "m_walk_fast_01+maos_nas_costas",
-         "morrendo_a": "mixamo:morte_a", "morrendo_b": "mixamo:morte_b",      # quedas ao levar um tiro (Mixamo, ver MIXAMO)
-         "morrendo_tras": "mixamo:morte_sentado",      # "Dying Backwards" inteiro: tiro de frente, cai de costas
+         "morrendo_a": "mixamo:morte_a@7", "morrendo_b": "mixamo:morte_b@25",      # quedas ao levar um tiro (Mixamo, ver MIXAMO), sem o comeco com os bracos para tras
+         "morrendo_tras": "mixamo:morte_sentado@19",      # "Dying Backwards" sem os 19 quadros parado: tiro de frente, cai de costas
          "morrendo_sentado": "mixamo:morte_sentado@53"}      # "Dying Backwards" a partir do quadro 53: ja quase sentado, caindo para tras
     d.update(extra or {}); return d
 PAPEIS = {
     "pm_parceiro": ("Police_Male_04", {"parada": "m_idle_neutral_01", "falando": "m_gestic_talk_neutral_01", "andando": "m_walk_fast_01", "correndo": "m_run_fast_01",
-                                       "morrendo_a": "mixamo:morte_a", "morrendo_b": "mixamo:morte_b", "morrendo_tras": "mixamo:morte_sentado"}),      # policial baleado tambem cai com a animacao
+                                       "morrendo_a": "mixamo:morte_a@7", "morrendo_b": "mixamo:morte_b@25", "morrendo_tras": "mixamo:morte_sentado@19"}),      # policial baleado tambem cai com a animacao
     "pm_apoio": ("Police_Male_01", {"parada": "m_idle_neutral_01", "falando": "m_gestic_talk_neutral_01", "andando": "m_walk_fast_01",
-                                    "morrendo_a": "mixamo:morte_a", "morrendo_b": "mixamo:morte_b", "morrendo_tras": "mixamo:morte_sentado"}),
+                                    "morrendo_a": "mixamo:morte_a@7", "morrendo_b": "mixamo:morte_b@25", "morrendo_tras": "mixamo:morte_sentado@19"}),
     "responsavel": ("Male_Adult_14", _civil("m", {"irritado": "m_idle_angry_01"})),
     "atendente": ("Female_Adult_08", _civil("f")),
     "seguranca": ("Male_Adult_20", _civil("m", {"irritado": "m_idle_angry_01", "apontando": "m_idle_neutral_01+apontando"})),
