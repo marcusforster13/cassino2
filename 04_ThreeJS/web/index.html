@@ -86,7 +86,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1029-1056';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1029-1105';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -199,6 +199,8 @@ gltf.scene.traverse(o => {
       m.lightMapIntensity = m.userData.lmBase; lmMats.push(m);
     } else if (!lm) { iluminar(m); if (escuro) m.lightMapIntensity *= .4; else if (cofre) m.lightMapIntensity *= .4; else if (/cardboard/.test(m.name)) m.lightMapIntensity *= .5; }      // pecas sem lightmap em comodo escuro: menos luz ambiente
     if (m.userData.metal) { m.metalness = .9; m.envMap = envSala(); m.envMapIntensity = .6; }
+    if (/^(Banqueta_|Modelo_Banqueta_)/.test(m.name)) m.lightMapIntensity *= 2.3;      // banquetas do balcao: madeira escura sumia sem a lanterna
+    if (/^Madeira_Balcao$/.test(m.name) && /^04_Bar_Moveis/.test(o.name) && m.userData.lmBase) { m.userData.lmBase *= 2.2; m.lightMapIntensity = m.userData.lmBase; }      // frente do balcao e moveis de madeira do bar
     if (/^Globo_Espelho/.test(m.name)) { m.roughness = .3; m.envMapIntensity = 1.4; m.emissive.setRGB(.05, .03, .06); }      // espelhos do globo: brilho espalhado (lisos, refletiam so o escuro)      // reflexo de uma sala clara: o ceu noturno deixava o aco preto e chapado
     return m;
   };
