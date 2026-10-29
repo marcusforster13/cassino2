@@ -41,7 +41,11 @@
   ],
   "colecao": "04_Bar_Moveis",
   "ignorar": [
-   "Placar_Acumulado"
+   "Placar_Acumulado",
+   "Placa_Banheiro",
+   "Calendario",
+   "Bar_Letreiro_Fundo",
+   "Plane="
   ]
  },
  "sinuca_relogio.glb": {

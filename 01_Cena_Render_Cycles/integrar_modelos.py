@@ -72,7 +72,8 @@ else:
         mats_antes = set(bpy.data.materials)
         bpy.ops.import_scene.gltf(filepath=caminho)
         novos = [o for o in bpy.data.objects if o not in antes]
-        for o in [o for o in novos if o.name.startswith(tuple(info.get("ignorar", ()))) ] if info.get("ignorar") else []:
+        ig_ = info.get("ignorar", ()); ig_exato = {n[:-1] for n in ig_ if n.endswith("=")}; ig_pref = tuple(n for n in ig_ if not n.endswith("="))
+        for o in [o for o in novos if o.name in ig_exato or (ig_pref and o.name.startswith(ig_pref))]:      # "Nome=" ignora so esse nome exato
             novos.remove(o); bpy.data.objects.remove(o, do_unlink=True)      # pecas que vieram no arquivo so como referencia
         col = bpy.data.collections.get(info.get("colecao", "")) or bpy.context.scene.collection
         religados = 0

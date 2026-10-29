@@ -855,15 +855,16 @@ for x, y in ((-5.8, 5.7), (0, 12.7), (5.7, 5.7)):                               
 box("Balcao_Corpo", (.6, 3.6, 1.05), (3.6, 3.0, FZ + .525), M["mad"], C_BAR, bevel=.01)
 box("Balcao_Tampo", (.75, 3.75, .05), (3.55, 3.0, FZ + 1.075), M["rodape"], C_BAR, bevel=.012)
 box("Balcao_Retorno", (2.4, .5, 1.05), (4.8, 1.1, FZ + .525), M["mad"], C_BAR, bevel=.01)
-for k in range(4):
-    if not modelo_ph("Banqueta_Bar", "bar_chair_round_01", (2.92, 1.9 + k * .75, FZ), rnd.uniform(0, 6), C_BAR, max_tris=5000):
-        cyl("Banqueta_Assento", .17, .17, .05, (2.95, 1.9 + k * .75, FZ + .74), M["couro"], C_BAR, seg=16)
-        cyl("Banqueta_Pe", .14, .03, .72, (2.95, 1.9 + k * .75, FZ + .36), M["metal"], C_BAR, seg=10)
-for k, z in enumerate((1.0, 1.45, 1.9)):                                                          # prateleiras de garrafas na parede leste
-    box("Prateleira_Bar", (.26, 2.8, .035), (5.76, 3.6, FZ + z), M["mad_cl"], C_BAR)      # comeca depois da geladeira expositora
-    for j in range(11):
-        g = M[("garrafa_v", "garrafa_a", "garrafa_c")[(j + k) % 3]]; y = 2.33 + j * .26
-        torno("Garrafa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], g, C_BAR, pos=(5.76, y, FZ + z + .018), seg=10)
+_banq = {}
+def banqueta_autor(nome, pos, rz, col):
+    """Banqueta do autor (modelos/banqueta_realista.glb): importa uma vez e as outras copias usam a mesma malha. False sem o arquivo."""
+    if "me" not in _banq:
+        ob = modelo_autor_inteiro("banqueta_realista.glb", nome, pos[0], pos[1], pos[2], rz, col, "Banqueta")
+        _banq["me"] = ob.data if ob else None
+        return bool(ob)
+    if not _banq["me"]: return False
+    ob = bpy.data.objects.new(nome, _banq["me"]); col.objects.link(ob); ob.location = pos; ob.rotation_euler = (0, 0, rz)
+    return True
 def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo, troca=None):
     """Peca refeita pelo autor ja com materiais (modelos/<arq>): entra como veio, todas as pecas numa malha so, centrada e
     com a base no chao. Materiais com imagem ganham o prefixo Modelo_ (o pipeline mantem a UV). troca: {inicio do nome do
@@ -895,6 +896,17 @@ def modelo_autor_inteiro(arq, nome, x, y, z, rz, col, prefixo, troca=None):
     ob = bpy.data.objects.new(nome, me); col.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz)
     say("%s do autor: %d triangulos" % (nome, sum(len(pl.vertices) - 2 for pl in me.polygons)))
     return ob
+modelo_autor_inteiro("letreiro_bar_do_ze_realista.glb", "Fachada_Letreiro_Autor", -2, -.14, 3.4, 0, C_GAR, "Letreiro")      # caixa vinho com moldura de latao e o BAR DO ZE aceso; frente para a rua (-Y)
+for k in range(4):
+    rz_ = rnd.uniform(0, 6)
+    if not banqueta_autor("Banqueta_Bar", (2.92, 1.9 + k * .75, FZ), PI / 2 + (rz_ - 3) * .05, C_GAR) and not modelo_ph("Banqueta_Bar", "bar_chair_round_01", (2.92, 1.9 + k * .75, FZ), rz_, C_BAR, max_tris=5000):
+        cyl("Banqueta_Assento", .17, .17, .05, (2.95, 1.9 + k * .75, FZ + .74), M["couro"], C_BAR, seg=16)
+        cyl("Banqueta_Pe", .14, .03, .72, (2.95, 1.9 + k * .75, FZ + .36), M["metal"], C_BAR, seg=10)
+for k, z in enumerate((1.0, 1.45, 1.9)):                                                          # prateleiras de garrafas na parede leste
+    box("Prateleira_Bar", (.26, 2.8, .035), (5.76, 3.6, FZ + z), M["mad_cl"], C_BAR)      # comeca depois da geladeira expositora
+    for j in range(11):
+        g = M[("garrafa_v", "garrafa_a", "garrafa_c")[(j + k) % 3]]; y = 2.33 + j * .26
+        torno("Garrafa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], g, C_BAR, pos=(5.76, y, FZ + z + .018), seg=10)
 if not modelo_autor_inteiro("freezer_horizontal_realista.glb", "Freezer_Horizontal", 5.5, 5.1, FZ, 0, C_BAR, "Freezer"):      # puxadores para o balcao (-X)
     box("Freezer_Horizontal", (.7, 1.5, .9), (5.5, 5.1, FZ + .45), M["freezer"], C_BAR, bevel=.03)
 def geladeira(x, y, rz):
@@ -1278,6 +1290,8 @@ for k, (dx, a) in enumerate(((-.62, PI / 2), (.62, -PI / 2))):      # viradas pa
     c = cadeira("Cadeira_Calcada_%d" % k, 1.2 + dx, -1.0, a + rnd.uniform(-.2, .2), C_RUA); c.location.z = FZ
 torno("Garrafa_Calcada", GARRAFA, M["garrafa_a"], C_RUA, pos=(1.25, -.95, FZ + .745), seg=10)
 cartaz("Cavalete_Bar", (-.35, -1.35, FZ + .55), "-y", (.6, 1.0), M["lousa"], ["PRATO FEITO", "R$ 22", "CERVEJA", "GELADA"], C_RUA, .075)
+ob_ = modelo_autor_inteiro("cardapio_lousa.glb", "Calcada_Lousa_Cardapio", .1, -.32, FZ, 0, C_GAR, "Lousa")      # lousa do autor encostada na fachada, ao lado do vaso
+if ob_: ob_.rotation_euler.x = -math.radians(12)                       # pe na calcada e o topo apoiado na parede (y = -0,1)
 texto("Bar_Neon_Cerveja", "CERVEJA GELADA", .2, (2.6, -.2, FZ + 2.95), "-y", M["neon_a"], C_PRED)
 # loja fechada ao lado (bloco macico na frente da sala reservada)
 box("Loja_Fechada_Bloco", (6, 5.9, PD + .2), (9, 2.95, FZ + (PD + .2) / 2), M["fach"], C_PRED)
@@ -1482,6 +1496,7 @@ cartaz("Cartaz_Bar_A", (-5.89, 1.4, FZ + 1.9), "+x", (.7, .95), M["cartaz_v"], [
 cartaz("Cartaz_Bar_B", (-5.89, 2.6, FZ + 1.9), "+x", (.7, .95), M["cartaz_az"], ["SOM", "AO VIVO", "SÁBADO"], C_BAR, .1)
 cartaz("Cartaz_Bar_C", (-5.89, 3.8, FZ + 1.9), "+x", (.7, .95), M["cartaz_a"], ["FIADO", "SÓ", "AMANHÃ"], C_BAR, .1)
 cartaz("Placa_Banheiro", (5.2, 5.9, FZ + 2.3), "-y", (.8, .2), M["preto"], ["SÓ FUNCIONÁRIOS"], C_BAR, .06)
+modelo_autor_inteiro("placa_funcionarios_realista.glb", "Parede_Placa_Funcionarios", 4.8, 5.918, FZ + 2.2, 0, C_GAR, "PlacaFunc")      # centrada sobre a porta do deposito (x 4,4 .. 5,2), encostada na parede; frente para -Y
 ventilador("Ventilador_Bar_A", -3.6, 1.6, C_BAR); ventilador("Ventilador_Bar_B", .9, 2.2, C_BAR)
 cyl("Relogio_Parede", .16, .16, .03, (-1.6, 5.9, FZ + 2.3), M["branco"], C_BAR, rot=(PI / 2, 0, 0), seg=24)
 for a_, l_ in ((.5, .1), (2.2, .13)):
@@ -1607,6 +1622,7 @@ cartaz("Quadro_Chaves", (4.3, 9.09, FZ + 1.55), "+y", (.5, .4), M["mad_cl"], [],
 for k in range(6): box("Chave_Pendurada", (.02, .01, .07), (4.12 + k * .072, 9.105, FZ + 1.55), M["dourado"], C_ESC)
 cartaz("Calendario", (5.3, 9.09, FZ + 1.6), "+y", (.34, .5), M["branco"], [], C_ESC)
 box("Calendario_Faixa", (.34, .014, .14), (5.3, 9.092, FZ + 1.78), M["cartaz_v"], C_ESC)
+modelo_autor_inteiro("calendario_realista.glb", "Parede_Calendario_Autor", 5.3, 9.083, FZ + 1.35, 0, C_GAR_E, "Calend")      # outubro, espiral e suporte; frente para +Y
 box("Cadeira_Visita_Assento", (.44, .44, .06), (3.6, 10.4, FZ + .45), M["branco"], C_ESC, bevel=.015)
 box("Cadeira_Visita_Encosto", (.42, .04, .42), (3.6, 10.19, FZ + .72), M["branco"], C_ESC, bevel=.012)
 for sx in (-1, 1):
@@ -1672,7 +1688,8 @@ for k, z in enumerate((1.2, 1.65)):
     for j in range(9):
         torno("Garrafa_Sala", GARRAFA, M[("garrafa_c", "garrafa_a", "garrafa_v")[(j + k) % 3]], C_SEC, pos=(6.24, 9.55 + j * .24, FZ + z + .016), seg=10)
 for k in range(3):
-    if not modelo_ph("Banqueta_Sala", "bar_chair_round_01", (7.75, 9.8 + k * .7, FZ), rnd.uniform(0, 6), C_SEC, max_tris=5000):
+    rz_ = rnd.uniform(0, 6); continue      # banquetas da sala reservada retiradas a pedido do autor (o sorteio continua igual para o resto da cena)
+    if not banqueta_autor("Banqueta_Sala", (7.75, 9.8 + k * .7, FZ), -PI / 2 + (rz_ - 3) * .05, C_GAR_E) and not modelo_ph("Banqueta_Sala", "bar_chair_round_01", (7.75, 9.8 + k * .7, FZ), rz_, C_SEC, max_tris=5000):
         cyl("Banqueta_Sala_Assento", .17, .17, .05, (7.75, 9.8 + k * .7, FZ + .74), M["couro"], C_SEC, seg=16)
         cyl("Banqueta_Sala_Pe", .14, .03, .72, (7.75, 9.8 + k * .7, FZ + .36), M["cromo_sala"], C_SEC, seg=10)
 luz("Luz_Sala_Palco", "POINT", 320, "#ff3ad0", (9, 11.3, FZ + 2.7), C_LUZ, shadow_soft_size=.3)
