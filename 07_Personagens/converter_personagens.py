@@ -24,7 +24,8 @@ def _civil(s, extra=None):
     fala = "m_gestic_talk_neutral_01" if s == "m" else "f_gestic_talk_nervous_01"
     d = {"parada": s + "_idle_neutral_01", "falando": fala, "nervoso": s + "_idle_nervous_01", "andando": "m_walk_fast_01",
          "correndo": "m_run_fast_01", "rendido": s + "_idle_neutral_01+maos_na_cabeca",
-         "algemado": s + "_idle_neutral_01+maos_nas_costas", "algemado_andando": "m_walk_fast_01+maos_nas_costas"}
+         "algemado": s + "_idle_neutral_01+maos_nas_costas", "algemado_andando": "m_walk_fast_01+maos_nas_costas",
+         "morrendo_a": "mixamo:morte_a", "morrendo_b": "mixamo:morte_b"}      # quedas ao levar um tiro (Mixamo, ver MIXAMO)
     d.update(extra or {}); return d
 PAPEIS = {
     "pm_parceiro": ("Police_Male_04", {"parada": "m_idle_neutral_01", "falando": "m_gestic_talk_neutral_01", "andando": "m_walk_fast_01", "correndo": "m_run_fast_01"}),
@@ -39,6 +40,19 @@ PAPEIS = {
     "apostador_c": ("Female_Adult_01", _civil("f", {"sentado_jogando": "f_idle_neutral_01+sentado_jogando"})),
     "apostador_d": ("Male_Adult_01", _civil("m")),
 }
+
+MIX = os.path.join(AQUI, "mixamo")      # animacoes do Mixamo baixadas pelo autor (sem malha, 30 qps); fora do repositorio
+def _mapa_mixamo():
+    """Osso do Rocketbox (sufixo de 'Bip01 ...') -> osso do Mixamo. Os dois esqueletos olham para -Y em T-pose."""
+    m = {"Pelvis": "Hips", "Spine": "Spine", "Spine1": "Spine1", "Spine2": "Spine2", "Neck": "Neck", "Head": "Head"}
+    for L, lado in (("L", "Left"), ("R", "Right")):
+        m.update({L + " Clavicle": lado + "Shoulder", L + " UpperArm": lado + "Arm", L + " Forearm": lado + "ForeArm", L + " Hand": lado + "Hand",
+                  L + " Thigh": lado + "UpLeg", L + " Calf": lado + "Leg", L + " Foot": lado + "Foot", L + " Toe0": lado + "ToeBase"})
+        for i, dedo in enumerate(("Thumb", "Index", "Middle", "Ring", "Pinky")):
+            for j, suf in enumerate(("", "1", "2")):
+                m[L + " Finger%d%s" % (i, suf)] = lado + "Hand%s%d" % (dedo, j + 1)
+    return {k: "mixamorig:" + v for k, v in m.items()}
+MAPA_MIXAMO = _mapa_mixamo()
 
 REF_TPOSE = "Female_Adult_08"     # T-pose adulta usada como referencia para as criancas
 
@@ -278,7 +292,7 @@ def pose_bracos(arm, desejado, f, tgt_inv, tipo):
             # dedos apontando para a outra mao, por cima/atras da cabeca (maos entrelacadas)
             mira(hd, lado_, M_fa, -lado * .85 + cima * .15 - frente * .25)
 
-def redirecionar(src, arm, rest_ref, ini, fim, fator, passo=2, pose=None, no_lugar=False):
+def redirecionar(src, arm, rest_ref, ini, fim, fator, passo=2, pose=None, no_lugar=False, mapa=None):
     """Passa a animacao do esqueleto src para arm. Os FBX de animacao do Rocketbox vem com a pose do 1o quadro
     gravada como repouso, entao a rotacao de cada osso e comparada com a T-pose de um personagem adulto
     (rest_ref) no espaco do mundo e aplicada sobre a T-pose deste personagem (funciona tambem nas criancas,
@@ -290,7 +304,7 @@ def redirecionar(src, arm, rest_ref, ini, fim, fator, passo=2, pose=None, no_lug
         ordem.append(b); [visita(c) for c in b.children]
     for b in arm.data.bones:
         if b.parent is None: visita(b)
-    ossos_src = {sufixo(b.name): b.name for b in src.data.bones}
+    ossos_src = {k: v for k, v in mapa.items() if v in src.data.bones} if mapa else {sufixo(b.name): b.name for b in src.data.bones}      # mapa: esqueleto do Mixamo
     pares = [(b, ossos_src.get(sufixo(b.name)) if sufixo(b.name) in rest_ref else None) for b in ordem]
     rest_tgt = repouso_mundo(arm)
     acao = bpy.data.actions.new('retarget'); arm.animation_data.action = acao
@@ -390,7 +404,7 @@ manifesto = {}
 for papel, (pasta, anims) in PAPEIS.items():
     fbx = os.path.join(RB, pasta, pasta + ".fbx")
     saida = os.path.join(WEB, papel + ".glb")
-    fontes = [fbx] + [os.path.join(RB, "Animacoes", a.split("+")[0] + ".fbx") for a in anims.values()] + [os.path.abspath(__file__)]
+    fontes = [fbx] + [os.path.join(MIX, a[7:] + ".fbx") if a.startswith("mixamo:") else os.path.join(RB, "Animacoes", a.split("+")[0] + ".fbx") for a in anims.values()] + [os.path.abspath(__file__)]
     if not os.path.exists(fbx):
         say("AVISO: %s nao encontrado (baixe pelo LEIA-ME)" % fbx); continue
     if os.path.exists(saida) and (os.environ.get("SO", papel) != papel or not FORCAR and os.path.getmtime(saida) > max(os.path.getmtime(f) for f in fontes if os.path.exists(f))):   # SO=crianca: so esse papel
@@ -419,7 +433,8 @@ for papel, (pasta, anims) in PAPEIS.items():
     arm.animation_data_create()
     for nome, a in anims.items():
         a, _, pose = a.partition("+")                       # "arquivo+pose" = animacao com pose ajustada
-        caminho = os.path.join(RB, 'Animacoes', a + '.fbx')
+        mixamo = a.startswith("mixamo:")
+        caminho = os.path.join(MIX, a[7:] + '.fbx') if mixamo else os.path.join(RB, 'Animacoes', a + '.fbx')
         if not os.path.exists(caminho):
             say('AVISO: animacao %s nao encontrada' % a); continue
         antes = set(bpy.data.objects)
@@ -431,7 +446,12 @@ for papel, (pasta, anims) in PAPEIS.items():
         if acao:
             ini, fim = acao.frame_range[0], min(acao.frame_range[1], acao.frame_range[0] + 450)   # ate 15 s (loop)
             arm.location, arm.rotation_euler = base_loc, base_rot
-            assada = redirecionar(src, arm, rest_ref, ini, fim, fator, pose=pose or None, no_lugar=a.startswith(('m_run', 'm_walk', 'f_run', 'f_walk')))
+            if mixamo:      # T-pose do proprio Mixamo como referencia; quadril dele a 1,04 m
+                ref_mx = {k: rot(src.matrix_world @ src.data.bones[v].matrix_local) for k, v in MAPA_MIXAMO.items() if v in src.data.bones}
+                h_mx = (src.matrix_world @ src.data.bones[MAPA_MIXAMO["Pelvis"]].head_local).z
+                assada = redirecionar(src, arm, ref_mx, ini, fim, raiz_z / h_mx, mapa=MAPA_MIXAMO)
+            else:
+                assada = redirecionar(src, arm, rest_ref, ini, fim, fator, pose=pose or None, no_lugar=a.startswith(('m_run', 'm_walk', 'f_run', 'f_walk')))
             assada.name = nome; assada.use_fake_user = True
             tr = arm.animation_data.nla_tracks.new(); tr.name = nome
             st = tr.strips.new(nome, int(ini), assada); tr.mute = True

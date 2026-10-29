@@ -310,6 +310,10 @@ export async function iniciar(ctx) {
     cab.getWorldPosition(AH);
     const h = Math.max(.6, AH.y - n.position.y + .2);    // ate o topo da cabeca
     u.hit.scale.y = h; u.hit.position.y = h / 2;
+    if (u.pose === 'morrendo') {          // caido pela animacao: o corpo fica a frente dos pes; a area cobre dos pes a cabeca
+      const l = n.worldToLocal(AH.clone()); l.y = 0; const r = (l.length() / 2 + .25) / .42;
+      u.hit.position.x = l.x / 2; u.hit.position.z = l.z / 2; u.hit.scale.x = u.hit.scale.z = r;
+    }
   }
   function girarNoMundo(osso, q, fracao, maxAng) {       // aplica parte de uma rotacao do mundo ao osso, com limite
     OQ3.copy(OQ0).slerp(q, fracao);
@@ -367,7 +371,7 @@ export async function iniciar(ctx) {
     if (u.algemado && !nome.startsWith('algemado'))       // algemado: maos sempre nas costas
       nome = nome === 'andando' || nome === 'correndo' ? 'algemado_andando'
         : AGACHADO.has(nome) || (AGACHADO.has(u.pose) && nome !== 'parada') ? 'algemado_agachado' : 'algemado';
-    if (!u.acoes[nome]) return;
+    if (!u.acoes[nome] || u.pose === 'morrendo') return;       // depois de cair, nada troca a animacao
     u.pose = nome;
     const nova = u.acoes[nome];
     if (u.atual !== nova) { nova.reset().play(); u.atual?.crossFadeTo(nova, fade, false); u.atual = nova; }
@@ -745,9 +749,33 @@ export async function iniciar(ctx) {
     const lado = u.sentado ? 1 : -1; if (u.sentado) { u.sentado = false; n.position.y = .15; }      // sentado: tomba para a frente, no chao
     u.ameaca = false; u.atira = false;
     if (u.arma?.visible) { u.arma.visible = false; armaChao(n.position, u.chave); }
+    // em pe: uma das duas quedas do Mixamo (o corpo vai ~1,2 m para a frente). Vira o corpo para um lado livre de
+    // parede ou movel; sem lado livre, sentado ou sem a animacao, tomba inteiro como antes
+    const queda = lado < 0 ? ['morrendo_a', 'morrendo_b'].filter(k => u.acoes?.[k]) : [];
+    const dir = queda.length ? direcaoLivre(n, 2.0) : null;
+    if (dir !== null) {
+      n.rotation.y = dir; pocaSangue(n);
+      const acao = u.acoes[queda[Math.floor(Math.random() * queda.length)]];
+      clearTimeout(u.volta); acao.reset(); acao.setLoop(THREE.LoopOnce, 1); acao.clampWhenFinished = true; acao.play();
+      u.atual?.crossFadeTo(acao, .15, false); u.atual = acao; u.pose = 'morrendo';
+      return;
+    }
     pocaSangue(n);
     const y0 = n.position.y, r0 = n.rotation.x;
     suave(.7, e => { n.rotation.x = r0 + (lado * Math.PI / 2 - r0) * e; n.position.y = y0 + .12 * e; });
+  }
+  const rayQ = new THREE.Raycaster(); rayQ.firstHitOnly = true;
+  function direcaoLivre(n, dist) {          // giro (rotation.y) em que o corpo caido (2 m de comprimento, ombros de 0,6 m) nao entra em nada
+    const o = new THREE.Vector3(), d = new THREE.Vector3(), lado = new THREE.Vector3();
+    for (const k of [0, 1, -1, 2, -2, 3, -3, 4, .5, -.5, 1.5, -1.5, 2.5, -2.5, 3.5, -3.5]) {      // de frente primeiro, depois abrindo para os lados
+      const ry = n.rotation.y + k * Math.PI / 4; d.set(Math.sin(ry), 0, Math.cos(ry)); lado.set(d.z, 0, -d.x);
+      const livre = [.25, .7].every(h => [-.3, 0, .3].every(l => {
+        o.copy(n.position).addScaledVector(lado, l).setY(n.position.y + h); rayQ.set(o, d); rayQ.far = dist;
+        return !rayQ.intersectObjects(ctx.colisao(), false).length;
+      }));
+      if (livre) return ry;
+    }
+    return null;
   }
   // granada de efeito moral: arremesso em arco, quique no chao e nas paredes, estouro com clarao depois de 2,2 s
   const granadas = [], rayG = new THREE.Raycaster(); rayG.firstHitOnly = true;

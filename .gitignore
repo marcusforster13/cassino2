@@ -27,3 +27,6 @@ desktop.ini
 
 # chave da API do ElevenLabs (nunca no GitHub)
 06_Audio/chave_elevenlabs.txt
+
+# animacoes do Mixamo (Adobe): usadas nos personagens, mas os FBX originais nao podem ser redistribuidos
+07_Personagens/mixamo/

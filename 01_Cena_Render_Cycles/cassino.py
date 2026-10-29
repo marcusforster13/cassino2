@@ -1673,8 +1673,11 @@ for sx in (-1, 1):
 box("Palco_Espelho", (3.8, .02, 2.3), (9, 12.86, FZ + 1.6), M["espelho"], C_SEC)
 box("Palco_LED_Espelho", (3.9, .03, .04), (9, 12.85, FZ + 2.78), M["neon_az"], C_SEC)
 texto("Sala_Neon_Lounge", "LOUNGE", .34, (9.6, 6.14, FZ + 2.2), "+y", M["neon_m"], C_SEC)
-esfera("Globo_Espelhado", .17, (9, 9.7, FZ + PD - .32), M["cromo_sala"], C_SEC, sub=2, liso=False)
-cyl("Globo_Espelhado_Haste", .008, .008, .16, (9, 9.7, FZ + PD - .09), M["metal"], C_SEC, seg=6)
+ob_ = modelo_autor_inteiro("globo_espelhado_realista.glb", "Globo_Espelhado_Autor", 9, 9.7, 0, 0, C_GAR_E, "Globo")      # mosaico de espelhos, haste e canopla
+if ob_: ob_.location.z = FZ + PD - .022 - max(v.co.z for v in ob_.data.vertices)      # canopla encostada no forro
+else:
+    esfera("Globo_Espelhado", .17, (9, 9.7, FZ + PD - .32), M["cromo_sala"], C_SEC, sub=2, liso=False)
+    cyl("Globo_Espelhado_Haste", .008, .008, .16, (9, 9.7, FZ + PD - .09), M["metal"], C_SEC, seg=6)
 # sofas, mesinhas e bar
 sofa("Sofa_Sala_Leste_A", 11.5, 7.6, 2.3, (-1, 0), C_SEC); sofa("Sofa_Sala_Leste_B", 11.5, 10.2, 2.3, (-1, 0), C_SEC)
 sofa("Sofa_Sala_Sul", 9.6, 6.5, 2.4, (0, 1), C_SEC)
