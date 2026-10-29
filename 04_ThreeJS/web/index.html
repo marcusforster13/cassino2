@@ -86,7 +86,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1029-1512';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1029-1518';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -204,8 +204,8 @@ gltf.scene.traverse(o => {
     if (/^(Banqueta_|Modelo_Banqueta_)/.test(m.name)) m.lightMapIntensity *= 2.3;
     if (/^Janela_Aluminio branco/.test(m.name)) { m.color.setRGB(.13, .065, .03); m.roughness = .65; m.metalness = 0; }      // caixilho das janelas do sobrado em madeira escura (o branco destoava do predio antigo)
     if (/PortaEnrolar/.test(m.name)) m.lightMapIntensity *= .5;
-    if (m.name === 'Neon_Neon_Salao_Vermelho_Mat') { m.color.set('#40080a'); m.emissive.set('#ff2a2a'); m.emissiveIntensity = 6; }      // neons do salao: a mesma cor e forca dos antigos (com as do autor o tubo ficava branco)
-    if (m.name === 'Neon_Neon_Salao_Verde_Mat') { m.color.set('#06301a'); m.emissive.set('#2aff7a'); m.emissiveIntensity = 5; }
+    if (m.name === 'Neon_Neon_Salao_Vermelho_Mat') { m.color.set('#40080a'); m.emissive.set('#ff2a2a'); m.emissiveIntensity = 1; }      // neons do salao: tubo fino, com forca alta a exposicao do site (ACES) estourava para branco
+    if (m.name === 'Neon_Neon_Salao_Verde_Mat') { m.color.set('#06301a'); m.emissive.set('#2aff7a'); m.emissiveIntensity = .85; }
     if (m.name === 'Modelo_Chaves_0') { m.blending = THREE.AdditiveBlending; m.transparent = true; m.depthWrite = false; }      // rotulos do quadro de chaves: a imagem perdeu a transparencia (fundo preto) e cobria a madeira
     if (/MesaCarteado/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.2; m.lightMapIntensity = m.userData.lmBase; }      // mesa de carteado: feltro e borda escuros sem a lanterna
     if (/^Piso_Taco_Salao/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.0; m.lightMapIntensity = m.userData.lmBase; }      // taco do salao: escuro demais sem a lanterna
