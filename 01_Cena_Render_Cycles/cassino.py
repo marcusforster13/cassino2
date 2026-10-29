@@ -1286,9 +1286,18 @@ def malha_balde():
             say("balde do autor: %d triangulos" % sum(len(pl.vertices) - 2 for pl in me.polygons))
             for o in novos: bpy.data.objects.remove(o, do_unlink=True)
     return _balde["me"]
+_mesinha = {}
 def mesinha(nome, x, y, col, garrafa=True):
-    cyl(nome + "_Pe", .04, .16, .44, (x, y, FZ + .22), M["metal"], col, seg=10)
-    cyl(nome + "_Tampo", .32, .32, .03, (x, y, FZ + .455), M["preto_b"], col, seg=22)
+    """Mesinha redonda com garrafa, copos e balde. Com modelos/mesinha_realista.glb (tampo a 47 cm, como a antiga) as
+    copias usam a mesma malha do autor, fora do lightmap; sem o arquivo, pe conico e tampo."""
+    if "me" not in _mesinha:
+        ob_ = modelo_autor_inteiro("mesinha_realista.glb", nome + "_Autor", x, y, FZ, 0, C_GAR, "Mesinha")
+        _mesinha["me"] = ob_.data if ob_ else None
+    elif _mesinha["me"]:
+        ob_ = bpy.data.objects.new(nome + "_Autor", _mesinha["me"]); C_GAR.objects.link(ob_); ob_.location = (x, y, FZ)
+    if not _mesinha["me"]:
+        cyl(nome + "_Pe", .04, .16, .44, (x, y, FZ + .22), M["metal"], col, seg=10)
+        cyl(nome + "_Tampo", .32, .32, .03, (x, y, FZ + .455), M["preto_b"], col, seg=22)
     if garrafa:
         torno(nome + "_Garrafa", GARRAFA, M["garrafa_v"], col, pos=(x + .08, y + .05, FZ + .47), seg=10)
         me_ = malha_balde()
