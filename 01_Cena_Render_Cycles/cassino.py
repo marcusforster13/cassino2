@@ -979,6 +979,26 @@ for i, (x, y, rz) in enumerate(((-.7, 1.75, .2), (-3.9, 2.2, -.15), (0.15, 4.8, 
         c = cadeira("Cadeira_Bar_%d_%d" % (i, k), x + dx, y + dy, rz + a + rnd.uniform(-.2, .2), C_BAR); c.location.z = FZ
     torno("Garrafa_Mesa", [(0, 0), (.036, 0), (.036, .17), (.013, .23), (.013, .29), (0, .29)], M["garrafa_a"], C_BAR, pos=(x + .1, y + .05, FZ + .745), seg=10)
     copo("Copo_Mesa", x - .12, y - .1, FZ + .745, C_BAR)
+_mesa_itens = {}
+def item_mesa(arq, nome, x, y, z, rz, prefixo, escala=1.0):
+    """Item pequeno do autor sobre mesa ou balcao (condimentos, guardanapos, petiscos): importa uma vez, as copias usam a
+    mesma malha. Fora do lightmap, com a luz uniforme do bar. escala: o condimentos.glb vem com 4 m de altura."""
+    if arq not in _mesa_itens:
+        ob = modelo_autor_inteiro(arq, nome, x, y, z, rz, C_GAR, prefixo)
+        _mesa_itens[arq] = ob.data if ob else None
+        if ob: ob.scale = (escala,) * 3
+        return ob
+    if not _mesa_itens[arq]: return None
+    ob = bpy.data.objects.new(nome, _mesa_itens[arq]); C_GAR.objects.link(ob); ob.location = (x, y, z); ob.rotation_euler = (0, 0, rz); ob.scale = (escala,) * 3
+    return ob
+ZM = FZ + .7425                                                                                    # tampo das mesas do bar
+item_mesa("condimentos.glb", "Mesa_Condimentos", -.7 - .17, 1.75 + .17, ZM, .4, "Condimentos", .05)      # ketchup e mostarda (20 cm)
+item_mesa("prato_petiscos.glb", "Mesa_Prato_Petiscos", -.7 + .05, 1.75 - .2, ZM, .3, "Petiscos")        # so nesta mesa
+item_mesa("porta_guardanapos.glb", "Mesa_Guardanapos", -3.9 + .17, 2.2 - .17, ZM, -.15, "Guardanapos")
+item_mesa("condimentos.glb", "Mesa_Condimentos", .15 - .17, 4.8 + .17, ZM, 1.2, "Condimentos", .05)
+item_mesa("porta_guardanapos.glb", "Mesa_Guardanapos", .15 + .17, 4.8 - .17, ZM, .05, "Guardanapos")
+item_mesa("condimentos.glb", "Balcao_Condimentos", 3.48, 3.55, FZ + 1.10, PI / 2, "Condimentos", .05)    # balcao, entre a estufa e o copo
+item_mesa("porta_guardanapos.glb", "Balcao_Guardanapos", 3.48, 3.95, FZ + 1.10, PI / 2, "Guardanapos")
 for k in range(3):                                                                                # deposito do bar
     for j in range(2 + k % 2):
         if not modelo_ph("Engradado", "plastic_crate_01", (3.7 + k * .45, 8.7, FZ + j * .262), PI / 2 + rnd.uniform(-.06, .06), C_ESC, max_tris=4000):
