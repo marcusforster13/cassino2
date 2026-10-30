@@ -1703,6 +1703,7 @@ box("Sala_Revest_Oeste_Sul", (.025, .72, PD), (6.115, 6.47, FZ + PD / 2), M["vel
 box("Sala_Revest_Oeste_Verga", (.025, 1.1, PD - 2.05), (6.115, 7.35, FZ + 2.05 + (PD - 2.05) / 2), M["veludo"], C_SEC)
 cortina("Sala_Cortina_Entrada", (6.5, 6.85), (6.5, 7.0), M["veludo"], C_SEC)
 # palco com dois postes de pole dance, espelho ao fundo e fita de LED
+CAIXAS_AUTOR = modelo_autor_inteiro("caixas_som_pbr_refinadas.glb", "Caixas_Som_Autor", 9.0, 12.5415, FZ, 0, C_GAR, "CaixaSom")      # as duas caixas do autor ja na posicao; fora do lightmap (grade de aco)
 PALCO_AUTOR = modelo_autor_inteiro("palco_realista.glb", "Palco_Autor", 9.0, 11.748, FZ, 0, C_SEC, "Palco")      # tablado, degraus, LEDs, poles e espelho do autor, ja na posicao (arquivo nas coordenadas da cena)
 if not PALCO_AUTOR:
     box("Palco", (3.8, 1.9, .35), (9, 11.9, FZ + .175), M["palco"], C_SEC, bevel=.015)
@@ -1714,6 +1715,7 @@ for sx in (-1, 1):
         cyl("Pole_Dance", .023, .023, PD - .35, (9 + sx * 1.0, 11.75, FZ + .35 + (PD - .35) / 2), M["cromo_sala"], C_SEC, seg=14)
         cyl("Pole_Dance_Base", .13, .13, .02, (9 + sx * 1.0, 11.75, FZ + .36), M["cromo_sala"], C_SEC, seg=18)
         cyl("Pole_Dance_Topo", .09, .09, .02, (9 + sx * 1.0, 11.75, FZ + PD - .03), M["cromo_sala"], C_SEC, seg=18)
+    if CAIXAS_AUTOR: continue
     box("Caixa_Som", (.38, .34, .7), (9 + sx * 2.35, 12.55, FZ + .35), M["plast"], C_SEC, bevel=.02)
     for k, rr in enumerate((.13, .07)): cyl("Caixa_Som_Falante", rr, rr, .02, (9 + sx * 2.35, 12.375, FZ + .26 + k * .28), M["preto_b"], C_SEC, rot=(PI / 2, 0, 0), seg=16)
 if not PALCO_AUTOR:
@@ -1730,12 +1732,15 @@ else:
 sofa("Sofa_Sala_Leste_A", 11.5, 7.6, 2.3, (-1, 0), C_SEC); sofa("Sofa_Sala_Leste_B", 11.5, 10.2, 2.3, (-1, 0), C_SEC)
 sofa("Sofa_Sala_Sul", 9.6, 6.5, 2.4, (0, 1), C_SEC)
 mesinha("Mesinha_Sala_A", 10.6, 7.6, C_SEC); mesinha("Mesinha_Sala_B", 10.6, 10.2, C_SEC); mesinha("Mesinha_Sala_C", 9.6, 7.45, C_SEC)
-box("Bar_Sala_Balcao", (.5, 2.3, 1.05), (7.15, 10.5, FZ + .525), M["preto_piso"], C_SEC, bevel=.015)
-box("Bar_Sala_Tampo", (.6, 2.4, .04), (7.15, 10.5, FZ + 1.07), M["cromo_sala"], C_SEC)
-box("Bar_Sala_LED", (.02, 2.3, .04), (7.41, 10.5, FZ + .12), M["neon_az"], C_SEC)
+BAR_SALA_AUTOR = modelo_autor_inteiro("bar_sala_reservada_realista.glb", "Bar_Sala_Autor", 6.795, 10.5, FZ, 0, C_SEC, "BarSala")      # bancada e prateleiras do autor ja na posicao (prateleiras na mesma altura: as garrafas continuam)
+if not BAR_SALA_AUTOR:
+    box("Bar_Sala_Balcao", (.5, 2.3, 1.05), (7.15, 10.5, FZ + .525), M["preto_piso"], C_SEC, bevel=.015)
+    box("Bar_Sala_Tampo", (.6, 2.4, .04), (7.15, 10.5, FZ + 1.07), M["cromo_sala"], C_SEC)
+    box("Bar_Sala_LED", (.02, 2.3, .04), (7.41, 10.5, FZ + .12), M["neon_az"], C_SEC)
 for k, z in enumerate((1.2, 1.65)):
-    box("Bar_Sala_Prateleira", (.2, 2.2, .03), (6.24, 10.5, FZ + z), M["cromo_sala"], C_SEC)
-    box("Bar_Sala_Prateleira_LED", (.02, 2.2, .02), (6.15, 10.5, FZ + z + .03), M["neon_az"], C_SEC)
+    if not BAR_SALA_AUTOR:
+        box("Bar_Sala_Prateleira", (.2, 2.2, .03), (6.24, 10.5, FZ + z), M["cromo_sala"], C_SEC)
+        box("Bar_Sala_Prateleira_LED", (.02, 2.2, .02), (6.15, 10.5, FZ + z + .03), M["neon_az"], C_SEC)
     for j in range(9):
         torno("Garrafa_Sala", GARRAFA, M[("garrafa_c", "garrafa_a", "garrafa_v")[(j + k) % 3]], C_SEC, pos=(6.24, 9.55 + j * .24, FZ + z + .016), seg=10)
 for k in range(3):
