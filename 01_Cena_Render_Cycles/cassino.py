@@ -1101,8 +1101,13 @@ if not ob_:
     cyl("Mesa_Carteado_Pe", .09, .3, .72, (CX, CY, FZ + .36), M["mad"], C_SAL, seg=12)
     cyl("Mesa_Carteado_Borda", .7, .7, .06, (CX, CY, FZ + .75), M["mad"], C_SAL, seg=28)
     cyl("Mesa_Carteado_Feltro", .62, .62, .012, (CX, CY, FZ + .785), M["feltro"], C_SAL, seg=28)
+_cad_jogo = None
 for k in range(4):
     a = PI / 4 + k * PI / 2; x, y = CX + 1.02 * math.cos(a), CY + 1.02 * math.sin(a)
+    if k == 0: _cad_jogo = modelo_autor_inteiro("cadeira_carteado_capitone.glb", "Cadeira_Jogo_Autor", x, y, FZ, a + PI / 2, C_SAL, "CadJogo")      # encosto do autor em -Y: gira para fora da mesa
+    elif _cad_jogo:                                                       # as outras: copia da malha (cada uma com o seu lightmap), mesmas texturas
+        ob_ = bpy.data.objects.new("Cadeira_Jogo_Autor", _cad_jogo.data.copy()); C_SAL.objects.link(ob_); ob_.location = (x, y, FZ); ob_.rotation_euler = (0, 0, a + PI / 2)
+    if _cad_jogo: continue
     box("Cadeira_Jogo_Assento", (.44, .44, .08), (x, y, FZ + .46), M["couro"], C_SAL, rot=(0, 0, a), bevel=.02)
     box("Cadeira_Jogo_Encosto", (.06, .44, .5), (x + .2 * math.cos(a), y + .2 * math.sin(a), FZ + .75), M["couro"], C_SAL, rot=(0, 0, a), bevel=.02)
     box("Cadeira_Jogo_Base", (.36, .36, .42), (x, y, FZ + .21), M["mad"], C_SAL, rot=(0, 0, a))
@@ -1681,8 +1686,9 @@ for k in range(2):
 if not modelo_autor_inteiro("condensadora_ar.glb", "Condensadora_Ar_Autor", -2.5, 13.30, FZ + 1.71, PI, C_GAR_E, "Condensadora"):      # grade para o quintal, suportes na parede; fora do lightmap (chapas de metal)
     box("Condensadora_Ar", (.8, .32, .58), (-2.5, 13.3, FZ + 2.0), M["branco"], C_FUN, bevel=.02)
     cyl("Condensadora_Grade", .22, .22, .02, (-2.6, 13.47, FZ + 2.0), M["esquadria"], C_FUN, rot=(PI / 2, 0, 0), seg=16)
-barra("Varal", (-5.8, 16.6, FZ + 1.9), (5.8, 16.6, FZ + 1.9), .004, M["branco"], C_FUN, seg=4)
-for k in range(4): box("Pano_Varal", (.5, .01, .45), (-3.5 + k * .9, 16.6, FZ + 1.66), (M["branco"], M["cartaz_az"], M["cortina_br"], M["cartaz_v"])[k], C_FUN)
+VARAL_AUTOR = modelo_autor_inteiro("varal_roupas_realista.glb", "Varal_Autor", 0.0, 16.59, 1.587, 0, C_FUN, "Varal")      # corda, pregadores e roupas do autor, ja na posicao
+if not VARAL_AUTOR: barra("Varal", (-5.8, 16.6, FZ + 1.9), (5.8, 16.6, FZ + 1.9), .004, M["branco"], C_FUN, seg=4)
+for k in range(4 if not VARAL_AUTOR else 0): box("Pano_Varal", (.5, .01, .45), (-3.5 + k * .9, 16.6, FZ + 1.66), (M["branco"], M["cartaz_az"], M["cortina_br"], M["cartaz_v"])[k], C_FUN)
 box("Caixote_Beco", (.6, .5, .5), (-7.55, 8.3, FZ + .25), M["mad_cl"], C_FUN)
 box("Caixote_Beco_B", (.5, .4, .4), (-7.6, 8.3, FZ + .7), M["papelao"], C_FUN, rot=(0, 0, .3))
 

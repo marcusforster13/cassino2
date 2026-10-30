@@ -86,7 +86,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1030-0948';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1030-1211';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -213,6 +213,9 @@ gltf.scene.traverse(o => {
     if (m.name === 'Neon_Neon_Salao_Verde_Mat') { m.color.set('#06301a'); m.emissive.set('#2aff7a'); m.emissiveIntensity = .85; }
     if (m.name === 'Modelo_Chaves_0') { m.blending = THREE.AdditiveBlending; m.transparent = true; m.depthWrite = false; }      // rotulos do quadro de chaves: a imagem perdeu a transparencia (fundo preto) e cobria a madeira
     if (/MesaCarteado/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.2; m.lightMapIntensity = m.userData.lmBase; }      // mesa de carteado: feltro e borda escuros sem a lanterna
+    if (/BarSala/.test(m.name) && !/Neon/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= /Laca|Juntas/.test(m.name) || /frente/.test(m.map?.name || '') ? 4 : 2.5; m.lightMapIntensity = m.userData.lmBase; }      // bar da sala reservada: textura mais clara, a frente e o corpo (parte de baixo) um pouco mais; os LEDs azuis ficam iguais
+    if (/CadJogo/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.5; m.lightMapIntensity = m.userData.lmBase; }      // cadeiras do carteado: couro vinho escuro sumia
+    if (/Varal/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 7; m.lightMapIntensity = m.userData.lmBase; }      // roupas do varal: tecido fino assava quase preto
     if (/^Piso_Taco_Salao/.test(m.name) && m.userData.lmBase) { m.userData.lmBase *= 2.0; m.lightMapIntensity = m.userData.lmBase; }      // taco do salao: escuro demais sem a lanterna
     if (/^Mesinha_Preto_Brilhante/.test(m.name)) { m.color.setRGB(.05, .05, .055); m.roughness = .25; }      // tampo das mesinhas: preto puro sumia no escuro
     if (/^Mesinha_/.test(m.name)) m.lightMapIntensity *= .55;      // a luz uniforme deixava a mesinha cinza e chapada nos comodos escuros      // porta de enrolar na calcada: a luz uniforme do bar deixava o aco claro demais a noite      // banquetas do balcao: madeira escura sumia sem a lanterna
