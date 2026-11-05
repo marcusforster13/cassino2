@@ -602,12 +602,15 @@ export async function iniciar(ctx) {
     const g = new THREE.Group(), geo = new THREE.PlaneGeometry(tam, tam);
     const a = new THREE.Mesh(geo, matFlash), b = new THREE.Mesh(geo, matFlash), c = new THREE.Mesh(geo, matFlash);
     b.rotation.y = Math.PI / 2; b.scale.x = 1.5; c.rotation.x = Math.PI / 2; c.scale.y = 1.5; g.add(a, b, c);
-    const l = new THREE.PointLight(0xffc880, 0, 10, 2); g.add(l); g.userData.luz = l; g.visible = false; return g;
+    g.userData.luz = luzFlash; g.visible = false; return g;
   }
+  // uma luz so para todos os clarões, sempre na cena (intensidade 0 parada): uma luz que aparece ou some muda o numero de
+  // luzes e o three.js recompila todos os materiais da cena; era a travada do primeiro tiro
+  const luzFlash = new THREE.PointLight(0xffc880, 0, 10, 2); scene.add(luzFlash);
   function acenderFlash(f) {
-    f.rotation.z = Math.random() * 6.28; f.scale.setScalar(.75 + Math.random() * .6); f.visible = true; f.userData.luz.intensity = 9;
-    setTimeout(() => { f.userData.luz.intensity = 3; }, 40); setTimeout(() => { f.visible = false; f.userData.luz.intensity = 0; }, 85);
-    f.getWorldPosition(GT);
+    f.rotation.z = Math.random() * 6.28; f.scale.setScalar(.75 + Math.random() * .6); f.visible = true;
+    f.getWorldPosition(GT); luzFlash.position.copy(GT); luzFlash.intensity = 9;
+    setTimeout(() => { luzFlash.intensity = 3; }, 40); setTimeout(() => { f.visible = false; luzFlash.intensity = 0; }, 85);
     const m = new THREE.Mesh(geoFum, new THREE.MeshBasicMaterial({ color: 0xbfbfbf, transparent: true, opacity: .22, depthWrite: false }));
     m.position.copy(GT); m.scale.setScalar(.04); scene.add(m); fumacas.push({ f: m, t: 0, v: new THREE.Vector3(0, .25, 0), s0: .04, cres: .22, vida: 1.1, op: .22 });
   }
@@ -656,7 +659,16 @@ export async function iniciar(ctx) {
   }
   let armaModelo = null, granadaModelo = null;
   const prep = raiz => { raiz.traverse(o => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(m => ctx.iluminar(m.clone())) : ctx.iluminar(o.material.clone()); }); return raiz; };
-  gl.loadAsync(HQ('modelos/arma.glb')).then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); }).catch(() => { });
+  gl.loadAsync(HQ('modelos/arma.glb')).then(g => { armaModelo = prep(g.scene); arma.add(armaModelo.clone()); preaquecer(); }).catch(() => preaquecer());
+  function preaquecer() {        // compila antes os materiais do tiro (arma, clarao, fumaca, capsula, sangue, marca): sem isso o primeiro tiro travava
+    const g = new THREE.Group(), p = new THREE.PlaneGeometry(.01, .01);
+    for (const m of [matFlash, matCaps, matGota, matMarca, mancha.mat0 || (mancha.mat0 = new THREE.MeshBasicMaterial({ map: texSangue, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, toneMapped: false, color: 0x9a9a9a })),
+      new THREE.MeshBasicMaterial({ color: 0xbfbfbf, transparent: true, opacity: .22, depthWrite: false })]) g.add(new THREE.Mesh(p, m));
+    if (armaModelo) g.add(armaModelo.clone());
+    camera.add(g); g.position.set(0, 0, -.5); g.scale.setScalar(.001);
+    try { renderer.compile(scene, camera); } catch (e) { }
+    setTimeout(() => camera.remove(g), 500);
+  }
   gl.loadAsync(HQ('modelos/granada.glb')).then(g => { granadaModelo = prep(g.scene); }).catch(() => { });
   const controle = mao => (ctx.controles || []).find(c => c.userData.mao === mao);
   function sacar(on) {
