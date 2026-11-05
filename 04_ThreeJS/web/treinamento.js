@@ -602,20 +602,23 @@ export async function iniciar(ctx) {
     const g = new THREE.Group(), geo = new THREE.PlaneGeometry(tam, tam);
     const a = new THREE.Mesh(geo, matFlash), b = new THREE.Mesh(geo, matFlash), c = new THREE.Mesh(geo, matFlash);
     b.rotation.y = Math.PI / 2; b.scale.x = 1.5; c.rotation.x = Math.PI / 2; c.scale.y = 1.5; g.add(a, b, c);
-    g.userData.luz = luzFlash; g.visible = false; return g;
+    g.visible = false; return g;
   }
-  // uma luz so para todos os clarões, sempre na cena (intensidade 0 parada): uma luz que aparece ou some muda o numero de
-  // luzes e o three.js recompila todos os materiais da cena; era a travada do primeiro tiro
-  const luzFlash = new THREE.PointLight(0xffc880, 0, 10, 2); scene.add(luzFlash);
+  // o clarao do policial ilumina com a lanterna da camera (luz que ja existe na cena): uma luz nova recompilava os materiais
+  // no primeiro tiro, e uma luz extra fixa pesava em todos os quadros no Quest. O clarao dos atiradores fica so no brilho.
+  const lant = ctx.lanterna; let lantAte = 0, lantCor = null, lantInt = 0;
   function acenderFlash(f) {
     f.rotation.z = Math.random() * 6.28; f.scale.setScalar(.75 + Math.random() * .6); f.visible = true;
-    f.getWorldPosition(GT); luzFlash.position.copy(GT); luzFlash.intensity = 9;
-    setTimeout(() => { luzFlash.intensity = 3; }, 40); setTimeout(() => { f.visible = false; luzFlash.intensity = 0; }, 85);
+    if (lant && f === clarao) {
+      if (performance.now() > lantAte) { lantCor = lant.color.getHex(); lantInt = lant.intensity; }
+      lant.color.setHex(0xffc880); lant.intensity = lantInt + 70; lantAte = performance.now() + 85;
+      setTimeout(() => { if (performance.now() >= lantAte - 5) { lant.color.setHex(lantCor); lant.intensity = ctx.lanternaLigada() ? 40 : 0; } }, 85);
+    }
+    setTimeout(() => { f.visible = false; }, 85); f.getWorldPosition(GT);
     const m = new THREE.Mesh(geoFum, new THREE.MeshBasicMaterial({ color: 0xbfbfbf, transparent: true, opacity: .22, depthWrite: false }));
     m.position.copy(GT); m.scale.setScalar(.04); scene.add(m); fumacas.push({ f: m, t: 0, v: new THREE.Vector3(0, .25, 0), s0: .04, cres: .22, vida: 1.1, op: .22 });
   }
   const clarao = criarFlash(); clarao.position.set(0, 0, -.2); arma.add(clarao);      // a boca do cano fica em (0, 0, -0,15)
-  const luzTiro = clarao.userData.luz;
   // capsulas ejetadas e gotas de sangue: pequenas pecas com gravidade e vida curta
   const soltos = [], geoCaps = new THREE.CylinderGeometry(.0045, .0045, .019, 6), matCaps = new THREE.MeshBasicMaterial({ color: 0xb8923a });
   const geoGota = new THREE.SphereGeometry(.011, 5, 4), matGota = new THREE.MeshBasicMaterial({ color: 0x6a0505 });

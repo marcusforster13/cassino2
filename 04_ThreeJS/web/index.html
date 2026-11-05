@@ -97,7 +97,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1105-1230';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1105-1303';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -545,7 +545,7 @@ addEventListener('keydown', e => { if (e.code === 'KeyM' && window.__som) { somM
 
 /* ---------- motor do treinamento (fase 2) ---------- */
 import('./' + H('treinamento.js')).then(m => m.iniciar({
-  scene, camera, rig, renderer, hotspots, setLanterna, cena: gltf.scene, CFG, iluminar, irPara, controles, grips,
+  scene, camera, rig, renderer, hotspots, setLanterna, lanterna, cena: gltf.scene, CFG, iluminar, irPara, controles, grips,
   lanternaLigada: () => lantOn, colisao: () => alvosCol,
   setYaw: y => { yaw = y; pitch = 0; }
 })).catch(e => console.error('Treinamento não carregou:', e));
