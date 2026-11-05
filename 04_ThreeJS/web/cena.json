@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-30 13:24",
+ "gerado_em": "2026-11-05 12:20",
  "qualidade": "alta",
  "lightmaps": {
   "01_Rua_Estatico": {
@@ -165,6 +165,7 @@
    2.95
   ]
  },
+ "glb_bytes": 54313416,
  "luz_dinamica": 0.9,
  "pontos": {
   "Maquina_01": {
@@ -448,6 +449,5 @@
    "rz": 1.2793
   }
  },
- "maquinas": 8,
- "glb_bytes": 54174556
+ "maquinas": 8
 }

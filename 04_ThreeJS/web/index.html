@@ -97,7 +97,7 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 const $ = id => document.getElementById(id);
-const VERSAO = '1105-1107';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
+const VERSAO = '1105-1223';      // carimbada por carimbar_versao.py a cada envio; entra no endereco dos arquivos para o navegador nao usar copia antiga
 window.__versao = VERSAO; window.__arq = {};
 // endereco de um arquivo com a marca do conteudo dele: muda so quando o arquivo muda (o resto fica guardado no navegador)
 const H = window.__h = p => p + '?h=' + (window.__arq[p] || VERSAO);
@@ -230,6 +230,7 @@ gltf.scene.traverse(o => {
     if (/^(Banqueta_|Modelo_Banqueta_)/.test(m.name)) m.lightMapIntensity *= 2.3;
     if (/^Janela_Aluminio branco/.test(m.name)) { m.color.setRGB(.13, .065, .03); m.roughness = .65; m.metalness = 0; }      // caixilho das janelas do sobrado em madeira escura (o branco destoava do predio antigo)
     if (/PortaEnrolar/.test(m.name)) m.lightMapIntensity *= .5;
+    if (/Placa(Priv|Ger)/.test(m.name)) { m.lightMapIntensity *= 4; m.metalness = Math.min(m.metalness, .4); }      // placas de latao das portas: o letreiro dourado sumia no escuro
     if (/CaixaSom/.test(m.name)) m.lightMapIntensity *= 5.5;      // caixas de som da sala reservada: pretas, sumiam no escuro
     if (m.name === 'Neon_Neon_Salao_Vermelho_Mat') { m.color.set('#40080a'); m.emissive.set('#ff2a2a'); m.emissiveIntensity = 1; }      // neons do salao: tubo fino, com forca alta a exposicao do site (ACES) estourava para branco
     if (/^BarSala_Neon_Azul/.test(m.name)) { m.color.set('#06123a'); m.emissive.set('#3a7bff'); m.emissiveIntensity = .8; }      // LEDs azuis do bar da sala reservada: finos, mesma regra dos neons

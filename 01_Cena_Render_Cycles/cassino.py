@@ -1918,7 +1918,11 @@ def porta(nome, dobradica, rz, m, larg=.88, rotulo=None, lado_rotulo=-1):
             ob.location = (larg - .09, s * .0225, 1.02); ob.rotation_euler = (0, 0, 0 if s > 0 else PI)
         else:
             cyl(nome + "_Macaneta", .025, .025, .05, (larg - .09, s * .05, 1.02), M["metal"], C_INT, r, rot=(PI / 2, 0, 0), seg=10)
-    if rotulo:
+    arq = {"PRIVATIVO": "placa_privativo.glb", "GERÊNCIA": "placa_gerencia.glb"}.get(rotulo)
+    pl = modelo_autor_inteiro(arq, nome + "_Placa", 0, 0, 0, 0, C_INT, "Placa" + rotulo[:4].title()) if arq else None
+    if pl:                                                       # placa de latao do autor (deitada, frente +Z): em pe na folha, abre junto com a porta
+        pl.parent = r; pl.location = (larg / 2, lado_rotulo * .0225, 1.62); pl.rotation_euler = (PI / 2, 0, 0 if lado_rotulo < 0 else PI)
+    elif rotulo:
         texto(nome + "_Rotulo", rotulo, .07, (larg / 2, lado_rotulo * .026, 1.62), "-y" if lado_rotulo < 0 else "+y", M["texto_br"], C_INT, r)
     return r
 porta("I_Porta_Salao", (-5.2, 6.0), 0, M["porta_mad"], rotulo="PRIVATIVO")
